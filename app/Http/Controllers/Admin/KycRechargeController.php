@@ -21,12 +21,20 @@ class KycRechargeController extends Controller
 
 
     // Show create form
-    public function create()
-    {
-        $users = User::all();
-        $vehicles = AddCustomerVehicle::all();
-        return view('admin.kyc-recharge.create', compact('users', 'vehicles'));
+   public function create(Request $request)
+{
+    $users = User::all();
+    $vehicles = AddCustomerVehicle::all();
+
+    // get vehicle number from query if available
+    $selectedVehicle = null;
+    if ($request->has('vehicle_number')) {
+        $selectedVehicle = AddCustomerVehicle::where('vehicle_number', $request->vehicle_number)->first();
     }
+
+    return view('admin.kyc-recharge.create', compact('users', 'vehicles', 'selectedVehicle'));
+}
+
 
     // Show single recharge
     public function show($id)

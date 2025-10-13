@@ -15,41 +15,50 @@
     @endif
 
     <!-- Form for creating recharge -->
-    <form id="kycRechargeForm" method="POST">
-        @csrf
+   <form id="kycRechargeForm" method="POST">
+    @csrf
 
-        <!-- Hidden user_id (logged-in user) -->
-        <input type="hidden" name="user_id" value="{{ Auth::id() }}">
-        <input type="hidden" name="created_by_id" value="{{ Auth::id() }}">
+    <!-- Hidden user_id (logged-in user) -->
+    <input type="hidden" name="user_id" value="{{ Auth::id() }}">
+    <input type="hidden" name="created_by_id" value="{{ Auth::id() }}">
 
-       <div class="mb-3">
+    @if(isset($selectedVehicle))
+        <input type="hidden" name="vehicle_id" value="{{ $selectedVehicle->id }}">
+    @endif
+
+    <div class="mb-3">
     <label>Vehicle Number</label>
-    <select name="vehicle_number" class="form-control select2" required>
+    <select name="vehicle_id" id="vehicle_id" class="form-control select2" required>
         <option value="">-- Select Vehicle Number --</option>
         @foreach($vehicles as $vehicle)
-            <option value="{{ $vehicle->vehicle_number }}">{{ $vehicle->vehicle_number }}</option>
+            <option value="{{ $vehicle->id }}"
+                {{ isset($selectedVehicle) && $selectedVehicle->id == $vehicle->id ? 'selected' : '' }}>
+                {{ $vehicle->vehicle_number }}
+            </option>
         @endforeach
     </select>
 </div>
 
+    <div class="mb-3">
+        <label>Title</label>
+        <input type="text" name="title" class="form-control" placeholder="Enter Title"
+               value="KYC Recharge" required readonly>
+    </div>
 
-        <div class="mb-3">
-            <label>Title</label>
-            <input type="text" name="title" class="form-control" placeholder="Enter Title" value="KYC Recharge" required readonly>
-        </div>
+    <div class="mb-3">
+        <label>Description</label>
+        <textarea name="description" class="form-control" placeholder="Enter Description"></textarea>
+    </div>
 
-        <div class="mb-3">
-            <label>Description</label>
-            <textarea name="description" class="form-control" placeholder="Enter Description"></textarea>
-        </div>
+    <div class="mb-3">
+        <label>Payment Amount (INR)</label>
+        <input type="number" step="0.01" name="payment_amount" id="payment_amount" class="form-control"
+               placeholder="Enter Amount" value="299" readonly required>
+    </div>
 
-        <div class="mb-3">
-            <label>Payment Amount (INR)</label>
-            <input type="number" step="0.01" name="payment_amount" id="payment_amount" class="form-control" placeholder="Enter Amount" value="299" readonly required>
-        </div>
+    <button type="button" class="btn btn-success" id="payButton">Create & Pay</button>
+</form>
 
-        <button type="button" class="btn btn-success" id="payButton">Create & Pay</button>
-    </form>
 </div>
 
 @endsection

@@ -89,6 +89,8 @@
 
             <strong>Vehicle Model:</strong> {{ $vehicle['vehicle_model'] }}<br>
             <strong>Vehicle Number:</strong> {{ $vehicle['vehicle_number'] }}
+            
+
         </div>
 
         <div class="col-md-5">
@@ -129,6 +131,17 @@
                 <button type="button" class="btn btn-sm btn-outline-primary"
                     onclick="requestPassword('{{ $vehicle['id'] }}', '{{ $vehicle['password'] }}')">Show Password</button>
             </p>
+
+            <strong>KYC Status:</strong>
+@if($vehicle['kyc_status'] == 'completed')
+    <span class="badge bg-success">KYC Completed</span>
+@else
+    <a href="{{ route('admin.kyc-recharges.create', ['vehicle_number' => $vehicle['vehicle_number']]) }}"
+       class="badge bg-warning text-dark blink text-decoration-none">
+       KYC Pending – Click to Pay
+    </a>
+@endif
+
 
             {{-- Shared With --}}
             @if($sharedWith->count())
