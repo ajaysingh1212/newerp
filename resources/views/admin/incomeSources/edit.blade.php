@@ -1,0 +1,46 @@
+@extends('layouts.admin')
+@section('content')
+
+<div class="card">
+    <div class="card-header">
+        {{ trans('global.edit') }} {{ trans('cruds.incomeSource.title_singular') }}
+    </div>
+
+    <div class="card-body">
+        @include('watermark')
+        <form method="POST" action="{{ route("admin.income-sources.update", [$incomeSource->id]) }}" enctype="multipart/form-data">
+            @method('PUT')
+            @csrf
+            <div class="card px-3">
+                <h4 class= "text-center mt-2 py-2 bg-1">Edit Income Sources</h4>
+            <div class="row">
+            <div class="form-group col-lg-6">
+                <label class="required" for="name">{{ trans('cruds.incomeSource.fields.name') }}</label>
+                <input class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}" type="text" name="name" id="name" value="{{ old('name', $incomeSource->name) }}" required>
+                @if($errors->has('name'))
+                    <span class="text-danger">{{ $errors->first('name') }}</span>
+                @endif
+                <span class="help-block">{{ trans('cruds.incomeSource.fields.name_helper') }}</span>
+            </div>
+            <div class="form-group col-lg-6">
+                <label for="fee_percent">{{ trans('cruds.incomeSource.fields.fee_percent') }}</label>
+                <input class="form-control {{ $errors->has('fee_percent') ? 'is-invalid' : '' }}" type="number" name="fee_percent" id="fee_percent" value="{{ old('fee_percent', $incomeSource->fee_percent) }}" step="0.01">
+                @if($errors->has('fee_percent'))
+                    <span class="text-danger">{{ $errors->first('fee_percent') }}</span>
+                @endif
+                <span class="help-block">{{ trans('cruds.incomeSource.fields.fee_percent_helper') }}</span>
+            </div>
+            </div>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-danger" type="submit">
+                    {{ trans('global.save') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+@endsection

@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Models;
+
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Role extends Model
+{
+    use SoftDeletes, HasFactory;
+
+    public $table = 'roles';
+
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
+    protected $fillable = [
+        'title',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
+
+    public function selectUserStockTransfers()
+    {
+        return $this->hasMany(StockTransfer::class, 'select_user_id', 'id');
+    }
+
+    public function partyTypeActivationRequests()
+    {
+        return $this->hasMany(ActivationRequest::class, 'party_type_id', 'id');
+    }
+
+    public function permissions()
+    {
+        return $this->belongsToMany(Permission::class);
+    }
+}
