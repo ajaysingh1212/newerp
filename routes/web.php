@@ -8,7 +8,8 @@ Use App\Http\Controllers\Admin\UnbindProductController;
 
 use App\Http\Controllers\Admin\CurrentStockController;
 use App\Http\Controllers\Admin\UserAlertsControlle;
-
+use App\Http\Controllers\Admin\KycRechargeController;
+use App\Http\Controllers\Admin\VehicleSharingController;
 
 Route::redirect('/', '/login');
 Route::get('/home', function () {
