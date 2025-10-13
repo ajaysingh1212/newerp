@@ -731,6 +731,7 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
             <div class="row">
                 @php
                     $vehicles = \App\Models\AddCustomerVehicle::where('user_id', auth()->id())->get();
+                   
                 @endphp
                 @foreach($vehicles as $vehicle)
                     @php
