@@ -103,6 +103,9 @@ public function index(Request $request)
         $hasRecharge = \DB::table('recharge_requests')
             ->where('vehicle_number', $vehicle->vehicle_number)
             ->exists();
+            $hasKyc = \DB::table('kyc_recharges')
+    ->where('vehicle_number', $vehicle->vehicle_number)
+    ->exists();
 
         $subscription = $amc = $warranty = null;
 
@@ -160,6 +163,7 @@ public function index(Request $request)
             'warranty_remaining_days' => $warranty['days_left'] ?? null,
             'warranty_expired' => $warranty['expired'] ?? false,
             'request_date' => optional($vehicle->rechargeRequest()->latest()->first())->created_at?->format('Y-m-d'),
+             'kyc_status' => $hasKyc ? 'completed' : 'pending',
         ];
     });
 
