@@ -1,6 +1,12 @@
 @extends('layouts.admin')
 @section('content')
 
+@php
+    // Logged-in user ke roles ko fetch karo
+    $userRoles = auth()->user()->roles->pluck('title')->toArray();
+@endphp
+
+@if(!in_array('Customer', $userRoles) && !in_array('Sharing', $userRoles))
 <style>
     .card .bg-1{
         background: #8776cc;
@@ -709,4 +715,107 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
      }
 }
 </script>
+
+@else
+<div class="card">
+    <div class="card-header bg-warning text-white">
+        Vehicle Sharing / Add Sharing User
+    </div>
+
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.vehicle-sharing.store') }}">
+            @csrf
+
+            {{-- Step 1: Select Vehicles --}}
+            <h4 class="mb-3">Select Vehicles to Share</h4>
+            <div class="row">
+                @php
+                    $vehicles = \App\Models\AddCustomerVehicle::where('user_id', auth()->id())->get();
+                @endphp
+                @foreach($vehicles as $vehicle)
+                    @php
+                        // Fetch already shared users
+                        $sharedUsers = DB::table('vehicle_sharing')
+                                        ->join('users', 'vehicle_sharing.sharing_user_id', '=', 'users.id')
+                                        ->where('vehicle_sharing.vehicle_id', $vehicle->id)
+                                        ->select('users.name', 'users.email')
+                                        ->get();
+                    @endphp
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>{{ $vehicle->vehicle_number }}</span>
+                                <input type="checkbox" name="vehicle_ids[]" value="{{ $vehicle->id }}">
+                            </div>
+                            <div class="card-body text-center">
+                                {{-- Vehicle Image --}}
+                                @if($vehicle->vehicle_photos && $vehicle->vehicle_photos->url)
+                                    <img src="{{ $vehicle->vehicle_photos->url }}" alt="Vehicle Photo" class="img-fluid mb-2" height="100">
+                                @else
+                                    <img src="{{ asset('img/car.png') }}" alt="No Image" class="img-fluid mb-2">
+                                @endif
+
+                                <p class="mb-1"><strong>Owner:</strong> {{ $vehicle->owners_name }}</p>
+                                <p class="mb-1"><strong>Type:</strong> {{ $vehicle->select_vehicle_type ? $vehicle->select_vehicle_type->name : '-' }}</p>
+                                <p class="mb-1"><strong>Status:</strong> {{ $vehicle->status }}</p>
+
+                                @if($sharedUsers->count())
+                                    <div class="mt-2 p-2 border rounded bg-light">
+                                        <strong>Shared With:</strong>
+                                        <ul class="mb-0">
+                                            @foreach($sharedUsers as $user)
+                                                <li>{{ $user->name }} ({{ $user->email }})</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- Step 2: Role --}}
+            <div class="form-group mt-3">
+                <label for="role">Select Role</label>
+                <select name="role" id="role" class="form-control" required>
+                    <option value="Sharing">Sharing</option>
+                </select>
+            </div>
+
+            {{-- Step 3: User Details --}}
+            <div class="form-group mt-3">
+                <label for="name">Name</label>
+                <input type="text" name="name" id="name" class="form-control" required>
+            </div>
+
+            <div class="form-group mt-3">
+                <label for="email">Email</label>
+                <input type="email" name="email" id="email" class="form-control" required>
+            </div>
+
+            <div class="form-group mt-3">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" class="form-control" required>
+            </div>
+
+            <div class="form-group mt-3">
+                <label for="status">Status</label>
+                <select name="status" id="status" class="form-control" required>
+                    <option value="enable" selected>Enable</option>
+                    <option value="disable">Disable</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-4">Share Vehicles</button>
+        </form>
+    </div>
+</div>
+
+
+@endif
+
 @endsection
+
+
+

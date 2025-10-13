@@ -2,8 +2,7 @@ APP_NAME=Laravel
 APP_ENV=local
 APP_KEY=base64:VNlqAFrfCg4Fg/rNFL47NWR19xsAxxqr7PuwsXPKlk8=
 APP_DEBUG=true
-APP_URL=https://erp.eemotrack.com
-
+APP_URL=http://127.0.0.1:8000
 LOG_CHANNEL=stack
 LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=debug

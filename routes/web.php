@@ -8,7 +8,7 @@ Use App\Http\Controllers\Admin\UnbindProductController;
 
 use App\Http\Controllers\Admin\CurrentStockController;
 use App\Http\Controllers\Admin\UserAlertsControlle;
-
+use App\Http\Controllers\Admin\VehicleSharingController;
 
 Route::redirect('/', '/login');
 Route::get('/home', function () {
@@ -334,6 +334,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     });
     Route::get('recharge-plan-details/{id}', [App\Http\Controllers\Admin\RechargePlanController::class, 'getPlanDetails']);
     Route::get('/get-customer-vehicles/{userId}', [App\Http\Controllers\Admin\RechargeRequestController::class, 'getCustomerVehicles']);
+    // vehicle sharing
+    Route::post('vehicle-sharing/store', [VehicleSharingController::class, 'store'])->name('vehicle-sharing.store');
 
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
