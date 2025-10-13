@@ -16,6 +16,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 
@@ -29,34 +30,58 @@ public function index(Request $request)
 {
     abort_if(Gate::denies('add_customer_vehicle_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-   $vehicles = AddCustomerVehicle::with([
-    'select_vehicle_type',
-    'team',
-    'product_master.product_model',
-    'product_master.imei',
-    'product_master.vts',
-    'appLink',
-])
-->when(!auth()->user()->is_admin, function ($query) {
-    $query->where('created_by_id', auth()->id());
-})
-->when(request('search'), function ($query) {
-    $search = request('search');
-    $query->where(function ($q) use ($search) {
-        $q->where('vehicle_number', 'like', "%{$search}%")
-          ->orWhere('vehicle_number', 'like', "%{$search}%")
-          ->orWhereHas('product_master.imei', function ($sub) use ($search) {
-              $sub->where('imei_number', 'like', "%{$search}%");
-          });
-    });
-})
-->orderByDesc('id')
-->get();
+    $search = $request->input('search');
 
-        
+    // 1️⃣ Vehicles owned by the user
+    $ownedVehicles = AddCustomerVehicle::with([
+        'select_vehicle_type',
+        'team',
+        'product_master.product_model',
+        'product_master.imei',
+        'product_master.vts',
+        'appLink',
+    ])
+    ->when(!auth()->user()->is_admin, function ($query) {
+        $query->where('created_by_id', auth()->id());
+    })
+    ->when($search, function ($query) use ($search) {
+        $query->where('vehicle_number', 'like', "%{$search}%")
+              ->orWhereHas('product_master.imei', function ($sub) use ($search) {
+                  $sub->where('imei_number', 'like', "%{$search}%");
+              });
+    })
+    ->orderByDesc('id')
+    ->get();
+
+    // 2️⃣ Vehicles shared with logged-in user
+    $sharedVehicleIds = DB::table('vehicle_sharing')
+        ->where('sharing_user_id', auth()->id())
+        ->pluck('vehicle_id')
+        ->toArray();
+
+    $sharedVehicles = AddCustomerVehicle::with([
+        'select_vehicle_type',
+        'team',
+        'product_master.product_model',
+        'product_master.imei',
+        'product_master.vts',
+        'appLink',
+    ])
+    ->whereIn('id', $sharedVehicleIds)
+    ->when($search, function ($query) use ($search) {
+        $query->where('vehicle_number', 'like', "%{$search}%")
+              ->orWhereHas('product_master.imei', function ($sub) use ($search) {
+                  $sub->where('imei_number', 'like', "%{$search}%");
+              });
+    })
+    ->orderByDesc('id')
+    ->get();
+
+    // 3️⃣ Merge owned + shared
+    $vehicles = $ownedVehicles->merge($sharedVehicles)->unique('id');
+
     $now = \Carbon\Carbon::now();
 
-    // Format expiry with days left and expired flag
     $formatExpiryInfo = function ($date) use ($now) {
         if (!$date) return ['date' => null, 'days_left' => null, 'expired' => false];
 
@@ -75,39 +100,27 @@ public function index(Request $request)
     };
 
     $data = $vehicles->map(function ($vehicle) use ($now, $formatExpiryInfo) {
-        // Check if recharge_requests exists
         $hasRecharge = \DB::table('recharge_requests')
             ->where('vehicle_number', $vehicle->vehicle_number)
             ->exists();
-        
-        $subscription = null;
-        $amc = null;
-        $warranty = null;
+
+        $subscription = $amc = $warranty = null;
 
         if ($hasRecharge) {
-            // Use directly from vehicle if recharge exists
             $subscription = $formatExpiryInfo($vehicle->subscription);
             $amc = $formatExpiryInfo($vehicle->amc);
             $warranty = $formatExpiryInfo($vehicle->warranty);
-           
         } else {
-            // Else fallback to activation request
             $activation = \DB::table('activation_requests')
                 ->where('vehicle_reg_no', $vehicle->vehicle_number)
                 ->first();
 
             if ($activation) {
                 $productMaster = \App\Models\ProductMaster::withTrashed()->find($activation->product_id);
-                $productModel = null;
+                $productModel = optional($productMaster)->product_model;
 
-                if ($productMaster && $productMaster->product_model_id) {
-                    $productModel = \App\Models\ProductModel::withTrashed()->find($productMaster->product_model_id);
-                }
-
-                // Base date = request_date or created_at of activation
                 $activationDate = \Carbon\Carbon::parse($activation->request_date ?? $activation->created_at ?? now());
 
-                // If numeric, treat as months; else use as-is
                 $subscriptionDate = is_numeric(optional($productModel)->subscription)
                     ? $activationDate->copy()->addMonths(optional($productModel)->subscription)
                     : optional($productModel)->subscription;
@@ -137,26 +150,21 @@ public function index(Request $request)
             'vehicle_photos' => $vehicle->getFirstMediaUrl('vehicle_photos')
                 ? '<img src="' . $vehicle->getFirstMediaUrl('vehicle_photos') . '" width="100%">'
                 : '',
-
             'subscription_date' => $subscription['date'] ?? null,
             'subscription_remaining_days' => $subscription['days_left'] ?? null,
             'subscription_expired' => $subscription['expired'] ?? false,
-
             'amc_date' => $amc['date'] ?? null,
             'amc_remaining_days' => $amc['days_left'] ?? null,
             'amc_expired' => $amc['expired'] ?? false,
-
             'warranty_date' => $warranty['date'] ?? null,
             'warranty_remaining_days' => $warranty['days_left'] ?? null,
             'warranty_expired' => $warranty['expired'] ?? false,
-
             'request_date' => optional($vehicle->rechargeRequest()->latest()->first())->created_at?->format('Y-m-d'),
         ];
     });
 
     return view('admin.addCustomerVehicles.index', ['vehicles' => $data]);
 }
-
 
 
 

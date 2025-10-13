@@ -129,40 +129,45 @@ public function index(Request $request)
     return view('admin.users.index');
 }
 
-public function create()
-{
-    abort_if(Gate::denies('user_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+    public function create()
+    {
+        abort_if(Gate::denies('user_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    $states = State::pluck('state_name', 'id')->prepend(trans('global.pleaseSelect'), '');
-    $districts = District::pluck('districts', 'id')->prepend(trans('global.pleaseSelect'), '');
-    $teams = Team::pluck('name', 'id')->prepend(trans('global.pleaseSelect'), '');
+        $states = State::pluck('state_name', 'id')->prepend(trans('global.pleaseSelect'), '');
+        $districts = District::pluck('districts', 'id')->prepend(trans('global.pleaseSelect'), '');
+        $teams = Team::pluck('name', 'id')->prepend(trans('global.pleaseSelect'), '');
 
-    $allRoles = Role::pluck('title', 'id');
-    $userRole = auth()->user()->roles->first()->title ?? '';
+        $allRoles = Role::pluck('title', 'id');
+        $userRole = auth()->user()->roles->first()->title ?? '';
 
-    if ($userRole === 'Admin') {
-        $allowedRoles = $allRoles;
-    } elseif ($userRole === 'CNF') {
-        $allowedRoles = $allRoles->filter(function ($title) {
-            return in_array($title, ['Distributer', 'Dealer', 'Customer']);
-        });
-    } elseif ($userRole === 'Distributer') {
-        $allowedRoles = $allRoles->filter(function ($title) {
-            return in_array($title, ['Dealer', 'Customer']);
-        });
-    } elseif ($userRole === 'Dealer') {
-        $allowedRoles = $allRoles->filter(function ($title) {
-            return $title === 'Customer';
-        });
-    } else {
-        $allowedRoles = collect(); // No roles allowed
+        if ($userRole === 'Admin') {
+            $allowedRoles = $allRoles;
+        } elseif ($userRole === 'CNF') {
+            $allowedRoles = $allRoles->filter(function ($title) {
+                return in_array($title, ['Distributer', 'Dealer', 'Customer']);
+            });
+        } elseif ($userRole === 'Distributer') {
+            $allowedRoles = $allRoles->filter(function ($title) {
+                return in_array($title, ['Dealer', 'Customer']);
+            });
+        } elseif ($userRole === 'Dealer') {
+            $allowedRoles = $allRoles->filter(function ($title) {
+                return $title === 'Customer';
+            });
+        } elseif ($userRole === 'Customer') {
+            // ✅ Allow Customer to create Sharing role
+            $allowedRoles = $allRoles->filter(function ($title) {
+                return $title === 'Sharing';
+            });
+        } else {
+            $allowedRoles = collect(); // No roles allowed
+        }
+
+        $roles = $allowedRoles;
+
+        return view('admin.users.create', compact('districts', 'roles', 'states', 'teams'));
     }
 
-    $roles = $allowedRoles;
-
-    return view('admin.users.create', compact('districts', 'roles', 'states', 'teams'));
-
-} 
 
 
 public function store(StoreUserRequest $request)
