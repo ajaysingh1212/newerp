@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.8",
         "laraveldaily/laravel-charts": "^0.1.29",
         "nuovo/spreadsheet-reader": "^0.5.11",
+        "razorpay/razorpay": "^2.9",
         "spatie/laravel-medialibrary": "^10.7",
         "spatie/laravel-permission": "^6.18",
         "yajra/laravel-datatables-oracle": "^10.3"

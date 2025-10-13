@@ -8,6 +8,7 @@ Use App\Http\Controllers\Admin\UnbindProductController;
 
 use App\Http\Controllers\Admin\CurrentStockController;
 use App\Http\Controllers\Admin\UserAlertsControlle;
+use App\Http\Controllers\Admin\KycRechargeController;
 
 
 Route::redirect('/', '/login');
@@ -334,6 +335,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     });
     Route::get('recharge-plan-details/{id}', [App\Http\Controllers\Admin\RechargePlanController::class, 'getPlanDetails']);
     Route::get('/get-customer-vehicles/{userId}', [App\Http\Controllers\Admin\RechargeRequestController::class, 'getCustomerVehicles']);
+
+    Route::resource('kyc-recharges', KycRechargeController::class);
+
+    Route::post('kyc-recharges/{id}/payment-callback', [KycRechargeController::class, 'paymentCallback'])
+    ->name('kyc-recharges.payment-callback');
 
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {

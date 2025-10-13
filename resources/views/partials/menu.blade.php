@@ -884,6 +884,18 @@
                                     </a>
                                 </li>
                             @endcan
+
+                            @can('kyc_recharge_access')
+    <li class="nav-item">
+        <a href="{{ route('admin.kyc-recharges.index') }}" class="nav-link {{ request()->is('admin/kyc-recharges') || request()->is('admin/kyc-recharges/*') ? 'active' : '' }}">
+            <i class="fa-fw nav-icon fas fa-id-card"></i>
+            <p>
+                {{ trans('cruds.kycRecharge.title') }}
+            </p>
+        </a>
+    </li>
+@endcan
+
                         </ul>
                     </li>
                 @endcan
