@@ -340,4 +340,22 @@ public function store(StoreUserRequest $request)
 
         return response()->json(['id' => $media->id, 'url' => $media->getUrl()], Response::HTTP_CREATED);
     }
+    public function search(Request $request)
+    {
+        $query = $request->get('q');
+        if (strlen($query) < 3) {
+            return response()->json([]);
+        }
+
+        $users = User::query()
+            ->where('name', 'like', "%{$query}%")
+            ->orWhere('email', 'like', "%{$query}%")
+            ->orWhere('mobile_number', 'like', "%{$query}%")
+            ->select('id', 'name', 'email', 'mobile_number')
+            ->limit(10)
+            ->get();
+
+        return response()->json($users);
+    }
+
 }

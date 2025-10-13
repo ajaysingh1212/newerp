@@ -16,30 +16,41 @@ class VehicleSharingController extends Controller
 {
 public function store(Request $request)
 {
+    // Base validation
     $request->validate([
-        'vehicle_ids' => 'required|array',
-        'role'        => 'required|string',
-        'name'        => 'required|string',
-        'email'       => 'required|email|unique:users,email',
-        'password'    => 'required|string|min:6',
-        'status'      => 'required|string',
-       
+        'vehicle_ids'      => 'required|array',
+        'role'             => 'required|string',
+        'status'           => 'required|string',
+        'existing_user_id' => 'nullable|exists:users,id',
     ]);
 
-    // Create user
-    $user = User::create([
-        'name'     => $request->name,
-        'email'    => $request->email,
-        'password' => Hash::make($request->password),
-        'status'   => $request->status,
-        'created_by_id' => auth()->id(),
-    ]);
+    // Additional validation only if a new user is being created
+    if (!$request->filled('existing_user_id')) {
+        $request->validate([
+            'name'     => 'required|string',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+    }
 
-    // Attach role to pivot table role_user
-    $role = Role::firstOrCreate(['title' => $request->role]);
-    $user->roles()->attach($role->id);
+    // Use existing user or create new one
+    if ($request->filled('existing_user_id')) {
+        $user = User::findOrFail($request->existing_user_id);
+    } else {
+        $user = User::create([
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'password'      => Hash::make($request->password),
+            'status'        => $request->status,
+            'created_by_id' => auth()->id(),
+        ]);
 
-    // Save vehicle sharing in pivot table
+        // Attach role
+        $role = Role::firstOrCreate(['title' => $request->role]);
+        $user->roles()->attach($role->id);
+    }
+
+    // Save vehicle sharing entries
     foreach ($request->vehicle_ids as $vehicleId) {
         DB::table('vehicle_sharing')->insert([
             'vehicle_id'      => $vehicleId,
@@ -52,6 +63,8 @@ public function store(Request $request)
 
     return redirect()->back()->with('success', 'Vehicles shared successfully.');
 }
+
+
 
     public function mySharedVehicles()
     {
