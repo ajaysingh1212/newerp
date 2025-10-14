@@ -338,7 +338,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     // vehicle sharing
     Route::post('vehicle-sharing/store', [VehicleSharingController::class, 'store'])->name('vehicle-sharing.store');
     Route::get('users/create/search', [App\Http\Controllers\Admin\UsersController::class, 'search'])->name('users.search');
-
+    Route::post('/vehicle-sharing/remove', [VehicleSharingController::class, 'remove'])
+    ->name('vehicle-sharing.remove');
     Route::resource('kyc-recharges', KycRechargeController::class);
 
     Route::post('kyc-recharges/{id}/payment-callback', [KycRechargeController::class, 'paymentCallback'])
