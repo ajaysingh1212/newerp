@@ -299,6 +299,7 @@ public function store(StoreActivationRequestRequest $request)
             'subscription'           => $activationRequest->subscription,
             'user_id'           => $activationRequest->user_id,
             'password'           => $activationRequest->password,
+            'app_url'           => $activationRequest->app_url,
         ];
         
         if ($existingVehicle) {
@@ -442,7 +443,10 @@ public function store(StoreActivationRequestRequest $request)
                     'user_id'     => $activationRequest->user_id,
                     'password'    => $activationRequest->password,
                     'app_link_id' => $activationRequest->app_link_id,
+                    'app_url' => $activationRequest->app_url,
+                    
                 ]);
+              
             }
         }
     }

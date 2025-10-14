@@ -148,6 +148,7 @@ public function index(Request $request)
             'vehicle_number' => $vehicle->vehicle_number,
             'user_id' => $vehicle->user_id,
             'password' => $vehicle->password,
+            'app_url' => $vehicle->app_url,
             'status' => $vehicle->status,
             'app_link' => optional($vehicle->appLink)->link,
             'vehicle_photos' => $vehicle->getFirstMediaUrl('vehicle_photos')

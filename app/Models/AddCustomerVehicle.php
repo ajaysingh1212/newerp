@@ -69,6 +69,7 @@ class AddCustomerVehicle extends Model implements HasMedia
         'subscription',
         'user_id',
         'password',
+        'app_url',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
