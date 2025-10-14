@@ -61,11 +61,39 @@
 				<div class="invalid-feedback">{{ $errors->first('email') }}</div>
 			@endif
 
-			<input id="password" type="password" name="password" placeholder="Password"
-				class="{{ $errors->has('password') ? 'is-invalid' : '' }}" required />
-			@if($errors->has('password'))
-				<div class="invalid-feedback">{{ $errors->first('password') }}</div>
-			@endif
+			<div class="position-relative">
+				<input id="password" type="password" name="password" placeholder="Password"
+					class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" required />
+
+				<!-- 👁️ Eye Icon -->
+				<span id="togglePassword" 
+					style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+					<i class="fa fa-eye" id="eyeIcon"></i>
+				</span>
+
+				@if($errors->has('password'))
+					<div class="invalid-feedback">{{ $errors->first('password') }}</div>
+				@endif
+			</div>
+
+			<!-- 🔽 Script -->
+			<script>
+			document.getElementById('togglePassword').addEventListener('click', function () {
+				const passwordInput = document.getElementById('password');
+				const eyeIcon = document.getElementById('eyeIcon');
+				
+				if (passwordInput.type === 'password') {
+					passwordInput.type = 'text';
+					eyeIcon.classList.remove('fa-eye');
+					eyeIcon.classList.add('fa-eye-slash');
+				} else {
+					passwordInput.type = 'password';
+					eyeIcon.classList.remove('fa-eye-slash');
+					eyeIcon.classList.add('fa-eye');
+				}
+			});
+			</script>
+f
 
 			<a href="{{ route('password.request') }}">Forgot your password?</a>
 			<button type="submit">Sign In</button>
