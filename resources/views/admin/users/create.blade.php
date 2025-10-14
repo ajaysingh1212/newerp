@@ -743,7 +743,7 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
                     <div class="col-md-4">
                         <div class="card mb-3 shadow-sm">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <span>{{ $vehicle->vehicle_number }}</span>
+                                <span><b>Vehicle Number: </b> {{ $vehicle->vehicle_number }}</span>
                                 <input type="checkbox" name="vehicle_ids[]" value="{{ $vehicle->id }}">
                             </div>
                             <div class="card-body text-center">
@@ -767,59 +767,81 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
                 @endforeach
             </div>
 
-            {{-- Step 2: Search or Enter User --}}
-            <h4 class="mt-4">Search Existing User or Add New</h4>
-            <div class="form-group">
-                <label for="user_search">Search User (Name / Email / Mobile)</label>
-                <input type="text" id="user_search" class="form-control" placeholder="Type at least 3 letters...">
-                <div id="search_results" class="list-group mt-1" style="display: none;"></div>
-            </div>
+            {{-- Step 2 & 3: Search or Add User --}}
+            <h4 class="mt-4 mb-3">Share Vehicle With</h4>
+            <div class="row">
+                {{-- Left Card: Search Existing User --}}
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fa fa-search"></i> Search Existing User
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="user_search">Search User (Name / Email / Mobile)</label>
+                                <input type="text" id="user_search" class="form-control" placeholder="Type at least 3 letters...">
+                                <div id="search_results" class="list-group mt-1" style="display: none;"></div>
+                            </div>
 
-            {{-- Selected User Card --}}
-            <div id="selected_user_card" class="card mt-3 shadow-sm" style="display:none;">
-                <div class="card-header bg-info text-white">Selected User</div>
-                <div class="card-body">
-                    <p><strong>Name:</strong> <span id="selected_user_name"></span></p>
-                    <p><strong>Email:</strong> <span id="selected_user_email"></span></p>
-                    <p><strong>Mobile:</strong> <span id="selected_user_mobile"></span></p>
-                    <input type="hidden" name="existing_user_id" id="existing_user_id">
+                            {{-- Selected User Card --}}
+                            <div id="selected_user_card" class="card mt-3 border-info shadow-sm" style="display:none;">
+                                <div class="card-header bg-info text-white">Selected User</div>
+                                <div class="card-body">
+                                    <p><strong>Name:</strong> <span id="selected_user_name"></span></p>
+                                    <p><strong>Email:</strong> <span id="selected_user_email"></span></p>
+                                    <p><strong>Mobile:</strong> <span id="selected_user_mobile"></span></p>
+                                    <input type="hidden" name="existing_user_id" id="existing_user_id">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Right Card: Add New User --}}
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-success text-white">
+                            <i class="fa fa-user-plus"></i> Add New Sharing User
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group mt-2">
+                                <label for="role">Select Role</label>
+                                <select name="role" id="role" class="form-control" required>
+                                    <option value="Sharing">Sharing</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="name">Name (for new user)</label>
+                                <input type="text" name="name" id="name" class="form-control">
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="email">Email (for new user)</label>
+                                <input type="email" name="email" id="email" class="form-control">
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="password">Password (for new user)</label>
+                                <input type="password" name="password" id="password" class="form-control">
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="status">Status</label>
+                                <select name="status" id="status" class="form-control" required>
+                                    <option value="enable" selected>Enable</option>
+                                    <option value="disable">Disable</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="text-center my-3"><strong>OR</strong></div>
-
-            {{-- Step 3: Create New User --}}
-            <div class="form-group mt-3">
-                <label for="role">Select Role</label>
-                <select name="role" id="role" class="form-control" required>
-                    <option value="Sharing">Sharing</option>
-                </select>
+            {{-- Submit Button --}}
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary px-4 w-100">Share Vehicles</button>
             </div>
-
-            <div class="form-group mt-3">
-                <label for="name">Name (for new user)</label>
-                <input type="text" name="name" id="name" class="form-control">
-            </div>
-
-            <div class="form-group mt-3">
-                <label for="email">Email (for new user)</label>
-                <input type="email" name="email" id="email" class="form-control">
-            </div>
-
-            <div class="form-group mt-3">
-                <label for="password">Password (for new user)</label>
-                <input type="password" name="password" id="password" class="form-control">
-            </div>
-
-            <div class="form-group mt-3">
-                <label for="status">Status</label>
-                <select name="status" id="status" class="form-control" required>
-                    <option value="enable" selected>Enable</option>
-                    <option value="disable">Disable</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary mt-4 w-100">Share Vehicles</button>
         </form>
     </div>
 </div>
