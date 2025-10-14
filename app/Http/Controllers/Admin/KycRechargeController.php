@@ -19,81 +19,84 @@ class KycRechargeController extends Controller
     return view('admin.kyc-recharge.index', compact('recharges')); // dash (-) correctly used
 }
 
-
-    // Show create form
-   public function create(Request $request)
-{
-    $users = User::all();
-    $vehicles = AddCustomerVehicle::all();
-
-    // get vehicle number from query if available
-    $selectedVehicle = null;
-    if ($request->has('vehicle_number')) {
-        $selectedVehicle = AddCustomerVehicle::where('vehicle_number', $request->vehicle_number)->first();
-    }
-
-    return view('admin.kyc-recharge.create', compact('users', 'vehicles', 'selectedVehicle'));
-}
-
-
-    // Show single recharge
-    public function show($id)
+ public function show($id)
     {
         $recharge = KycRecharge::with('user', 'vehicle', 'createdBy')->findOrFail($id);
         return view('admin.kyc_recharge.show', compact('recharge'));
     }
 
+    // Show create form
+   public function create(Request $request)
+    {
+        $users = User::all();
+        $vehicles = AddCustomerVehicle::all();
+
+        $selectedVehicle = null;
+        if ($request->has('vehicle_number')) {
+            $selectedVehicle = AddCustomerVehicle::where('vehicle_number', $request->vehicle_number)->first();
+        }
+
+        return view('admin.kyc-recharge.create', compact('users', 'vehicles', 'selectedVehicle'));
+    }
+
     // Store new recharge
- public function store(Request $request)
-{
-    $data = $request->validate([
-        'vehicle_number' => 'nullable|string|max:50',
-        'title' => 'nullable|string|max:255',
-        'description' => 'nullable|string',
-        'payment_amount' => 'required|numeric',
-        'payment_status' => 'required|in:pending,completed,failed',
-    ]);
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'vehicle_number' => 'required|string|max:50',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'payment_amount' => 'required|numeric',
+            'payment_status' => 'required|in:pending,completed,failed',
+        ]);
 
-    $data['user_id'] = Auth::id();
-    $data['created_by_id'] = Auth::id();
-    $data['payment_status'] = 'pending';
+        $data['user_id'] = Auth::id();
+        $data['created_by_id'] = Auth::id();
+        $data['payment_status'] = 'pending';
 
-    $recharge = KycRecharge::create($data);
+        // Save recharge
+        $recharge = KycRecharge::create($data);
 
-    $api = new \Razorpay\Api\Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
-    $order = $api->order->create([
-        'receipt' => 'rcpt_' . $recharge->id,
-        'amount' => $data['payment_amount'] * 100,
-        'currency' => 'INR',
-        'payment_capture' => 1
-    ]);
+        try {
+            $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+            $order = $api->order->create([
+                'receipt' => 'rcpt_' . $recharge->id,
+                'amount' => $data['payment_amount'] * 100, // amount in paise
+                'currency' => 'INR',
+                'payment_capture' => 1
+            ]);
 
-    $recharge->razorpay_order_id = $order['id'];
-    $recharge->save();
+            $recharge->razorpay_order_id = $order['id'];
+            $recharge->save();
 
-    return response()->json([
-        'id' => $recharge->id,
-        'payment_amount' => $recharge->payment_amount,
-        'razorpay_order_id' => $order['id']
-    ]);
-}
+            return response()->json([
+                'id' => $recharge->id,
+                'payment_amount' => $recharge->payment_amount,
+                'razorpay_order_id' => $order['id']
+            ]);
+        } catch (\Exception $e) {
+            // Rollback recharge if Razorpay order fails
+            $recharge->delete();
+            return response()->json([
+                'error' => 'Error creating Razorpay order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
+    // Payment callback
+    public function paymentCallback(Request $request, $id)
+    {
+        $recharge = KycRecharge::findOrFail($id);
 
-public function paymentCallback(Request $request, $id)
-{
-    $recharge = KycRecharge::findOrFail($id);
+        // Here you can verify the Razorpay signature if needed
+        $recharge->payment_status = 'completed';
+        $recharge->payment_method = 'Razorpay';
+        $recharge->payment_date = now();
+        $recharge->save();
 
-    // You can verify Razorpay payment signature here
-
-    $recharge->payment_status = 'completed';
-    $recharge->payment_method = 'Razorpay';
-    $recharge->payment_date = now();
-    $recharge->save();
-
-    return redirect()->route('admin.kyc-recharges.index')
-                     ->with('success', 'Payment completed successfully.');
-}
-
+        return redirect()->route('admin.kyc-recharges.index')
+                         ->with('success', 'Payment completed successfully.');
+    }
 
     // Show edit form
     public function edit($id)
