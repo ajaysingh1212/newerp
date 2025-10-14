@@ -10,64 +10,41 @@
     background: #f8f9fa;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-.status-label {
-    font-weight: bold;
-}
-
-.status-label.expired {
-    color: red;
-}
-
-.status-label.active {
-    color: green;
-}
-
-.vehicle-actions a,
-.vehicle-actions button {
+.status-label { font-weight: bold; }
+.status-label.expired { color: red; }
+.status-label.active { color: green; }
+.vehicle-actions a, .vehicle-actions button {
     display: block;
     margin-bottom: 10px;
-    transform: none;
     width: 100%;
 }
-
-/* Blink animation */
-@keyframes blinker {
-  50% { opacity: 0; }
-}
-
+@keyframes blinker { 50% { opacity: 0; } }
 .blink {
-  animation: blinker 1s linear infinite;
-  background-color: #fff3cd;
-  padding: 10px;
-  border-radius: 5px;
-  margin-top: 10px;
+    animation: blinker 1s linear infinite;
+    background-color: #fff3cd;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
 }
 </style>
 
 <div class="container mt-4">
    <div class="d-flex justify-content-between align-items-center mb-4">
-    <!-- Search bar -->
     <form action="{{ route('admin.add-customer-vehicles.index') }}" method="GET" class="d-flex" style="max-width: 300px;">
-        <input type="text" name="search" value="{{ request('search') }}" 
-               class="form-control me-2" placeholder="Search Vehicle..." />
+        <input type="text" name="search" value="{{ request('search') }}" class="form-control me-2" placeholder="Search Vehicle..." />
         <button class="btn btn-primary" type="submit">Search</button>
     </form>
-
-    <!-- Add button -->
     <a class="btn btn-success" href="{{ route('admin.add-customer-vehicles.create') }}">+ Add Vehicle</a>
 </div>
 
 @forelse($vehicles as $vehicle)
 @php
-    // Users this vehicle is shared with
     $sharedWith = DB::table('vehicle_sharing')
         ->join('users', 'vehicle_sharing.sharing_user_id', '=', 'users.id')
         ->where('vehicle_sharing.vehicle_id', $vehicle['id'])
         ->select('users.name', 'users.email', 'users.id')
         ->get();
 
-    // If logged-in user is a shared user, get owner who shared it
     $sharedBy = DB::table('vehicle_sharing')
         ->join('add_customer_vehicles', 'vehicle_sharing.vehicle_id', '=', 'add_customer_vehicles.id')
         ->join('users', 'add_customer_vehicles.user_id', '=', 'users.id')
@@ -85,7 +62,6 @@
             @else
                 <img src="{{ asset('img/car.png') }}" alt="Default Car Image" style="width: 300px;">
             @endif
-
             <strong>Vehicle Model:</strong> {{ $vehicle['vehicle_model'] }}<br>
             <strong>Vehicle Number:</strong> {{ $vehicle['vehicle_number'] }}
         </div>
@@ -121,9 +97,9 @@
                 </div>
             </div>
 
-            <p class="mt-3 mb-1"><strong class="text-secondary">User ID:</strong> {{ $vehicle['user_id'] }}</p>
+            <p class="mt-3 mb-1"><strong>User ID:</strong> {{ $vehicle['user_id'] }}</p>
             <p class="mb-1">
-                <strong class="text-secondary">Password:</strong>
+                <strong>Password:</strong>
                 <span id="password-{{ $vehicle['id'] }}">••••••••</span>
                 <button type="button" class="btn btn-sm btn-outline-primary"
                     onclick="requestPassword('{{ $vehicle['id'] }}', '{{ $vehicle['password'] }}')">Show Password</button>
@@ -133,9 +109,8 @@
             @if($vehicle['kyc_status'] == 'completed')
                 <span class="badge bg-success">KYC Completed</span>
             @else
-                <a href="{{ route('admin.kyc-recharges.create', ['vehicle_number' => $vehicle['vehicle_number']]) }}"
-                class="badge bg-warning text-dark blink text-decoration-none">
-                KYC Pending – Click to Pay
+                <a href="{{ route('admin.kyc-recharges.create', ['vehicle_number' => $vehicle['vehicle_number']]) }}" class="badge bg-warning text-dark blink text-decoration-none">
+                    KYC Pending – Click to Pay
                 </a>
             @endif
 
@@ -148,7 +123,6 @@
                             <li id="shared-user-{{ $vehicle['id'] }}-{{ $user->id }}">
                                 {{ $user->name }} ({{ $user->email }})
                                 <button type="button" class="btn btn-sm btn-danger ms-2"
-                                    data-bs-toggle="modal" data-bs-target="#removeSharingModal"
                                     onclick="setRemoveModalData('{{ $vehicle['id'] }}', '{{ $user->id }}')">
                                     Remove
                                 </button>
@@ -188,118 +162,104 @@
 @endforelse
 </div>
 
-<!-- Password Modal -->
-<div class="modal fade" id="confirmPasswordModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form id="confirmPasswordForm">
-            @csrf
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Your Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="vehiclePasswordToShow">
-                    <input type="hidden" id="targetPasswordElementId">
-                    <div class="mb-3">
-                        <label for="currentPassword" class="form-label">Enter Your Password</label>
-                        <input type="password" class="form-control" id="currentPassword" required>
-                        <div class="invalid-feedback">Incorrect password</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Verify & Show</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Remove Sharing Modal -->
-<div class="modal fade" id="removeSharingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Remove Vehicle Sharing</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to remove this sharing?</p>
-                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
-                <input type="hidden" id="removeVehicleId">
-                <input type="hidden" id="removeUserId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="removeSharing()">Yes, Remove</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+// Password Modal
 function requestPassword(id, vehiclePassword) {
-    document.getElementById('vehiclePasswordToShow').value = vehiclePassword;
-    document.getElementById('targetPasswordElementId').value = 'password-' + id;
-    document.getElementById('currentPassword').value = '';
-    var passwordModal = new bootstrap.Modal(document.getElementById('confirmPasswordModal'));
-    passwordModal.show();
-}
-
-document.getElementById('confirmPasswordForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const enteredPassword = document.getElementById('currentPassword').value;
-    const vehiclePassword = document.getElementById('vehiclePasswordToShow').value;
-    const targetId = document.getElementById('targetPasswordElementId').value;
-
-    fetch("{{ route('admin.validate-password') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": '{{ csrf_token() }}',
-        },
-        body: JSON.stringify({ password: enteredPassword }),
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.valid) {
-            document.getElementById(targetId).innerText = vehiclePassword;
-            bootstrap.Modal.getInstance(document.getElementById('confirmPasswordModal')).hide();
-        } else {
-            document.getElementById('currentPassword').classList.add('is-invalid');
+    Swal.fire({
+        title: 'Enter Your Password',
+        input: 'password',
+        inputPlaceholder: 'Enter password',
+        showCancelButton: true,
+        confirmButtonText: 'Verify & Show',
+        preConfirm: (password) => {
+            return fetch("{{ route('admin.validate-password') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({ password: password }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.valid) {
+                    throw new Error('Invalid password');
+                }
+                return data;
+            })
+            .catch(error => {
+                Swal.showValidationMessage(error.message);
+            });
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('password-' + id).innerText = vehiclePassword;
+            Swal.fire('Success!', 'Password revealed.', 'success');
         }
     });
-});
-
-// Remove Sharing Modal functions
-function setRemoveModalData(vehicleId, userId){
-    document.getElementById('removeVehicleId').value = vehicleId;
-    document.getElementById('removeUserId').value = userId;
 }
 
-function removeSharing(){
-    const vehicleId = document.getElementById('removeVehicleId').value;
-    const userId = document.getElementById('removeUserId').value;
-
-    fetch("{{ route('admin.vehicle-sharing.remove') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": '{{ csrf_token() }}',
-        },
-        body: JSON.stringify({ vehicle_id: vehicleId, sharing_user_id: userId }),
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.success){
-            document.getElementById(`shared-user-${vehicleId}-${userId}`).remove();
-            bootstrap.Modal.getInstance(document.getElementById('removeSharingModal')).hide();
-        } else {
-            alert(data.message || 'Failed to remove sharing.');
+// Remove Sharing
+function setRemoveModalData(vehicleId, userId) {
+    Swal.fire({
+        title: 'Enter Your Password to Confirm Removal',
+        input: 'password',
+        inputPlaceholder: 'Enter password',
+        showCancelButton: true,
+        confirmButtonText: 'Verify & Remove',
+        preConfirm: (password) => {
+            return fetch("{{ route('admin.validate-password') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({ password: password }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.valid) {
+                    throw new Error('Invalid password');
+                }
+                return data;
+            })
+            .catch(error => {
+                Swal.showValidationMessage(error.message);
+            });
         }
-    }).catch(err=>{
-        console.error(err);
-        alert('An error occurred.');
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch("{{ route('admin.vehicle-sharing.remove') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({
+                    vehicle_id: vehicleId,
+                    sharing_user_id: userId
+                }),
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Network error");
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`shared-user-${vehicleId}-${userId}`).remove();
+                    Swal.fire('Removed!', 'Vehicle sharing has been removed.', 'success');
+                } else {
+                    Swal.fire('Error', data.message || 'Failed to remove sharing.', 'error');
+                }
+            })
+            .catch(err => {
+                Swal.fire('Error', 'An error occurred while removing sharing.', 'error');
+                console.error(err);
+            });
+        }
     });
 }
 </script>
