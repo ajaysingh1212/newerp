@@ -249,6 +249,14 @@
     </div>
 
     <div class="form-group col-lg-4">
+        <label for="app_url">App URL</label>
+        <input class="form-control {{ $errors->has('app_url') ? 'is-invalid' : '' }}" type="text" name="app_url" id="app_url" value="{{ old('app_url', $activationRequest->app_url) }}">
+        @if($errors->has('app_url'))
+            <span class="text-danger">{{ $errors->first('app_url') }}</span>
+        @endif
+    </div>
+
+    <div class="form-group col-lg-4">
         <label for="user_id">User Id</label>
         <input class="form-control {{ $errors->has('user_id') ? 'is-invalid' : '' }}" type="text" name="user_id" id="user_id" value="{{ old('user_id', $activationRequest->user_id) }}">
         @if($errors->has('user_id'))

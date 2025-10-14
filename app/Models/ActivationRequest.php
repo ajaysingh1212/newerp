@@ -74,6 +74,7 @@ class ActivationRequest extends Model implements HasMedia
         'subscription',
         'user_id',
         'password',
+        'app_url'
     ];
 
     // Status constants
