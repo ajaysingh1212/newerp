@@ -144,15 +144,15 @@ public function index(Request $request)
             $allowedRoles = $allRoles;
         } elseif ($userRole === 'CNF') {
             $allowedRoles = $allRoles->filter(function ($title) {
-                return in_array($title, ['Distributer', 'Dealer', 'Customer']);
+                return in_array($title, ['Distributer', 'Dealer', 'Customer','Sharing']);
             });
         } elseif ($userRole === 'Distributer') {
             $allowedRoles = $allRoles->filter(function ($title) {
-                return in_array($title, ['Dealer', 'Customer']);
+                return in_array($title, ['Dealer', 'Customer','Sharing']);
             });
         } elseif ($userRole === 'Dealer') {
             $allowedRoles = $allRoles->filter(function ($title) {
-                return $title === 'Customer';
+                 return in_array($title, ['Customer','Sharing']);
             });
         } elseif ($userRole === 'Customer') {
             // ✅ Allow Customer to create Sharing role
