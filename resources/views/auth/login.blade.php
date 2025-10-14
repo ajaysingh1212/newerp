@@ -1,47 +1,59 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
 <div class="container" id="container">
 	<!-- Sign Up Form -->
 	<div class="form-container sign-up-container">
 		<form method="POST" action="{{ route('register') }}">
-    @csrf
-    <h1>Create Account</h1>
-    <div class="social-container">
-        <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-        <a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-        <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-    </div>
-    <span>or use your email for registrations</span>
+			@csrf
+			<h1>Create Account</h1>
+			<div class="social-container">
+				<a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+				<a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
+				<a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
+			</div>
+			<span>or use your email for registration</span>
 
-    <input type="text" name="name" value="{{ old('name') }}" placeholder="Name" required />
-    @if($errors->has('name'))
-        <div class="invalid-feedback">{{ $errors->first('name') }}</div>
-    @endif
+			<input type="text" name="name" value="{{ old('name') }}" placeholder="Name" required />
+			@if($errors->has('name'))
+				<div class="invalid-feedback">{{ $errors->first('name') }}</div>
+			@endif
 
-    <input type="text" name="mobile_number" value="{{ old('mobile_number') }}" placeholder="Phone Number" required />
-    @if($errors->has('mobile_number'))
-        <div class="invalid-feedback">{{ $errors->first('mobile_number') }}</div>
-    @endif
+			<input type="text" name="mobile_number" value="{{ old('mobile_number') }}" placeholder="Phone Number" required />
+			@if($errors->has('mobile_number'))
+				<div class="invalid-feedback">{{ $errors->first('mobile_number') }}</div>
+			@endif
 
-    <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required />
-    @if($errors->has('email'))
-        <div class="invalid-feedback">{{ $errors->first('email') }}</div>
-    @endif
+			<input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required />
+			@if($errors->has('email'))
+				<div class="invalid-feedback">{{ $errors->first('email') }}</div>
+			@endif
 
-    <input type="password" name="password" placeholder="Password" required />
-    @if($errors->has('password'))
-        <div class="invalid-feedback">{{ $errors->first('password') }}</div>
-    @endif
+			<!-- Password with Eye Icon -->
+			<div class="password-wrapper">
+				<input id="registerPassword" type="password" name="password" placeholder="Password" required />
+				<span class="toggle-password" data-target="registerPassword">
+					<i class="fa-solid fa-eye"></i>
+				</span>
+			</div>
+			@if($errors->has('password'))
+				<div class="invalid-feedback">{{ $errors->first('password') }}</div>
+			@endif
 
-    <input type="password" name="password_confirmation" placeholder="Confirm Password" required />
+			<div class="password-wrapper">
+				<input id="registerConfirm" type="password" name="password_confirmation" placeholder="Confirm Password" required />
+				<span class="toggle-password" data-target="registerConfirm">
+					<i class="fa-solid fa-eye"></i>
+				</span>
+			</div>
 
-    <button type="submit">Sign Up</button>
-</form>
-
+			<button type="submit">Sign Up</button>
+		</form>
 	</div>
 
 	<!-- Sign In Form -->
 	<div class="form-container sign-in-container">
-
 		<form method="POST" action="{{ route('login') }}">
 			@csrf
 			<div>
@@ -61,39 +73,17 @@
 				<div class="invalid-feedback">{{ $errors->first('email') }}</div>
 			@endif
 
-			<div class="position-relative">
-				<input id="password" type="password" name="password" placeholder="Password"
-					class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" required />
-
-				<!-- 👁️ Eye Icon -->
-				<span id="togglePassword" 
-					style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer;">
-					<i class="fa fa-eye" id="eyeIcon"></i>
+			<!-- Password with Eye Icon -->
+			<div class="password-wrapper">
+				<input id="loginPassword" type="password" name="password" placeholder="Password"
+					class="{{ $errors->has('password') ? 'is-invalid' : '' }}" required />
+				<span class="toggle-password" data-target="loginPassword">
+					<i class="fa-solid fa-eye"></i>
 				</span>
-
-				@if($errors->has('password'))
-					<div class="invalid-feedback">{{ $errors->first('password') }}</div>
-				@endif
 			</div>
-
-			<!-- 🔽 Script -->
-			<script>
-			document.getElementById('togglePassword').addEventListener('click', function () {
-				const passwordInput = document.getElementById('password');
-				const eyeIcon = document.getElementById('eyeIcon');
-				
-				if (passwordInput.type === 'password') {
-					passwordInput.type = 'text';
-					eyeIcon.classList.remove('fa-eye');
-					eyeIcon.classList.add('fa-eye-slash');
-				} else {
-					passwordInput.type = 'password';
-					eyeIcon.classList.remove('fa-eye-slash');
-					eyeIcon.classList.add('fa-eye');
-				}
-			});
-			</script>
-f
+			@if($errors->has('password'))
+				<div class="invalid-feedback">{{ $errors->first('password') }}</div>
+			@endif
 
 			<a href="{{ route('password.request') }}">Forgot your password?</a>
 			<button type="submit">Sign In</button>
@@ -103,7 +93,6 @@ f
 	<!-- Overlay -->
 	<div class="overlay-container">
 		<div class="overlay">
-
 			<div class="overlay-panel overlay-left">
 				<div>
 					<img src="{{ asset('img/logo.webp') }}" alt="" width="100">
@@ -120,7 +109,6 @@ f
 				<h1>Hello, Friend!</h1>
 				<p>Enter your personal details and start journey with us</p>
 				<button class="ghost" id="signUp">Sign Up</button>
-		
 			</div>
 		</div>
 	</div>
@@ -129,18 +117,16 @@ f
 <footer>
 	<p>
 		Created with <i class="fa fa-heart"></i> by
-		<a target="_blank" href="">Eemot Softwere</a>
-		- Fatching Any Issue
+		<a target="_blank" href="">Eemot Software</a>
+		- Facing Any Issue
 		<a target="_blank" href="tel:8294169540">here</a>.
 	</p>
 </footer>
+
 <style>
-    
 @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
 
-* {
-	box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
 	background: #f6f5f7;
@@ -153,33 +139,13 @@ body {
 	margin: -20px 0 50px;
 }
 
-h1 {
-	font-weight: bold;
-	margin: 0;
-}
+h1 { font-weight: bold; margin: 0; }
 
-h2 {
-	text-align: center;
-}
+p { font-size: 14px; font-weight: 100; line-height: 20px; margin: 20px 0 30px; }
 
-p {
-	font-size: 14px;
-	font-weight: 100;
-	line-height: 20px;
-	letter-spacing: 0.5px;
-	margin: 20px 0 30px;
-}
+span { font-size: 12px; }
 
-span {
-	font-size: 12px;
-}
-
-a {
-	color: #333;
-	font-size: 14px;
-	text-decoration: none;
-	margin: 15px 0;
-}
+a { color: #333; text-decoration: none; margin: 15px 0; }
 
 button {
 	border-radius: 20px;
@@ -189,23 +155,13 @@ button {
 	font-size: 12px;
 	font-weight: bold;
 	padding: 12px 45px;
-	letter-spacing: 1px;
 	text-transform: uppercase;
 	transition: transform 80ms ease-in;
 }
 
-button:active {
-	transform: scale(0.95);
-}
-
-button:focus {
-	outline: none;
-}
-
-button.ghost {
-	background-color: transparent;
-	border-color: #FFFFFF;
-}
+button:active { transform: scale(0.95); }
+button:focus { outline: none; }
+button.ghost { background-color: transparent; border-color: #FFFFFF; }
 
 form {
 	background-color: #FFFFFF;
@@ -224,13 +180,32 @@ input {
 	padding: 12px 15px;
 	margin: 8px 0;
 	width: 100%;
+	border-radius: 5px;
+}
+
+/* 👁️ Password wrapper */
+.password-wrapper {
+	position: relative;
+	width: 100%;
+}
+
+.toggle-password {
+	position: absolute;
+	right: 15px;
+	top: 50%;
+	transform: translateY(-50%);
+	cursor: pointer;
+	color: #555;
+}
+
+.toggle-password:hover {
+	color: #FF4B2B;
 }
 
 .container {
 	background-color: #fff;
 	border-radius: 10px;
-  	box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
-			0 10px 10px rgba(0,0,0,0.22);
+	box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
 	position: relative;
 	overflow: hidden;
 	width: 768px;
@@ -245,22 +220,11 @@ input {
 	transition: all 0.6s ease-in-out;
 }
 
-.sign-in-container {
-	left: 0;
-	width: 50%;
-	z-index: 2;
-}
+.sign-in-container { left: 0; width: 50%; z-index: 2; }
 
-.container.right-panel-active .sign-in-container {
-	transform: translateX(100%);
-}
+.container.right-panel-active .sign-in-container { transform: translateX(100%); }
 
-.sign-up-container {
-	left: 0;
-	width: 50%;
-	opacity: 0;
-	z-index: 1;
-}
+.sign-up-container { left: 0; width: 50%; opacity: 0; z-index: 1; }
 
 .container.right-panel-active .sign-up-container {
 	transform: translateX(100%);
@@ -270,15 +234,8 @@ input {
 }
 
 @keyframes show {
-	0%, 49.99% {
-		opacity: 0;
-		z-index: 1;
-	}
-	
-	50%, 100% {
-		opacity: 1;
-		z-index: 5;
-	}
+	0%, 49.99% { opacity: 0; z-index: 1; }
+	50%, 100% { opacity: 1; z-index: 5; }
 }
 
 .overlay-container {
@@ -292,29 +249,20 @@ input {
 	z-index: 100;
 }
 
-.container.right-panel-active .overlay-container{
-	transform: translateX(-100%);
-}
+.container.right-panel-active .overlay-container { transform: translateX(-100%); }
 
 .overlay {
-	background: #FF416C;
-	background: -webkit-linear-gradient(to right, #FF4B2B, #FF416C);
 	background: linear-gradient(to right, #FF4B2B, #FF416C);
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: 0 0;
 	color: #FFFFFF;
 	position: relative;
 	left: -100%;
 	height: 100%;
 	width: 200%;
-  	transform: translateX(0);
+	transform: translateX(0);
 	transition: transform 0.6s ease-in-out;
 }
 
-.container.right-panel-active .overlay {
-  	transform: translateX(50%);
-}
+.container.right-panel-active .overlay { transform: translateX(50%); }
 
 .overlay-panel {
 	position: absolute;
@@ -327,30 +275,18 @@ input {
 	top: 0;
 	height: 100%;
 	width: 50%;
-	transform: translateX(0);
 	transition: transform 0.6s ease-in-out;
 }
 
-.overlay-left {
-	transform: translateX(-20%);
-}
+.overlay-left { transform: translateX(-20%); }
 
-.container.right-panel-active .overlay-left {
-	transform: translateX(0);
-}
+.container.right-panel-active .overlay-left { transform: translateX(0); }
 
-.overlay-right {
-	right: 0;
-	transform: translateX(0);
-}
+.overlay-right { right: 0; }
 
-.container.right-panel-active .overlay-right {
-	transform: translateX(20%);
-}
+.container.right-panel-active .overlay-right { transform: translateX(20%); }
 
-.social-container {
-	margin: 20px 0;
-}
+.social-container { margin: 20px 0; }
 
 .social-container a {
 	border: 1px solid #DDDDDD;
@@ -364,40 +300,44 @@ input {
 }
 
 footer {
-    background-color: #222;
-    color: #fff;
-    font-size: 14px;
-    bottom: 0;
-    position: fixed;
-    left: 0;
-    right: 0;
-    text-align: center;
-    z-index: 999;
+	background-color: #222;
+	color: #fff;
+	font-size: 14px;
+	bottom: 0;
+	position: fixed;
+	left: 0;
+	right: 0;
+	text-align: center;
+	z-index: 999;
 }
 
-footer p {
-    margin: 10px 0;
-}
-
-footer i {
-    color: red;
-}
-
-footer a {
-    color: #3c97bf;
-    text-decoration: none;
-}
+footer p { margin: 10px 0; }
+footer i { color: red; }
+footer a { color: #3c97bf; }
 </style>
+
 <script>
-    const signUpButton = document.getElementById('signUp');
+const signUpButton = document.getElementById('signUp');
 const signInButton = document.getElementById('signIn');
 const container = document.getElementById('container');
 
-signUpButton.addEventListener('click', () => {
-	container.classList.add("right-panel-active");
-});
+signUpButton.addEventListener('click', () => container.classList.add("right-panel-active"));
+signInButton.addEventListener('click', () => container.classList.remove("right-panel-active"));
 
-signInButton.addEventListener('click', () => {
-	container.classList.remove("right-panel-active");
+// 👁️ Password show/hide logic
+document.querySelectorAll('.toggle-password').forEach(icon => {
+	icon.addEventListener('click', function() {
+		const target = document.getElementById(this.dataset.target);
+		const iconEl = this.querySelector('i');
+		if (target.type === 'password') {
+			target.type = 'text';
+			iconEl.classList.replace('fa-eye', 'fa-eye-slash');
+			this.style.color = '#FF4B2B';
+		} else {
+			target.type = 'password';
+			iconEl.classList.replace('fa-eye-slash', 'fa-eye');
+			this.style.color = '#555';
+		}
+	});
 });
 </script>
