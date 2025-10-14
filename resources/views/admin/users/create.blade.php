@@ -730,34 +730,26 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
             <h4 class="mb-3">Select Vehicles to Share</h4>
             <div class="row">
                 @php
-                    $vehicles = \App\Models\AddCustomerVehicle::where('owners_name', auth()->id())->get();
+                    $vehicles = \App\Models\AddCustomerVehicle::where('created_by_id', auth()->id())->get();
                 @endphp
                 @foreach($vehicles as $vehicle)
                     @php
-                        // Fetch already shared users
                         $sharedUsers = DB::table('vehicle_sharing')
-                                        ->join('users', 'vehicle_sharing.sharing_user_id', '=', 'users.id')
-                                        ->where('vehicle_sharing.vehicle_id', $vehicle->id)
-                                        ->select('users.name', 'users.email')
-                                        ->get();
+                            ->join('users', 'vehicle_sharing.sharing_user_id', '=', 'users.id')
+                            ->where('vehicle_sharing.vehicle_id', $vehicle->id)
+                            ->select('users.name', 'users.email')
+                            ->get();
                     @endphp
                     <div class="col-md-4">
-                        <div class="card mb-3">
+                        <div class="card mb-3 shadow-sm">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span>{{ $vehicle->vehicle_number }}</span>
                                 <input type="checkbox" name="vehicle_ids[]" value="{{ $vehicle->id }}">
                             </div>
                             <div class="card-body text-center">
-                                {{-- Vehicle Image --}}
-                                @if($vehicle->vehicle_photos && $vehicle->vehicle_photos->url)
-                                    <img src="{{ $vehicle->vehicle_photos->url }}" alt="Vehicle Photo" class="img-fluid mb-2" height="100">
-                                @else
-                                    <img src="{{ asset('img/car.png') }}" alt="No Image" class="img-fluid mb-2">
-                                @endif
-
-                                <p class="mb-1"><strong>Owner:</strong> {{ $vehicle->owners_name }}</p>
-                                <p class="mb-1"><strong>Type:</strong> {{ $vehicle->select_vehicle_type ? $vehicle->select_vehicle_type->name : '-' }}</p>
-                                <p class="mb-1"><strong>Status:</strong> {{ $vehicle->status }}</p>
+                                <img src="{{ $vehicle->getFirstMediaUrl('vehicle_photos') ?: asset('img/car.png') }}" class="img-fluid mb-2" height="100">
+                                <p><strong>Owner:</strong> {{ $vehicle->owners_name }}</p>
+                                <p><strong>Status:</strong> {{ $vehicle->status }}</p>
 
                                 @if($sharedUsers->count())
                                     <div class="mt-2 p-2 border rounded bg-light">
@@ -775,7 +767,28 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
                 @endforeach
             </div>
 
-            {{-- Step 2: Role --}}
+            {{-- Step 2: Search or Enter User --}}
+            <h4 class="mt-4">Search Existing User or Add New</h4>
+            <div class="form-group">
+                <label for="user_search">Search User (Name / Email / Mobile)</label>
+                <input type="text" id="user_search" class="form-control" placeholder="Type at least 3 letters...">
+                <div id="search_results" class="list-group mt-1" style="display: none;"></div>
+            </div>
+
+            {{-- Selected User Card --}}
+            <div id="selected_user_card" class="card mt-3 shadow-sm" style="display:none;">
+                <div class="card-header bg-info text-white">Selected User</div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> <span id="selected_user_name"></span></p>
+                    <p><strong>Email:</strong> <span id="selected_user_email"></span></p>
+                    <p><strong>Mobile:</strong> <span id="selected_user_mobile"></span></p>
+                    <input type="hidden" name="existing_user_id" id="existing_user_id">
+                </div>
+            </div>
+
+            <div class="text-center my-3"><strong>OR</strong></div>
+
+            {{-- Step 3: Create New User --}}
             <div class="form-group mt-3">
                 <label for="role">Select Role</label>
                 <select name="role" id="role" class="form-control" required>
@@ -783,20 +796,19 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
                 </select>
             </div>
 
-            {{-- Step 3: User Details --}}
             <div class="form-group mt-3">
-                <label for="name">Name</label>
-                <input type="text" name="name" id="name" class="form-control" required>
+                <label for="name">Name (for new user)</label>
+                <input type="text" name="name" id="name" class="form-control">
             </div>
 
             <div class="form-group mt-3">
-                <label for="email">Email</label>
-                <input type="email" name="email" id="email" class="form-control" required>
+                <label for="email">Email (for new user)</label>
+                <input type="email" name="email" id="email" class="form-control">
             </div>
 
             <div class="form-group mt-3">
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" class="form-control" required>
+                <label for="password">Password (for new user)</label>
+                <input type="password" name="password" id="password" class="form-control">
             </div>
 
             <div class="form-group mt-3">
@@ -807,11 +819,54 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
                 </select>
             </div>
 
-            <button type="submit" class="btn btn-primary mt-4">Share Vehicles</button>
+            <button type="submit" class="btn btn-primary mt-4 w-100">Share Vehicles</button>
         </form>
     </div>
 </div>
 
+{{-- JS for live user search --}}
+<script>
+document.getElementById('user_search').addEventListener('keyup', function() {
+    const query = this.value;
+    const resultBox = document.getElementById('search_results');
+    resultBox.innerHTML = '';
+    if (query.length < 3) {
+        resultBox.style.display = 'none';
+        return;
+    }
+
+    fetch(`{{ route('admin.users.search') }}?q=${query}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.length === 0) {
+                resultBox.innerHTML = '<div class="list-group-item">No results found</div>';
+            } else {
+                data.forEach(user => {
+                    resultBox.innerHTML += `
+                        <a href="#" class="list-group-item list-group-item-action" 
+                           data-id="${user.id}" data-name="${user.name}" data-email="${user.email}" data-mobile="${user.mobile_number || ''}">
+                            ${user.name} (${user.email})
+                        </a>`;
+                });
+            }
+            resultBox.style.display = 'block';
+        });
+});
+
+document.getElementById('search_results').addEventListener('click', function(e) {
+    e.preventDefault();
+    if (e.target.closest('a')) {
+        const a = e.target.closest('a');
+        document.getElementById('selected_user_name').textContent = a.dataset.name;
+        document.getElementById('selected_user_email').textContent = a.dataset.email;
+        document.getElementById('selected_user_mobile').textContent = a.dataset.mobile;
+        document.getElementById('existing_user_id').value = a.dataset.id;
+        document.getElementById('selected_user_card').style.display = 'block';
+        this.style.display = 'none';
+        document.getElementById('user_search').value = a.dataset.name;
+    }
+});
+</script>
 
 @endif
 

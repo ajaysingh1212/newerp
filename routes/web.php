@@ -337,6 +337,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::get('/get-customer-vehicles/{userId}', [App\Http\Controllers\Admin\RechargeRequestController::class, 'getCustomerVehicles']);
     // vehicle sharing
     Route::post('vehicle-sharing/store', [VehicleSharingController::class, 'store'])->name('vehicle-sharing.store');
+    Route::get('users/create/search', [App\Http\Controllers\Admin\UsersController::class, 'search'])->name('users.search');
 
     Route::resource('kyc-recharges', KycRechargeController::class);
 
