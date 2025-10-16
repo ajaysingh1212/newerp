@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -21,14 +22,70 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.1/min/dropzone.min.css" rel="stylesheet" />
     <link href="{{ asset('css/custom.css') }}" rel="stylesheet" />
     @yield('styles')
+
     <style>
-        #sidebar-overlay{
+        #sidebar-overlay {
             background: none;
         }
+
+        /* 🌟 Preloader Style */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #preloader img {
+            width: 120px;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.1); opacity: 1; }
+        }
+
+        #preloader-text {
+            margin-top: 15px;
+            font-family: "Source Sans Pro", sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ff6600;
+            letter-spacing: 1px;
+        }
     </style>
+
+    <script>
+        // 🌟 Preloader hide after page load
+        window.addEventListener("load", function () {
+            const preloader = document.getElementById('preloader');
+            preloader.style.opacity = '0';
+            setTimeout(() => {
+                preloader.style.display = 'none';
+            }, 600);
+        });
+    </script>
 </head>
 
+
+    
+
+
+
 <body class="sidebar-mini layout-fixed" style="height: auto; ">
+    <!-- 🌟 Preloader -->
+        <div id="preloader">
+        <img src="{{ asset('img/dipawali.gif') }}" alt="Loading...">
+        <div id="preloader-text">Loading... Please wait 🎇</div>
+    </div>
     <div class="wrapper" >
         <div class="position-fixed w-100" style="z-index: 9999;">
         <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom d-flex justify-content-between " style="">
