@@ -77,7 +77,7 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin', '
 
 Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], function () {
 
-    // 🔐 User Login API
+    // 🔐 User Login API test
     Route::post('login', 'UsersApiController@login')->name('login');
      
     // 📄 Get User Details by ID
