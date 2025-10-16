@@ -128,6 +128,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     Route::post('alerts/mark-read', 'UserAlertApiController@markAsRead')->name('alerts.mark-read');
     Route::get('alerts/all', 'UserAlertApiController@fetchAll')->name('alerts.all');
 
+    // ➕ Upload Profile Photo (no auth)
+   Route::post('user/{user_id}/upload-profile-photo', 'UsersApiController@uploadProfilePhoto')->name('user.upload-profile-photo');
+
     
    
     

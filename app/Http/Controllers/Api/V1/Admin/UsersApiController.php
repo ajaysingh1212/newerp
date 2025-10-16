@@ -267,6 +267,37 @@ class UsersApiController extends Controller
     }
 
 
+    // Profile photo upload without auth
+public function uploadProfilePhoto(Request $request, $user_id)
+{
+    $user = User::find($user_id);
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    // Validate file
+    $validator = Validator::make($request->all(), [
+        'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    // Delete existing profile image if any
+    if ($user->profile_image) {
+        $user->profile_image->delete();
+    }
+
+    // Add new profile image
+    $user->addMedia($request->file('profile_image'))->toMediaCollection('profile_image');
+
+    // Response with only message
+    return response()->json([
+        'message' => 'Profile photo uploaded successfully'
+    ], 200);
+}
+
     
     
     
