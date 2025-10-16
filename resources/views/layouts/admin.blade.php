@@ -41,7 +41,7 @@
                     <h4 class="pt-1 fw-bold">
     EEMOTRACK INDIA 
     <span class="ms-2 text-primary">
-       ({{ auth()->user()->name }})
+       ({{ auth()->user()->name }}) <img src="{{ asset('img/dipawali.gif') }}" alt="">
     </span>
 </h4>
 
