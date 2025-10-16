@@ -77,7 +77,7 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin', '
 
 Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], function () {
 
-    // 🔐 User Login API test
+    // 🔐 User Login
     Route::post('login', 'UsersApiController@login')->name('login');
      
     // 📄 Get User Details by ID
@@ -130,6 +130,8 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
 
     // ➕ Upload Profile Photo (no auth)
    Route::post('user/{user_id}/upload-profile-photo', 'UsersApiController@uploadProfilePhoto')->name('user.upload-profile-photo');
+
+   Route::post('create-kyc-recharge', 'CustomerVehicleApiController@createKycRecharge')->name('kyc-recharge.create');
 
     
    
