@@ -146,7 +146,7 @@
         </div>
 
         <div class="col-md-3 vehicle-actions d-flex flex-column justify-content-center text-center">
-            <a href="{{ $vehicle['app_url'] }}" alt="_blank" class="btn btn-warning btn-sm">✏️ App</a>
+            <a href="{{ $vehicle['app_url'] }}" alt="_blank" class="btn btn-warning btn-sm">✏️ Track Vehicle</a>
             <a href="{{ route('admin.add-customer-vehicles.edit', $vehicle['id']) }}" class="btn btn-warning btn-sm">✏️ Edit</a>
             <a href="{{ route('admin.add-customer-vehicles.show', $vehicle['id']) }}" class="btn btn-info btn-sm">👁️ View</a>
             @if($vehicle['app_link'])
