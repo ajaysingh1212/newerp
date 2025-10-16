@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
@@ -41,10 +40,12 @@
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            transition: opacity 0.6s ease;
         }
 
         #preloader img {
-            width: 120px;
+            width: 500px;
+            height: 500px;
             animation: glow 1.5s ease-in-out infinite alternate;
         }
 
@@ -64,25 +65,23 @@
     </style>
 
     <script>
-        // 🌟 Preloader hide after page load
-        window.addEventListener("load", function () {
-            const preloader = document.getElementById('preloader');
-            preloader.style.opacity = '0';
-            setTimeout(() => {
-                preloader.style.display = 'none';
-            }, 600);
+        // 🌟 Show preloader for exactly 3 seconds, then hide
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(function () {
+                const preloader = document.getElementById('preloader');
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 600); // fade-out transition time
+            }, 3000); // 3 seconds visible
         });
     </script>
 </head>
 
 
-    
-
-
-
 <body class="sidebar-mini layout-fixed" style="height: auto; ">
     <!-- 🌟 Preloader -->
-        <div id="preloader">
+    <div id="preloader">
         <img src="{{ asset('img/dipawali.gif') }}" alt="Loading...">
         <div id="preloader-text">Loading... Please wait 🎇</div>
     </div>
@@ -98,7 +97,7 @@
                     <h4 class="pt-1 fw-bold">
     EEMOTRACK INDIA 
     <span class="ms-2 text-primary">
-       ({{ auth()->user()->name }}) <img src="{{ asset('img/dipawali.gif') }}" alt="" width="100">
+       ({{ auth()->user()->name }})
     </span>
 </h4>
 
