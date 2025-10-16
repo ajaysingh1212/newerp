@@ -44,7 +44,7 @@
         }
 
         #preloader img {
-            width: 500px;
+            width: 700px;
             height: 500px;
             animation: glow 1.5s ease-in-out infinite alternate;
         }
