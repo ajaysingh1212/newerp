@@ -10,6 +10,8 @@ use App\Http\Resources\Admin\VehicleResource;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\RechargeRequest;
+use App\Models\KycRecharge;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerVehicleApiController extends Controller
 {
@@ -46,7 +48,7 @@ class CustomerVehicleApiController extends Controller
             ->where('owners_name', $user_id)
             ->get();
     
-            $data = $vehicles->map(function ($vehicle) {
+            $data = $vehicles->map(function ($vehicle) use ($user_id) {
                 $requestDate = $vehicle->request_date 
                     ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date) 
                     : null;
@@ -57,12 +59,10 @@ class CustomerVehicleApiController extends Controller
                 $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)->exists();
     
                 if ($hasRecharge) {
-                    // Recharge hua hai → vehicle table ki dates direct use karo
                     $warrantyExpiry     = $vehicle->warranty;
                     $subscriptionExpiry = $vehicle->subscription;
                     $amcExpiry          = $vehicle->amc;
                 } else {
-                    // Recharge nahi hua hai → calculate karo activation date se
                     $warrantyExpiry = $requestDate && $productModel?->warranty
                         ? $requestDate->copy()->addMonths($productModel->warranty)->format('Y-m-d')
                         : null;
@@ -76,6 +76,13 @@ class CustomerVehicleApiController extends Controller
                         : null;
                 }
     
+                // 🔹 Check KYC status
+                $kycExists = KycRecharge::where('user_id', $user_id)
+                    ->where('vehicle_number', $vehicle->vehicle_number)
+                    ->exists();
+    
+                $kycStatus = $kycExists ? 'complete' : 'pending';
+    
                 return [
                     'vehicle_number'  => $vehicle->vehicle_number,
                     'product_model'   => $productModel?->product_model,
@@ -84,6 +91,8 @@ class CustomerVehicleApiController extends Controller
                     'warranty'        => $warrantyExpiry,
                     'subscription'    => $subscriptionExpiry,
                     'amc'             => $amcExpiry,
+                    'kyc_status'      => $kycStatus, 
+                    'app_url'         => $vehicle->app_url, 
                 ];
             });
     
@@ -101,6 +110,7 @@ class CustomerVehicleApiController extends Controller
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
     
     public function getVehicleById($id)
     {
@@ -215,5 +225,98 @@ class CustomerVehicleApiController extends Controller
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
+public function createKycRecharge(Request $request)
+{
+    try {
+        $data = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'vehicle_number' => 'required|string|exists:add_customer_vehicles,vehicle_number',
+            'description' => 'nullable|string',
+            'payment_amount' => 'required|numeric',
+            'payment_status' => 'nullable|in:pending,completed,failed',
+            'payment_method' => 'nullable|string|max:100',
+            'payment_date' => 'nullable|date',
+            
+            // Vehicle media files
+            'vehicle_photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'id_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'insurance_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'pollution_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'rc_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'product_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+        ]);
+
+        // ✅ Find the vehicle
+        $vehicle = AddCustomerVehicle::where('vehicle_number', $data['vehicle_number'])->firstOrFail();
+
+        // ✅ Generate title
+        $title = "KYC Recharge From Mobile ({$vehicle->vehicle_number})";
+
+        // ✅ Create KYC Recharge record
+        $kyc = KycRecharge::create([
+            'user_id' => $data['user_id'],
+            'vehicle_id' => $vehicle->id,
+            'vehicle_number' => $vehicle->vehicle_number,
+            'title' => $title,
+            'description' => $data['description'] ?? null,
+            'payment_status' => $data['payment_status'] ?? 'pending',
+            'payment_method' => $data['payment_method'] ?? null,
+            'payment_amount' => $data['payment_amount'],
+            'payment_date' => $data['payment_date'] ?? null,
+            'created_by_id' => $data['user_id'],
+        ]);
+
+        // ✅ Handle media files
+        $mediaFields = [
+            'vehicle_photo' => 'vehicle_photos',
+            'id_proof' => 'id_proofs',
+            'insurance_doc' => 'insurance',
+            'pollution_doc' => 'pollution',
+            'rc_doc' => 'registration_certificate',
+            'product_image' => 'product_images',
+        ];
+
+        foreach ($mediaFields as $input => $collection) {
+            if ($request->hasFile($input)) {
+                $vehicle->clearMediaCollection($collection);
+                $vehicle->addMediaFromRequest($input)->toMediaCollection($collection);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => '✅ KYC Recharge created successfully.',
+            'data' => [
+                'kyc_id' => $kyc->id,
+                'vehicle_id' => $vehicle->id,
+                'vehicle_number' => $vehicle->vehicle_number,
+                'media' => [
+                    'vehicle_photos' => $vehicle->vehicle_photos,
+                    'id_proofs' => $vehicle->id_proofs,
+                    'insurance' => $vehicle->insurance,
+                    'pollution' => $vehicle->pollution,
+                    'registration_certificate' => $vehicle->registration_certificate,
+                    'product_images' => $vehicle->product_images,
+                ],
+            ],
+        ], Response::HTTP_CREATED);
+
+    } catch (\Exception $e) {
+        Log::error('KYC Recharge Error', [
+            'message' => $e->getMessage(),
+            'request' => $request->all()
+        ]);
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong while creating KYC Recharge.',
+            'error' => $e->getMessage()
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
+
+
 
 }
