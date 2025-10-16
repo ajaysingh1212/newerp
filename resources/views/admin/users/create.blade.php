@@ -747,7 +747,7 @@ background: linear-gradient(18deg, rgba(135, 118, 204, 1) 13%, rgba(210, 231, 25
                                 <input type="checkbox" name="vehicle_ids[]" value="{{ $vehicle->id }}">
                             </div>
                             <div class="card-body text-center">
-                                <img src="{{ $vehicle->getFirstMediaUrl('vehicle_photos') ?: asset('img/car.png') }}" class="img-fluid mb-2" height="100">
+                                <img src="{{ $vehicle->getFirstMediaUrl('vehicle_photos') ?: asset('img/99192.gif') }}" class="img-fluid mb-2" height="100">
                                 <p><strong>Owner:</strong> {{ $vehicle->owners_name }}</p>
                                 <p><strong>Status:</strong> {{ $vehicle->status }}</p>
 

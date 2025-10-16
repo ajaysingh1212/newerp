@@ -60,7 +60,7 @@
             @if(!empty($vehicle['vehicle_photos']))
                 {!! $vehicle['vehicle_photos'] !!}
             @else
-                <img src="{{ asset('img/car.png') }}" alt="Default Car Image" style="width: 300px;">
+                <img src="{{ asset('img/99192.gif') }}" alt="Default Car Image" style="width: 300px;">
             @endif
             <strong>Vehicle Model:</strong> {{ $vehicle['vehicle_model'] }}<br>
             <strong>Vehicle Number:</strong> {{ $vehicle['vehicle_number'] }}
@@ -144,9 +144,6 @@
                 </div>
             @endif
         </div>
-        @php 
-        dd($vehicle);
-        @endphp
 
         <div class="col-md-3 vehicle-actions d-flex flex-column justify-content-center text-center">
             <p class="text-dark">{{ $vehicle['app_url'] }}</p>
