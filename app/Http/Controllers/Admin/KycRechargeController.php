@@ -41,62 +41,74 @@ class KycRechargeController extends Controller
 
     // Store new recharge
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'vehicle_number' => 'required|string|max:50',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'payment_amount' => 'required|numeric',
-            'payment_status' => 'required|in:pending,completed,failed',
+{
+    $data = $request->validate([
+        'vehicle_number' => 'required|string|max:50',
+        'title' => 'nullable|string|max:255',
+        'description' => 'nullable|string',
+        'payment_amount' => 'required|numeric',
+        'payment_status' => 'required|in:pending,completed,failed',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        'location' => 'nullable|string|max:255',
+        'latitude' => 'nullable|numeric',
+        'longitude' => 'nullable|numeric',
+    ]);
+
+    $data['user_id'] = Auth::id();
+    $data['created_by_id'] = Auth::id();
+    $data['payment_status'] = 'pending';
+
+    // ✅ Image upload
+    if ($request->hasFile('image')) {
+        $path = $request->file('image')->store('kyc-recharge-images', 'public');
+        $data['image'] = $path;
+    }
+
+    // Create KYC Recharge entry
+    $recharge = KycRecharge::create($data);
+
+    try {
+        $api = new \Razorpay\Api\Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+        $order = $api->order->create([
+            'receipt' => 'rcpt_' . $recharge->id,
+            'amount' => $data['payment_amount'] * 100,
+            'currency' => 'INR',
+            'payment_capture' => 1
         ]);
 
-        $data['user_id'] = Auth::id();
-        $data['created_by_id'] = Auth::id();
-        $data['payment_status'] = 'pending';
-
-        // Save recharge
-        $recharge = KycRecharge::create($data);
-
-        try {
-            $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
-            $order = $api->order->create([
-                'receipt' => 'rcpt_' . $recharge->id,
-                'amount' => $data['payment_amount'] * 100, // amount in paise
-                'currency' => 'INR',
-                'payment_capture' => 1
-            ]);
-
-            $recharge->razorpay_order_id = $order['id'];
-            $recharge->save();
-
-            return response()->json([
-                'id' => $recharge->id,
-                'payment_amount' => $recharge->payment_amount,
-                'razorpay_order_id' => $order['id']
-            ]);
-        } catch (\Exception $e) {
-            // Rollback recharge if Razorpay order fails
-            $recharge->delete();
-            return response()->json([
-                'error' => 'Error creating Razorpay order: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Payment callback
-    public function paymentCallback(Request $request, $id)
-    {
-        $recharge = KycRecharge::findOrFail($id);
-
-        // Here you can verify the Razorpay signature if needed
-        $recharge->payment_status = 'completed';
-        $recharge->payment_method = 'Razorpay';
-        $recharge->payment_date = now();
+        $recharge->razorpay_order_id = $order['id'];
         $recharge->save();
 
-        return redirect()->route('admin.kyc-recharges.index')
-                         ->with('success', 'Payment completed successfully.');
+        return response()->json([
+            'id' => $recharge->id,
+            'payment_amount' => $recharge->payment_amount,
+            'razorpay_order_id' => $order['id']
+        ]);
+    } catch (\Exception $e) {
+        $recharge->delete();
+        return response()->json([
+            'error' => 'Error creating Razorpay order: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+
+    // Payment callback
+  // JSON callback endpoint
+public function paymentCallbackJson(Request $request, $id)
+{
+    $recharge = KycRecharge::findOrFail($id);
+    $recharge->payment_status = 'completed';
+    $recharge->payment_method = 'Razorpay';
+    $recharge->payment_date = now();
+    $recharge->save();
+
+    return response()->json([
+        'success' => true,
+        'redirect' => route('admin.kyc-recharges.index')
+    ]);
+}
+
 
     // Show edit form
     public function edit($id)

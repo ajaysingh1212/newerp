@@ -21,9 +21,15 @@ class KycRecharge extends Model
         'payment_date',
         'created_by_id',
         'razorpay_order_id',
+
+        // 🆕 New fields added
+        'image',
+        'location',
+        'latitude',
+        'longitude',
     ];
 
-    // Relations
+    // 🔗 Relations
     public function user()
     {
         return $this->belongsTo(User::class);
