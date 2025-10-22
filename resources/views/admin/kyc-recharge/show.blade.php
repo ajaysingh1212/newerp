@@ -18,7 +18,10 @@
             </p>
             <p><strong>Payment Method:</strong> {{ $recharge->payment_method ?? 'N/A' }}</p>
             <p><strong>Payment Amount:</strong> ₹{{ number_format($recharge->payment_amount, 2) }}</p>
-            <p><strong>Payment Date:</strong> {{ $recharge->payment_date ? $recharge->payment_date->format('d M Y') : 'N/A' }}</p>
+            <p><strong>Payment Date:</strong> 
+    {{ $recharge->payment_date ? \Carbon\Carbon::parse($recharge->payment_date)->format('d M Y') : 'N/A' }}
+</p>
+
             <p><strong>Location:</strong> {{ $recharge->location ?? 'N/A' }}</p>
             <p><strong>Latitude:</strong> {{ $recharge->latitude ?? 'N/A' }}</p>
             <p><strong>Longitude:</strong> {{ $recharge->longitude ?? 'N/A' }}</p>
@@ -32,10 +35,7 @@
             @endif
         </div>
 
-        <div class="card-footer">
-            <a href="{{ route('admin.kyc-recharge.edit', $recharge->id) }}" class="btn btn-warning">Edit</a>
-            <a href="{{ route('admin.kyc-recharge.index') }}" class="btn btn-secondary">Back to List</a>
-        </div>
+      
     </div>
 </div>
 @endsection

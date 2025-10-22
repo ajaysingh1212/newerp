@@ -10,6 +10,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class KycRecharge extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
+protected $casts = [
+    'payment_date' => 'datetime',
+];
 
     protected $fillable = [
         'user_id',
