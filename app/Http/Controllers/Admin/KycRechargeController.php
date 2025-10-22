@@ -15,12 +15,21 @@ use Illuminate\Support\Facades\Log;
 class KycRechargeController extends Controller
 {
     // List all KYC Recharges
-   public function index()
+  public function index(Request $request)
 {
-    $recharges = KycRecharge::with('user', 'vehicle', 'createdBy')->get();
-    
-    return view('admin.kyc-recharge.index', compact('recharges')); // dash (-) correctly used
+    // Get optional status from query parameter
+    $status = $request->query('status'); // e.g., Pending, Completed, Failed, Total
+
+    $recharges = KycRecharge::with('user', 'vehicle', 'createdBy')
+        ->when($status && strtolower($status) !== 'total', function ($query) use ($status) {
+            $query->where('payment_status', strtolower($status));
+        })
+        ->latest()
+        ->get();
+
+    return view('admin.kyc-recharge.index', compact('recharges', 'status'));
 }
+
 
  public function show($id)
 {

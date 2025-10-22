@@ -16,6 +16,7 @@ use App\Models\CheckComplain;
 use App\Models\AddCustomerVehicle;
 use App\Models\ProductMaster;
 use App\Models\StockTransfer;
+use App\Models\KycRecharge;
 class HomeController extends Controller
 {
     public function index(Request $request)
@@ -211,6 +212,11 @@ foreach ($grouped as $modelName => $items) {
 }
 
 
+$totalsStatus = [
+    'Pending' => KycRecharge::where('payment_status', 'pending')->count(),
+    'Failed' => KycRecharge::where('payment_status', 'failed')->count(),
+    'Completed' => KycRecharge::where('payment_status', 'completed')->count(),
+];
 
 
    $user = Auth::user();
@@ -300,7 +306,7 @@ $transferCounts = $transfers->pluck('total');
             'userRole', 'totals', 'stockData', 'chartLabels', 'chartValues',
             'timeFilter', 'selectedRoleType', 'selectedUserId', 'users',
             'activationStatus', 'activationFrom', 'activationTo', 'activationGranularity',
-            'activationChartLabels', 'activationChartValues','chartData','totalStock', 'totalActivations', 'combinedChartData','transferLabels','transferCounts'
+            'activationChartLabels', 'activationChartValues','chartData','totalStock', 'totalActivations', 'combinedChartData','transferLabels','transferCounts','totalsStatus'
         ));
 
 
