@@ -342,8 +342,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     ->name('vehicle-sharing.remove');
     Route::resource('kyc-recharges', KycRechargeController::class);
 
-    Route::post('kyc-recharges/{id}/payment-callback', [KycRechargeController::class, 'paymentCallback'])
-    ->name('kyc-recharges.payment-callback');
 
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
@@ -367,3 +365,7 @@ Route::get('admin/activationrequests/invoice/{id}', [App\Http\Controllers\Admin\
   Route::get('activationrequests/{id}/invoice', [App\Http\Controllers\Admin\CheckComplainController::class, 'invoice'])->name('admin.checkcomplains.invoice');
   Route::get('admin/current-stocks/{id}/invoice', [CurrentStockController::class, 'invoice'])->name('admin.current-stocks.invoice');
 Route::get('/report/product-pie-chart', [App\Http\Controllers\HomeController::class, 'productPieChart'])->name('report.product.pie');
+
+Route::post('/admin/kyc-recharges', [KycRechargeController::class, 'store'])->name('admin.kyc-recharges.store');
+
+Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [KycRechargeController::class, 'paymentCallbackJson'])->name('admin.kyc-recharges.payment-callback-json');
