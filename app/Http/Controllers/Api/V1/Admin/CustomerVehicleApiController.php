@@ -238,12 +238,13 @@ public function createKycRecharge(Request $request)
             'payment_method' => 'nullable|string|max:100',
             'payment_date' => 'nullable|date',
 
-            // 🆕 New fields validation
+            // KYC specific fields
             'razorpay_order_id' => 'nullable|string|max:255',
             'location' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'image' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,pdf', // KYC uploaded file
+            'image_base64' => 'nullable|string', // KYC camera capture
 
             // Vehicle media files
             'vehicle_photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
@@ -254,18 +255,15 @@ public function createKycRecharge(Request $request)
             'product_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
         ]);
 
-        // ✅ Find the vehicle
+        // Find the vehicle
         $vehicle = AddCustomerVehicle::where('vehicle_number', $data['vehicle_number'])->firstOrFail();
 
-        // ✅ Generate title
-        $title = "KYC Recharge From Mobile ({$vehicle->vehicle_number})";
-
-        // ✅ Create KYC Recharge record
+        // Create KYC Recharge record
         $kyc = KycRecharge::create([
             'user_id' => $data['user_id'],
             'vehicle_id' => $vehicle->id,
             'vehicle_number' => $vehicle->vehicle_number,
-            'title' => $title,
+            'title' => "KYC Recharge From Mobile ({$vehicle->vehicle_number})",
             'description' => $data['description'] ?? null,
             'payment_status' => $data['payment_status'] ?? 'pending',
             'payment_method' => $data['payment_method'] ?? null,
@@ -278,13 +276,29 @@ public function createKycRecharge(Request $request)
             'longitude' => $data['longitude'] ?? null,
         ]);
 
-        // ✅ Handle KYC image upload (new field)
+        // Handle KYC image upload (admin style)
         if ($request->hasFile('image')) {
-            $kyc->addMediaFromRequest('image')->toMediaCollection('kyc_images');
+            $kyc->addMediaFromRequest('image')->toMediaCollection('kyc_recharge_images');
         }
 
-        // ✅ Handle vehicle media files
-        $mediaFields = [
+        // Handle Base64 KYC image (from camera)
+        if ($request->filled('image_base64')) {
+            $imageData = $request->image_base64;
+            if (str_contains($imageData, 'base64,')) {
+                $imageData = explode('base64,', $imageData)[1];
+            }
+            $tempPath = storage_path('app/tmp_camera_' . time() . '.png');
+            file_put_contents($tempPath, base64_decode($imageData));
+
+            $kyc->addMedia($tempPath)
+                ->usingFileName('camera_' . time() . '.png')
+                ->toMediaCollection('kyc_recharge_images');
+
+            @unlink($tempPath);
+        }
+
+        // Handle vehicle media files
+        $vehicleMediaFields = [
             'vehicle_photo' => 'vehicle_photos',
             'id_proof' => 'id_proofs',
             'insurance_doc' => 'insurance',
@@ -293,13 +307,13 @@ public function createKycRecharge(Request $request)
             'product_image' => 'product_images',
         ];
 
-        foreach ($mediaFields as $input => $collection) {
+        foreach ($vehicleMediaFields as $input => $collection) {
             if ($request->hasFile($input)) {
-                $vehicle->clearMediaCollection($collection);
                 $vehicle->addMediaFromRequest($input)->toMediaCollection($collection);
             }
         }
 
+        // Return response
         return response()->json([
             'status' => true,
             'message' => '✅ KYC Recharge created successfully.',
@@ -312,7 +326,7 @@ public function createKycRecharge(Request $request)
                 'longitude' => $kyc->longitude,
                 'razorpay_order_id' => $kyc->razorpay_order_id,
                 'media' => [
-                    'kyc_images' => $kyc->getMedia('kyc_images'),
+                    'kyc_images' => $kyc->getMedia('kyc_recharge_images'), // same as admin
                     'vehicle_photos' => $vehicle->vehicle_photos,
                     'id_proofs' => $vehicle->id_proofs,
                     'insurance' => $vehicle->insurance,
@@ -336,6 +350,8 @@ public function createKycRecharge(Request $request)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
+
 
 
 
