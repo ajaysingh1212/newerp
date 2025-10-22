@@ -4,23 +4,16 @@
 <div class="container">
     <h1 class="mb-4">Add New KYC Recharge</h1>
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div id="formErrors" class="alert alert-danger d-none">
+        <ul></ul>
+    </div>
 
     <form id="kycRechargeForm" method="POST" enctype="multipart/form-data">
         @csrf
 
         <input type="hidden" name="user_id" value="{{ Auth::id() }}">
         <input type="hidden" name="created_by_id" value="{{ Auth::id() }}">
-        <input type="hidden" name="vehicle_number" id="vehicle_number"
-               value="{{ $selectedVehicle->vehicle_number ?? '' }}">
+        <input type="hidden" name="vehicle_number" id="vehicle_number" value="{{ $selectedVehicle->vehicle_number ?? '' }}">
         <input type="hidden" name="image_base64" id="captured_image">
 
         <!-- Vehicle Number -->
@@ -30,8 +23,8 @@
                 <option value="">-- Select Vehicle Number --</option>
                 @foreach($vehicles as $vehicle)
                     <option value="{{ $vehicle->id }}"
-                            data-number="{{ $vehicle->vehicle_number }}"
-                            {{ isset($selectedVehicle) && $selectedVehicle->id == $vehicle->id ? 'selected' : '' }}>
+                        data-number="{{ $vehicle->vehicle_number }}"
+                        {{ isset($selectedVehicle) && $selectedVehicle->id == $vehicle->id ? 'selected' : '' }}>
                         {{ $vehicle->vehicle_number }}
                     </option>
                 @endforeach
@@ -58,6 +51,7 @@
                 <canvas id="snapshot" class="d-none"></canvas>
                 <br>
                 <button type="button" id="captureBtn" class="btn btn-primary mt-2">Capture Photo</button>
+                <div id="captureStatus" class="text-success mt-2" style="display:none;">📸 Photo captured successfully!</div>
             </div>
         </div>
 
@@ -88,133 +82,138 @@
         <button type="button" class="btn btn-success" id="payButton">Create & Pay</button>
     </form>
 </div>
-@endsection
 
-@section('scripts')
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgRXfXiK8KHfSnKtunSIpGpKNmLNGNUzM&libraries=geometry"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_KEY') }}&libraries=geometry"></script>
 
 <script>
 $(document).ready(function() {
     const vehicleSelect = $('#vehicle_id');
     const vehicleNumberInput = $('#vehicle_number');
+    const formErrorsDiv = $('#formErrors');
 
-    // Pre-select vehicle
+    // --- Vehicle select auto-update
     if(vehicleSelect.val()){
-        const selectedOption = vehicleSelect.find('option:selected');
-        vehicleNumberInput.val(selectedOption.data('number'));
+        vehicleNumberInput.val(vehicleSelect.find('option:selected').data('number'));
     }
 
-    // On vehicle change
     vehicleSelect.on('change', function(){
-        const selectedOption = $(this).find('option:selected');
-        vehicleNumberInput.val(selectedOption.data('number') || '');
+        vehicleNumberInput.val($(this).find('option:selected').data('number') || '');
     });
 
-    // AUTO LOCATION
-    if (navigator.geolocation) {
+    // --- Detect location
+    if(navigator.geolocation){
         navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
+            pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
                 $('#latitude').val(lat);
                 $('#longitude').val(lng);
 
                 const geocoder = new google.maps.Geocoder();
-                geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
-                    if (status === "OK" && results[0]) {
+                geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                    if(status === "OK" && results[0]){
                         $('#location').val(results[0].formatted_address);
                     } else {
                         $('#location').val("Location not found");
                     }
                 });
             },
-            function() {
-                $('#location').val("Location access denied");
-            }
+            () => $('#location').val("Location access denied")
         );
     } else {
         $('#location').val("Geolocation not supported");
     }
 
-    // CAMERA ACCESS
+    // --- Camera setup
     const video = document.getElementById('camera');
     const canvas = document.getElementById('snapshot');
     const captureBtn = document.getElementById('captureBtn');
     const imageInput = document.getElementById('captured_image');
+    const captureStatus = document.getElementById('captureStatus');
 
     navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
-        .catch(err => alert('Camera access denied or unavailable.'));
+        .then(stream => video.srcObject = stream)
+        .catch(() => alert('Camera access denied or unavailable.'));
 
     captureBtn.addEventListener('click', () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        imageInput.value = canvas.toDataURL('image/png'); // save base64
-        alert('Photo captured successfully!');
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        imageInput.value = canvas.toDataURL('image/png'); // base64
+        captureStatus.style.display = 'block';
     });
 
-    // RAZORPAY PAYMENT
-    $('#payButton').on('click', function(e) {
+    // --- Razorpay Payment
+    $('#payButton').on('click', async function(e){
         e.preventDefault();
+        formErrorsDiv.addClass('d-none').find('ul').html('');
         const formData = new FormData($('#kycRechargeForm')[0]);
 
-        fetch("{{ route('admin.kyc-recharges.store') }}", {
-            method: "POST",
-            headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.error){ 
-                alert(data.error); 
-                return; 
+        try {
+            const res = await fetch("{{ route('admin.kyc-recharges.store') }}", {
+                method: "POST",
+                headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+                body: formData
+            });
+
+            if(res.status === 422){
+                const data = await res.json();
+                const ul = Object.values(data.error).flat().map(err => `<li>${err}</li>`).join('');
+                formErrorsDiv.removeClass('d-none').find('ul').html(ul);
+                return;
             }
 
+            if(!res.ok){
+                console.error('Server error:', await res.text());
+                alert('Error while creating payment.');
+                return;
+            }
+
+            const data = await res.json();
+
+            // --- Razorpay config
             const options = {
-                "key": "{{ env('RAZORPAY_KEY_ID') }}",
-                "amount": data.payment_amount * 100,
-                "currency": "INR",
-                "name": "Your Company Name",
-                "description": "KYC Recharge Payment",
-                "order_id": data.razorpay_order_id,
-                "handler": function (response){
-                    // ✅ Use fetch without parsing JSON from redirect
-                    fetch("/admin/kyc-recharges/" + data.id + "/payment-callback-json", {
+                key: "{{ env('RAZORPAY_KEY_ID') }}",
+                amount: data.payment_amount * 100,
+                currency: "INR",
+                name: "Studio Capella",
+                description: "KYC Recharge Payment",
+                order_id: data.razorpay_order_id,
+                handler: async function(response){
+                    const callbackUrl = "{{ route('admin.kyc-recharges.payment-callback-json', ['id' => 'REPLACE_ID']) }}".replace('REPLACE_ID', data.id);
+
+                    const callbackRes = await fetch(callbackUrl, {
                         method: "POST",
                         headers: {
                             'X-CSRF-TOKEN': "{{ csrf_token() }}",
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(response)
-                    })
-                    .then(res => res.json())
-                    .then(result => {
-                        if(result.success){
-                            window.location.href = result.redirect;
-                        } else {
-                            alert('Payment callback failed.');
-                        }
-                    })
-                    .catch(err => alert('Payment callback error.'));
+                    });
+
+                    const result = await callbackRes.json();
+                    if(result.success){
+                        window.location.href = result.redirect;
+                    } else {
+                        alert(result.message || 'Payment callback failed.');
+                    }
                 },
-                "prefill": { 
-                    "name": "{{ Auth::user()->name }}", 
-                    "email": "{{ Auth::user()->email }}" 
+                prefill: { 
+                    name: "{{ addslashes(Auth::user()->name) }}", 
+                    email: "{{ addslashes(Auth::user()->email) }}" 
                 },
-                "theme": { "color": "#F37254" }
+                theme: { color: "#F37254" }
             };
-            const rzp1 = new Razorpay(options);
-            rzp1.open();
-        })
-        .catch(err => { 
-            console.error(err); 
-            alert('Something went wrong while creating payment.'); 
-        });
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        } catch (err) {
+            console.error('Error:', err);
+            alert('Something went wrong. Please check console.');
+        }
     });
 });
 </script>
-
 @endsection

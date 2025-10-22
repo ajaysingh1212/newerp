@@ -4,10 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class KycRecharge extends Model
+class KycRecharge extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
+protected $casts = [
+    'payment_date' => 'datetime',
+];
 
     protected $fillable = [
         'user_id',
@@ -21,15 +26,12 @@ class KycRecharge extends Model
         'payment_date',
         'created_by_id',
         'razorpay_order_id',
-
-        // 🆕 New fields added
-        'image',
         'location',
         'latitude',
         'longitude',
     ];
 
-    // 🔗 Relations
+    // 🔗 Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -43,5 +45,11 @@ class KycRecharge extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    // 🖼️ Media Collection registration
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('kyc_recharge_images')->singleFile(); // Only 1 image per record
     }
 }

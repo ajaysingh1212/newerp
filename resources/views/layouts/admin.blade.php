@@ -81,10 +81,10 @@
 
 <body class="sidebar-mini layout-fixed" style="height: auto; ">
     <!-- 🌟 Preloader -->
-    <div id="preloader">
+    <!-- <div id="preloader">
         <img src="{{ asset('img/dipawali.gif') }}" alt="Loading...">
         <div id="preloader-text">Loading... Please wait 🎇</div>
-    </div>
+    </div> -->
     <div class="wrapper" >
         <div class="position-fixed w-100" style="z-index: 9999;">
         <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom d-flex justify-content-between " style="">
