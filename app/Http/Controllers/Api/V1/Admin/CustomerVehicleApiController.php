@@ -237,7 +237,14 @@ public function createKycRecharge(Request $request)
             'payment_status' => 'nullable|in:pending,completed,failed',
             'payment_method' => 'nullable|string|max:100',
             'payment_date' => 'nullable|date',
-            
+
+            // 🆕 New fields validation
+            'razorpay_order_id' => 'nullable|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+
             // Vehicle media files
             'vehicle_photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
             'id_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
@@ -265,9 +272,18 @@ public function createKycRecharge(Request $request)
             'payment_amount' => $data['payment_amount'],
             'payment_date' => $data['payment_date'] ?? null,
             'created_by_id' => $data['user_id'],
+            'razorpay_order_id' => $data['razorpay_order_id'] ?? null,
+            'location' => $data['location'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
         ]);
 
-        // ✅ Handle media files
+        // ✅ Handle KYC image upload (new field)
+        if ($request->hasFile('image')) {
+            $kyc->addMediaFromRequest('image')->toMediaCollection('kyc_images');
+        }
+
+        // ✅ Handle vehicle media files
         $mediaFields = [
             'vehicle_photo' => 'vehicle_photos',
             'id_proof' => 'id_proofs',
@@ -291,7 +307,12 @@ public function createKycRecharge(Request $request)
                 'kyc_id' => $kyc->id,
                 'vehicle_id' => $vehicle->id,
                 'vehicle_number' => $vehicle->vehicle_number,
+                'location' => $kyc->location,
+                'latitude' => $kyc->latitude,
+                'longitude' => $kyc->longitude,
+                'razorpay_order_id' => $kyc->razorpay_order_id,
                 'media' => [
+                    'kyc_images' => $kyc->getMedia('kyc_images'),
                     'vehicle_photos' => $vehicle->vehicle_photos,
                     'id_proofs' => $vehicle->id_proofs,
                     'insurance' => $vehicle->insurance,
@@ -315,6 +336,7 @@ public function createKycRecharge(Request $request)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
