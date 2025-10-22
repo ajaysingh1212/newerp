@@ -103,10 +103,10 @@
         <div class="flex items-center justify-center">
             @if($recharge->getFirstMediaUrl('kyc_recharge_images'))
                 <img src="{{ $recharge->getFirstMediaUrl('kyc_recharge_images') }}" 
-                     alt="KYC Image" class="rounded-lg" style="max-width: 250px;">
+                     alt="KYC Image" class="rounded-lg" style="width: 120px; height:90px;">
             @else
                 <img src="{{ asset('images/add-image.png') }}" 
-                     alt="Add KYC Image" class="rounded-lg" style="max-width: 250px;">
+                     alt="Add KYC Image" class="rounded-lg" style="width: 120px;height:90px;">
             @endif
         </div>
     </div>
