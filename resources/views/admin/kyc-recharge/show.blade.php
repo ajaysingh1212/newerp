@@ -180,10 +180,10 @@
                                     <td class="text-center p-1">
                                         @if($file)
                                             <img src="{{ $file->getUrl() }}" 
-                                                 alt="{{ $label }}" class="rounded-lg mx-auto" style="max-width: 120px;">
+                                                 alt="{{ $label }}" class="rounded-lg mx-auto" style="width: 120px; height:90px;">
                                         @else
                                             <img src="{{ asset('images/add-image.png') }}" 
-                                                 alt="Add {{ $label }}" class="rounded-lg mx-auto" style="max-width: 120px;">
+                                                 alt="Add {{ $label }}" class="rounded-lg mx-auto" style="width: 120px; height:90px;">
                                         @endif
                                         <div class="mt-1 text-[9px] font-medium">{{ $label }}</div>
                                     </td>
