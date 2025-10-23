@@ -351,6 +351,37 @@ public function createKycRecharge(Request $request)
     }
 }
 
+public function getVehicleByNumber($vehicle_number)
+{
+    try {
+        $vehicle = AddCustomerVehicle::with([
+            'select_vehicle_type',
+            'product_master.product_model',
+            'appLink',
+            'media'
+        ])->where('vehicle_number', $vehicle_number)->firstOrFail(); // throws 404 if not found
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Vehicle details fetched successfully by vehicle number.',
+            'data' => new VehicleResource($vehicle)
+        ], Response::HTTP_OK);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Vehicle not found for the given number.',
+        ], Response::HTTP_NOT_FOUND);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Failed to fetch vehicle details.',
+            'error' => $e->getMessage()
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
+
 
 
 
