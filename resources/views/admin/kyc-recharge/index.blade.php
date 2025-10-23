@@ -35,14 +35,27 @@
                         <td>{{ number_format($recharge->payment_amount, 2) }}</td>
                         <td>{{ $recharge->payment_date ? \Carbon\Carbon::parse($recharge->payment_date)->format('d-m-Y H:i') : '-' }}</td>
                         <td>
-                            <a href="{{ route('admin.kyc-recharges.show', $recharge->id) }}" class="btn btn-sm btn-info">View</a>
-                            <a href="{{ route('admin.kyc-recharges.edit', $recharge->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                            <form action="{{ route('admin.kyc-recharges.destroy', $recharge->id) }}" method="POST" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this recharge?')">Delete</button>
-                            </form>
-                        </td>
+    @can('kyc_recharge_show')
+        <a href="{{ route('admin.kyc-recharges.show', $recharge->id) }}" class="btn btn-sm btn-info">
+            {{ __('View') }}
+        </a>
+    @endcan
+
+    @can('kyc_recharge_edit')
+        <a href="{{ route('admin.kyc-recharges.edit', $recharge->id) }}" class="btn btn-sm btn-warning">
+            {{ __('Edit') }}
+        </a>
+    @endcan
+
+    @can('kyc_recharge_delete')
+        <form action="{{ route('admin.kyc-recharges.destroy', $recharge->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('{{ __('Are you sure you want to delete this recharge?') }}');">
+            @csrf
+            @method('DELETE')
+            <button class="btn btn-sm btn-danger">{{ __('Delete') }}</button>
+        </form>
+    @endcan
+</td>
+
                     </tr>
                     @empty
                     <tr>

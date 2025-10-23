@@ -10,6 +10,8 @@ use App\Models\AddCustomerVehicle;
 use Razorpay\Api\Api;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Gate;
+use Symfony\Component\HttpFoundation\Response;
  
 
 class KycRechargeController extends Controller
@@ -17,10 +19,15 @@ class KycRechargeController extends Controller
     // List all KYC Recharges
   public function index(Request $request)
 {
-    // Get optional status from query parameter
+    abort_if(Gate::denies('kyc_recharge_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+    $user = auth()->user();
     $status = $request->query('status'); // e.g., Pending, Completed, Failed, Total
 
     $recharges = KycRecharge::with('user', 'vehicle', 'createdBy')
+        ->when(!$user->is_admin, function ($query) use ($user) {
+            // Normal users only see recharges they created
+            $query->where('created_by_id', $user->id);
+        })
         ->when($status && strtolower($status) !== 'total', function ($query) use ($status) {
             $query->where('payment_status', strtolower($status));
         })
@@ -31,8 +38,10 @@ class KycRechargeController extends Controller
 }
 
 
+
  public function show($id)
 {
+    abort_if(Gate::denies('kyc_recharge_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
     $recharge = KycRecharge::with(['user', 'vehicle', 'createdBy'])->findOrFail($id);
     return view('admin.kyc-recharge.show', compact('recharge'));
 }
@@ -40,78 +49,89 @@ class KycRechargeController extends Controller
 
 
     // Show create form
-  public function create(Request $request)
-    {
-        $users = User::all();
+ public function create(Request $request)
+{
+    abort_if(Gate::denies('kyc_recharge_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+    $user = auth()->user(); // current logged-in user
+
+    // Fetch users (admins can assign, users cannot)
+    $users = User::all();
+
+    // Show all vehicles if admin, otherwise only vehicles created by this user
+    if ($user->is_admin) {
         $vehicles = AddCustomerVehicle::all();
-        $selectedVehicle = null;
-
-        if ($request->has('vehicle_number')) {
-            $selectedVehicle = AddCustomerVehicle::where('vehicle_number', $request->vehicle_number)->first();
-        }
-
-        return view('admin.kyc-recharge.create', compact('users', 'vehicles', 'selectedVehicle'));
+    } else {
+        $vehicles = AddCustomerVehicle::where('created_by_id', $user->id)->get();
     }
+
+    // Handle preselected vehicle (optional, e.g., from query param)
+    $selectedVehicle = null;
+    if ($request->has('vehicle_number')) {
+        $selectedVehicle = AddCustomerVehicle::where('vehicle_number', $request->vehicle_number)->first();
+    }
+
+    return view('admin.kyc-recharge.create', compact('users', 'vehicles', 'selectedVehicle'));
+}
+
 
  
  public function store(Request $request)
-    {
-        try {
-            // ✅ Default payment status
-            $request->merge(['payment_status' => 'pending']);
+{
+    try {
+        $user = auth()->user();
 
-            // ✅ Validation
-            $data = $request->validate([
-                'vehicle_number' => 'required|string|max:50',
-                'vehicle_id' => 'required|exists:add_customer_vehicles,id',
-                'title' => 'nullable|string|max:255',
-                'description' => 'nullable|string',
-                'payment_amount' => 'required|numeric',
-                'payment_status' => 'required|in:pending,completed,failed',
-                'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-                'image_base64' => 'nullable|string',
-                'location' => 'nullable|string|max:255',
-                'latitude' => 'nullable|numeric',
-                'longitude' => 'nullable|numeric',
-            ]);
+        // Default payment status
+        $paymentStatus = $user->is_admin ? 'completed' : 'pending';
+        $request->merge(['payment_status' => $paymentStatus]);
 
-            $data['user_id'] = Auth::id();
-            $data['created_by_id'] = Auth::id();
+        // Validation
+        $data = $request->validate([
+            'vehicle_number' => 'required|string|max:50',
+            'vehicle_id' => 'required|exists:add_customer_vehicles,id',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'payment_amount' => 'required|numeric',
+            'payment_status' => 'required|in:pending,completed,failed',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'image_base64' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
 
-            // ✅ Create recharge record (without image)
-            $recharge = KycRecharge::create($data);
+        $data['user_id'] = $user->id;
+        $data['created_by_id'] = $user->id;
 
-            // ✅ Handle uploaded file
-            if ($request->hasFile('image')) {
-                $recharge
-                    ->addMediaFromRequest('image')
-                    ->toMediaCollection('kyc_recharge_images');
+        // Create recharge record (without image)
+        $recharge = KycRecharge::create($data);
+
+        // Handle uploaded file
+        if ($request->hasFile('image')) {
+            $recharge->addMediaFromRequest('image')
+                     ->toMediaCollection('kyc_recharge_images');
+        }
+
+        // Handle Base64 image (from camera)
+        if ($request->filled('image_base64')) {
+            $imageData = $request->image_base64;
+            if (str_contains($imageData, 'base64,')) {
+                $imageData = explode('base64,', $imageData)[1];
             }
+            $tempPath = storage_path('app/tmp_camera_' . time() . '.png');
+            file_put_contents($tempPath, base64_decode($imageData));
 
-            // ✅ Handle Base64 image (from camera)
-            if ($request->filled('image_base64')) {
-                $imageData = $request->image_base64;
+            $recharge->addMedia($tempPath)
+                     ->usingFileName('camera_' . time() . '.png')
+                     ->toMediaCollection('kyc_recharge_images');
 
-                // Extract base64 cleanly
-                if (str_contains($imageData, 'base64,')) {
-                    $imageData = explode('base64,', $imageData)[1];
-                }
+            @unlink($tempPath);
+        }
 
-                $tempPath = storage_path('app/tmp_camera_' . time() . '.png');
-                file_put_contents($tempPath, base64_decode($imageData));
-
-                $recharge
-                    ->addMedia($tempPath)
-                    ->usingFileName('camera_' . time() . '.png')
-                    ->toMediaCollection('kyc_recharge_images');
-
-                @unlink($tempPath); // cleanup
-            }
-
-            // ✅ Create Razorpay order
+        // ✅ Admin: directly mark as completed, no Razorpay
+        if (!$user->is_admin) {
+            // Normal user -> create Razorpay order
             try {
                 $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
-
                 $order = $api->order->create([
                     'receipt' => 'rcpt_' . $recharge->id,
                     'amount' => intval($data['payment_amount'] * 100),
@@ -121,6 +141,13 @@ class KycRechargeController extends Controller
 
                 $recharge->razorpay_order_id = $order['id'];
                 $recharge->save();
+
+                return response()->json([
+                    'id' => $recharge->id,
+                    'payment_amount' => $recharge->payment_amount,
+                    'razorpay_order_id' => $order['id'],
+                    'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+                ]);
             } catch (\Exception $razorpayEx) {
                 Log::error('Razorpay Order Error: ' . $razorpayEx->getMessage(), [
                     'trace' => $razorpayEx->getTraceAsString()
@@ -130,27 +157,30 @@ class KycRechargeController extends Controller
                     'error' => 'Razorpay order creation failed. Check logs for details.'
                 ], 500);
             }
-
-            // ✅ Return JSON Response
-            return response()->json([
-                'id' => $recharge->id,
-                'payment_amount' => $recharge->payment_amount,
-                'razorpay_order_id' => $order['id'],
-                'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $ve) {
-            return response()->json(['error' => $ve->errors()], 422);
-        } catch (\Exception $e) {
-            Log::error('KYC Recharge Store Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'error' => 'Something went wrong while creating payment. Check server logs.'
-            ], 500);
         }
+
+        // ✅ Admin: return success directly
+        return response()->json([
+            'success' => true,
+            'id' => $recharge->id,
+            'payment_amount' => $recharge->payment_amount,
+            'payment_status' => 'completed',
+            'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $ve) {
+        return response()->json(['error' => $ve->errors()], 422);
+    } catch (\Exception $e) {
+        Log::error('KYC Recharge Store Error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'error' => 'Something went wrong while creating payment. Check server logs.'
+        ], 500);
     }
+}
+
 
     public function paymentCallbackJson(Request $request, $id)
     {
@@ -181,6 +211,7 @@ class KycRechargeController extends Controller
     // Show edit form
     public function edit($id)
     {
+        abort_if(Gate::denies('kyc_recharge_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $recharge = KycRecharge::findOrFail($id);
         $users = User::all();
         $vehicles = AddCustomerVehicle::all();
@@ -211,6 +242,7 @@ class KycRechargeController extends Controller
     // Delete recharge
     public function destroy($id)
     {
+        abort_if(Gate::denies('kyc_recharge_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $recharge = KycRecharge::findOrFail($id);
         $recharge->delete();
 

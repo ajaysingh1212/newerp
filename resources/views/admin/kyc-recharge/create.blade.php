@@ -79,11 +79,15 @@
                    class="form-control" value="299" readonly required>
         </div>
 
-        <button type="button" class="btn btn-success" id="payButton">Create & Pay</button>
+        <button type="button" class="btn btn-success" id="payButton">
+            {{ auth()->user()->is_admin ? 'Create Recharge' : 'Create & Pay' }}
+        </button>
     </form>
 </div>
 
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+@if(!auth()->user()->is_admin)
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+@endif
 <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_KEY') }}&libraries=geometry"></script>
 
 <script>
@@ -145,7 +149,7 @@ $(document).ready(function() {
         captureStatus.style.display = 'block';
     });
 
-    // --- Razorpay Payment
+    // --- Form submission
     $('#payButton').on('click', async function(e){
         e.preventDefault();
         formErrorsDiv.addClass('d-none').find('ul').html('');
@@ -173,7 +177,14 @@ $(document).ready(function() {
 
             const data = await res.json();
 
-            // --- Razorpay config
+            // --- Admin: no Razorpay, just redirect
+            @if(auth()->user()->is_admin)
+                alert('KYC Recharge created successfully!');
+                window.location.href = "{{ route('admin.kyc-recharges.index') }}";
+                return;
+            @endif
+
+            // --- Normal user: Razorpay
             const options = {
                 key: "{{ env('RAZORPAY_KEY_ID') }}",
                 amount: data.payment_amount * 100,
@@ -183,7 +194,6 @@ $(document).ready(function() {
                 order_id: data.razorpay_order_id,
                 handler: async function(response){
                     const callbackUrl = "{{ route('admin.kyc-recharges.payment-callback-json', ['id' => 'REPLACE_ID']) }}".replace('REPLACE_ID', data.id);
-
                     const callbackRes = await fetch(callbackUrl, {
                         method: "POST",
                         headers: {
@@ -192,7 +202,6 @@ $(document).ready(function() {
                         },
                         body: JSON.stringify(response)
                     });
-
                     const result = await callbackRes.json();
                     if(result.success){
                         window.location.href = result.redirect;
@@ -209,6 +218,7 @@ $(document).ready(function() {
 
             const rzp = new Razorpay(options);
             rzp.open();
+
         } catch (err) {
             console.error('Error:', err);
             alert('Something went wrong. Please check console.');
