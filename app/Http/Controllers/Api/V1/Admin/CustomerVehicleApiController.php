@@ -264,7 +264,7 @@ public function createKycRecharge(Request $request)
             'vehicle_id' => $vehicle->id,
             'vehicle_number' => $vehicle->vehicle_number,
             'title' => "KYC Recharge From Mobile ({$vehicle->vehicle_number})",
-            'description' => $data['description'] ?? null,
+            'description' => !empty($data['description']) ? $data['description'] : 'N/A',
             'payment_status' => $data['payment_status'] ?? 'pending',
             'payment_method' => $data['payment_method'] ?? null,
             'payment_amount' => $data['payment_amount'],
