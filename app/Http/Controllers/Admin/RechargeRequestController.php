@@ -81,7 +81,6 @@ public function index(Request $request)
         $table->editColumn('vehicle_number', fn($row) => $row->vehicle_number ? '<span style="text-transform: uppercase;">' . e($row->vehicle_number) . '</span>' : '');
         $table->addColumn('select_recharge_type', fn($row) => $row->select_recharge?->type ?? '');
         $table->editColumn('select_recharge.plan_name', fn($row) => $row->select_recharge?->plan_name ?? '');
-
         $table->editColumn('attechment', function ($row) {
             $media = $row->attechment;
             return $media
@@ -89,13 +88,27 @@ public function index(Request $request)
                 : '';
         });
 
-        $table->rawColumns(['actions', 'placeholder', 'attechment','vehicle_number']);
+        // ✅ New columns
+        $table->addColumn('vehicle_status', fn($row) => $row->vehicle_status ?? '');
+        $table->addColumn('payment_status', fn($row) => ucfirst($row->payment_status ?? ''));
+        $table->addColumn('created_at', fn($row) => $row->created_at ? $row->created_at->format('d-m-Y H:i') : '');
+
+        $table->rawColumns([
+            'actions', 
+            'placeholder', 
+            'attechment',
+            'vehicle_number',
+            'vehicle_status',   // optional if you want styling
+            'payment_status',   // optional
+            'created_at'        // optional
+        ]);
 
         return $table->make(true);
     }
 
     return view('admin.rechargeRequests.index');
 }
+
 
 
 
@@ -316,6 +329,7 @@ public function store(Request $request)
             'amc_duration'          => $vehicle->amc,
             'warranty_duration'     => $vehicle->warranty,
             'subscription_duration' => $vehicle->subscription,
+            'vehicle_status'                => 'processing',
         ]);
 
         // Create commission
@@ -355,37 +369,47 @@ private function generatePaymentId()
 
 
     public function edit(RechargeRequest $rechargeRequest)
-    {
-        abort_if(Gate::denies('recharge_request_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+{
+    abort_if(Gate::denies('recharge_request_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $users = User::pluck('name', 'id')->prepend(trans('global.pleaseSelect'), '');
+    $users = User::with(['roles'])->get();
+    $userOptions = $users->pluck('name', 'id')->prepend(trans('global.pleaseSelect'), '');
+    $products = CurrentStock::pluck('sku', 'id')->prepend(trans('global.pleaseSelect'), '');
+    $select_recharges = RechargePlan::all()->mapWithKeys(function ($plan) {
+        return [
+            $plan->id => "{$plan->type} - {$plan->plan_name} - ₹{$plan->price}"
+        ];
+    })->prepend(trans('global.pleaseSelect'), '');
 
-        $products = CurrentStock::pluck('sku', 'id')->prepend(trans('global.pleaseSelect'), '');
+    return view('admin.rechargeRequests.edit', compact(
+        'products',
+        'rechargeRequest',
+        'select_recharges',
+        'userOptions',
+        'users'
+    ));
+}
 
-        $select_recharges = RechargePlan::pluck('type', 'id')->prepend(trans('global.pleaseSelect'), '');
+public function update(Request $request, RechargeRequest $rechargeRequest)
+{
+    
+    // Validate only the vehicle_status
+    $request->validate([
+        'vehicle_status' => 'required|string|in:Processing,Live',
+    ]);
 
-        $rechargeRequest->load('user', 'product', 'select_recharge', 'team');
+    try {
+        $rechargeRequest->update([
+            'vehicle_status' => $request->vehicle_status,
+        ]);
 
-        return view('admin.rechargeRequests.edit', compact('products', 'rechargeRequest', 'select_recharges', 'users'));
+        return redirect()->route('admin.recharge-requests.index')
+            ->with('success', 'Vehicle status updated successfully.');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Something went wrong: ' . $e->getMessage());
     }
+}
 
-    public function update(UpdateRechargeRequestRequest $request, RechargeRequest $rechargeRequest)
-    {
-        $rechargeRequest->update($request->all());
-
-        if ($request->input('attechment', false)) {
-            if (! $rechargeRequest->attechment || $request->input('attechment') !== $rechargeRequest->attechment->file_name) {
-                if ($rechargeRequest->attechment) {
-                    $rechargeRequest->attechment->delete();
-                }
-                $rechargeRequest->addMedia(storage_path('tmp/uploads/' . basename($request->input('attechment'))))->toMediaCollection('attechment');
-            }
-        } elseif ($rechargeRequest->attechment) {
-            $rechargeRequest->attechment->delete();
-        }
-
-        return redirect()->route('admin.recharge-requests.index');
-    }
 
     public function show(RechargeRequest $rechargeRequest)
     {
