@@ -17,6 +17,7 @@ use App\Models\AddCustomerVehicle;
 use App\Models\ProductMaster;
 use App\Models\StockTransfer;
 use App\Models\KycRecharge;
+use App\Models\RechargeRequest;
 class HomeController extends Controller
 {
     public function index(Request $request)
@@ -218,6 +219,13 @@ $totalsStatus = [
     'Completed' => KycRecharge::where('payment_status', 'completed')->count(),
 ];
 
+// Controller method
+$totalsStatusRecharge = [
+    'Pending'   => RechargeRequest::where('payment_status', 'pending')->count(),
+    'Failed'    => RechargeRequest::where('payment_status', 'failed')->count(),
+    'Completed'=> RechargeRequest::where('payment_status', 'completed')->count(),
+];
+
 
    $user = Auth::user();
 
@@ -306,7 +314,7 @@ $transferCounts = $transfers->pluck('total');
             'userRole', 'totals', 'stockData', 'chartLabels', 'chartValues',
             'timeFilter', 'selectedRoleType', 'selectedUserId', 'users',
             'activationStatus', 'activationFrom', 'activationTo', 'activationGranularity',
-            'activationChartLabels', 'activationChartValues','chartData','totalStock', 'totalActivations', 'combinedChartData','transferLabels','transferCounts','totalsStatus'
+            'activationChartLabels', 'activationChartValues','chartData','totalStock', 'totalActivations', 'combinedChartData','transferLabels','transferCounts','totalsStatus', 'totalsStatusRecharge'
         ));
 
 

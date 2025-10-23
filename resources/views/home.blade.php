@@ -48,6 +48,36 @@
 
 </div>
 
+<div class="row mt-4">
+
+    @foreach(['Pending', 'Failed', 'Completed'] as $index => $status)
+        <div class="col-md-3">
+            <a href="{{ route('admin.recharge-requests.index', ['status' => $status]) }}" style="text-decoration: none;">
+                <div class="card bg-{{ ['info','danger','success'][$index] }} text-white text-center">
+                    <div class="card-body">
+                        <h5>Total {{ $status }} Recharges</h5>
+                        <h3>{{ $totalsStatusRecharge[$status] ?? 0 }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+    @endforeach
+
+    {{-- Total Recharges card --}}
+    <div class="col-md-3">
+        <a href="{{ route('admin.recharge-requests.index', ['status' => 'Total']) }}" style="text-decoration: none;">
+            <div class="card bg-primary text-white text-center">
+                <div class="card-body">
+                    <h5>Total Recharges</h5>
+                    <h3>{{ array_sum($totalsStatusRecharge) }}</h3>
+                </div>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+
 
     <div class="row">
    <div class="col-lg-12">
