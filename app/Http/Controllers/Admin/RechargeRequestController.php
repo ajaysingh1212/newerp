@@ -213,6 +213,7 @@ public function store(Request $request)
     $loggedInUser = auth()->user();
     $loggedInUserRole = strtolower(trim(optional($loggedInUser->roles()->first())->title ?? ''));
 
+    // Calculate commission
     $commissionAmount = 0;
     $dealerId = null;
     $distributorId = null;
@@ -227,9 +228,16 @@ public function store(Request $request)
         }
     }
 
-    $paymentMethod = $finalAmount <= 0 ? 'wallet' : ($request->payment_method ?? 'razorpay');
-    $razorpayPaymentId = $finalAmount <= 0 ? 'WALLET_' . strtoupper(Str::random(10)) : $request->razorpay_payment_id;
-    $paymentStatus = $finalAmount <= 0 ? 'success' : ($request->payment_status ?? 'pending');
+    // Admin auto-payment vs regular user
+    if ($loggedInUserRole === 'admin') {
+        $paymentMethod = 'admin';
+        $razorpayPaymentId = 'ADMIN_' . strtoupper(Str::random(10));
+        $paymentStatus = 'success';
+    } else {
+        $paymentMethod = $finalAmount <= 0 ? 'wallet' : ($request->payment_method ?? 'razorpay');
+        $razorpayPaymentId = $finalAmount <= 0 ? 'WALLET_' . strtoupper(Str::random(10)) : $request->razorpay_payment_id;
+        $paymentStatus = $finalAmount <= 0 ? 'success' : ($request->payment_status ?? 'pending');
+    }
 
     DB::beginTransaction();
 
@@ -256,44 +264,39 @@ public function store(Request $request)
             if (!$activationDate || !$months) return 0;
             $start = Carbon::parse($activationDate);
             $expiry = $start->copy()->addMonths($months);
-            $remainingDays = $now->diffInDays($expiry, false);
-            return max(0, $remainingDays);
+            return max(0, $now->diffInDays($expiry, false));
         };
 
         $calculateUpdatedDate = function ($currentDate, $activationDate, $months, $productDuration) use ($now, $calculateRemainingDays) {
             $extraDays = $calculateRemainingDays($activationDate, $productDuration);
             $base = $currentDate ? Carbon::parse($currentDate) : $now;
 
-            if ($base->gt($now)) {
-                return $base->addMonths($months)->addDays($extraDays);
-            } else {
-                return $now->copy()->addMonths($months)->addDays($extraDays);
-            }
+            return $base->gt($now)
+                ? $base->addMonths($months)->addDays($extraDays)
+                : $now->copy()->addMonths($months)->addDays($extraDays);
         };
 
         // Subscription
         $productSubMonths = $productModel->subscription ?? 0;
         $activationSub = $activation->subscription ?? null;
         $subDuration = $request->subscription_duration ?? ($rechargePlan->subscription_duration ?? 0);
-        $finalSubscription = $calculateUpdatedDate($vehicle->subscription, $activationSub, $subDuration, $productSubMonths);
-        $vehicle->subscription = $finalSubscription;
+        $vehicle->subscription = $calculateUpdatedDate($vehicle->subscription, $activationSub, $subDuration, $productSubMonths);
 
         // Warranty
         $productWarrantyMonths = $productModel->warranty ?? 0;
         $activationWarranty = $activation->warranty ?? null;
         $warrantyDuration = $request->warranty_duration ?? ($rechargePlan->warranty_duration ?? 0);
-        $finalWarranty = $calculateUpdatedDate($vehicle->warranty, $activationWarranty, $warrantyDuration, $productWarrantyMonths);
-        $vehicle->warranty = $finalWarranty;
+        $vehicle->warranty = $calculateUpdatedDate($vehicle->warranty, $activationWarranty, $warrantyDuration, $productWarrantyMonths);
 
         // AMC
         $productAmcMonths = $productModel->amc ?? 0;
         $activationAmc = $activation->amc ?? null;
         $amcDuration = $request->amc_duration ?? ($rechargePlan->amc_duration ?? 0);
-        $finalAmc = $calculateUpdatedDate($vehicle->amc, $activationAmc, $amcDuration, $productAmcMonths);
-        $vehicle->amc = $finalAmc;
+        $vehicle->amc = $calculateUpdatedDate($vehicle->amc, $activationAmc, $amcDuration, $productAmcMonths);
 
         $vehicle->save();
 
+        // Create recharge request
         $rechargeRequest = RechargeRequest::create([
             'user_id'               => $request->user_id,
             'vehicle_number'        => $request->vehicle_number,
@@ -310,11 +313,12 @@ public function store(Request $request)
             'payment_date'          => now(),
             'payment_id'            => $paymentId,
             'created_by_id'         => $loggedInUser->id,
-            'amc_duration'          => $finalAmc,
-            'warranty_duration'     => $finalWarranty,
-            'subscription_duration' => $finalSubscription,
+            'amc_duration'          => $vehicle->amc,
+            'warranty_duration'     => $vehicle->warranty,
+            'subscription_duration' => $vehicle->subscription,
         ]);
 
+        // Create commission
         Commission::create([
             'recharge_request_id'    => $rechargeRequest->id,
             'customer_id'            => $customer->id,
@@ -335,6 +339,7 @@ public function store(Request $request)
         return redirect()->back()->with('error', 'Something went wrong: ' . $e->getMessage());
     }
 }
+
 
 
 
