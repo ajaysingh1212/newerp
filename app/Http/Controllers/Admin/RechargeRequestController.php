@@ -38,14 +38,23 @@ public function index(Request $request)
     abort_if(Gate::denies('recharge_request_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
     if ($request->ajax()) {
-        $userId = auth()->id(); // Logged-in user ID
+        $user = auth()->user(); // Logged-in user
 
-        $query = RechargeRequest::with(['user', 'product', 'select_recharge', 'team'])
-            ->where(function ($q) use ($userId) {
+        $query = RechargeRequest::with(['user', 'product', 'select_recharge', 'team']);
+
+        // Check if user is admin via roles table (Spatie)
+        $isAdmin = $user->roles()->where('id', 1)->exists(); // Admin role ID = 1
+
+        // Only apply filter for non-admins
+        if (!$isAdmin) {
+            $userId = $user->id;
+            $query->where(function ($q) use ($userId) {
                 $q->where('created_by_id', $userId)
-                  ->orWhere('user_id', $userId); // Support both fields
-            })
-            ->select(sprintf('%s.*', (new RechargeRequest)->table));
+                  ->orWhere('user_id', $userId);
+            });
+        }
+
+        $query->select(sprintf('%s.*', (new RechargeRequest)->table));
 
         $table = Datatables::of($query);
 
@@ -68,13 +77,9 @@ public function index(Request $request)
         });
 
         $table->editColumn('id', fn($row) => $row->id ?? '');
-
         $table->addColumn('user_name', fn($row) => $row->user?->name ?? '');
         $table->editColumn('vehicle_number', fn($row) => $row->vehicle_number ? '<span style="text-transform: uppercase;">' . e($row->vehicle_number) . '</span>' : '');
-
-
         $table->addColumn('select_recharge_type', fn($row) => $row->select_recharge?->type ?? '');
-
         $table->editColumn('select_recharge.plan_name', fn($row) => $row->select_recharge?->plan_name ?? '');
 
         $table->editColumn('attechment', function ($row) {
@@ -91,6 +96,8 @@ public function index(Request $request)
 
     return view('admin.rechargeRequests.index');
 }
+
+
 
 
 
