@@ -58,7 +58,7 @@
     <div class="row">
         <div class="col-md-4 text-center">
             @if(!empty($vehicle['vehicle_photos']))
-                {!! preg_replace('/<img(.*?)>/i', '<img$1 style="width:300px; height:200px;">', $vehicle['vehicle_photos']) !!}
+                {!! preg_replace('/<img(.*?)>/i', '<img$1 style="width:300px; height:200px;border-radius:10px">', $vehicle['vehicle_photos']) !!}
             @else
                 <img src="{{ asset('img/99192.gif') }}" alt="Default Car Image" style="width: 300px; height:auto;">
             @endif
