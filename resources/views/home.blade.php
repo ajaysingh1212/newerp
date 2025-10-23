@@ -18,7 +18,36 @@
             </div>
         </div>
         @endforeach
+        </div>
+        <div class="row mt-4">
+  
+    @foreach(['Pending', 'Failed', 'Completed'] as $index => $status)
+        <div class="col-md-3">
+            <a href="{{ route('admin.kyc-recharges.index', ['status' => $status]) }}" style="text-decoration: none;">
+                <div class="card bg-{{ ['info','danger','success'][$index] }} text-white text-center">
+                    <div class="card-body">
+                        <h5>Total {{ $status }} KYCs</h5>
+                        <h3>{{ $totalsStatus[$status] ?? 0 }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+    @endforeach
+
+    {{-- Total KYC card --}}
+    <div class="col-md-3">
+        <a href="{{ route('admin.kyc-recharges.index', ['status' => 'Total']) }}" style="text-decoration: none;">
+            <div class="card bg-primary text-white text-center">
+                <div class="card-body">
+                    <h5>Total KYCs</h5>
+                    <h3>{{ array_sum($totalsStatus) }}</h3>
+                </div>
+            </div>
+        </a>
     </div>
+
+</div>
+
 
     <div class="row">
    <div class="col-lg-12">
