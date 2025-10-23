@@ -76,12 +76,14 @@ class CustomerVehicleApiController extends Controller
                         : null;
                 }
     
-                // 🔹 Check KYC status
-                $kycExists = KycRecharge::where('user_id', $user_id)
-                    ->where('vehicle_number', $vehicle->vehicle_number)
-                    ->exists();
-    
-                $kycStatus = $kycExists ? 'complete' : 'pending';
+                // 🔹 Check KYC status with payment completed
+                    $kycExists = KycRecharge::where('user_id', $user_id)
+                        ->where('vehicle_number', $vehicle->vehicle_number)
+                        ->where('payment_status', 'completed') // ✅ Only completed payments count
+                        ->exists();
+
+                    $kycStatus = $kycExists ? 'complete' : 'pending';
+
     
                 return [
                     'vehicle_number'  => $vehicle->vehicle_number,
