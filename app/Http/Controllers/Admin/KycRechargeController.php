@@ -126,11 +126,11 @@ class KycRechargeController extends Controller
     try {
         $user = auth()->user();
 
-        // Default payment status
+        // ✅ If admin: directly mark as completed
         $paymentStatus = $user->is_admin ? 'completed' : 'pending';
         $request->merge(['payment_status' => $paymentStatus]);
 
-        // Validation
+        // ✅ Validate fields
         $data = $request->validate([
             'vehicle_number' => 'required|string|max:50',
             'vehicle_id' => 'required|exists:add_customer_vehicles,id',
@@ -145,29 +145,23 @@ class KycRechargeController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
-        // 🔍 Vehicle fetch karo (to get owner id)
+        // ✅ Vehicle find
         $vehicle = \App\Models\AddCustomerVehicle::findOrFail($data['vehicle_id']);
 
-        // ✅ Agar admin hai, to recharge user_id = vehicle owner
-        // ✅ Agar normal user hai, to recharge user_id = logged in user
+        // ✅ Set user_id based on role
         $data['user_id'] = $user->is_admin ? $vehicle->owners_name : $user->id;
-
-        // Always set created_by_id = creator
         $data['created_by_id'] = $user->id;
-
-        // Default vehicle_status = processing
         $data['vehicle_status'] = 'processing';
 
-        // Create recharge record (without image)
+        // ✅ Create recharge record
         $recharge = \App\Models\KycRecharge::create($data);
 
-        // Handle uploaded file
+        // ✅ Handle image upload (normal or base64)
         if ($request->hasFile('image')) {
             $recharge->addMediaFromRequest('image')
                      ->toMediaCollection('kyc_recharge_images');
         }
 
-        // Handle Base64 image (from camera)
         if ($request->filled('image_base64')) {
             $imageData = $request->image_base64;
             if (str_contains($imageData, 'base64,')) {
@@ -175,67 +169,47 @@ class KycRechargeController extends Controller
             }
             $tempPath = storage_path('app/tmp_camera_' . time() . '.png');
             file_put_contents($tempPath, base64_decode($imageData));
-
             $recharge->addMedia($tempPath)
                      ->usingFileName('camera_' . time() . '.png')
                      ->toMediaCollection('kyc_recharge_images');
-
             @unlink($tempPath);
         }
 
-        // ✅ Admin: directly mark as completed, skip Razorpay
+        // ✅ If admin — directly save without Razorpay
         if ($user->is_admin) {
             return response()->json([
                 'success' => true,
                 'id' => $recharge->id,
                 'payment_amount' => $recharge->payment_amount,
                 'payment_status' => 'completed',
-                'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+                'redirect' => route('admin.kyc-recharges.index'),
             ]);
         }
 
-        // ✅ Normal user: create Razorpay order
-        try {
-            $api = new \Razorpay\Api\Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
-            $order = $api->order->create([
-                'receipt' => 'rcpt_' . $recharge->id,
-                'amount' => intval($data['payment_amount'] * 100),
-                'currency' => 'INR',
-                'payment_capture' => 1,
-            ]);
+        // ✅ Else (normal user): create Razorpay order
+        $api = new \Razorpay\Api\Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+        $order = $api->order->create([
+            'receipt' => 'rcpt_' . $recharge->id,
+            'amount' => intval($data['payment_amount'] * 100),
+            'currency' => 'INR',
+            'payment_capture' => 1,
+        ]);
 
-            $recharge->razorpay_order_id = $order['id'];
-            $recharge->save();
+        $recharge->update(['razorpay_order_id' => $order['id']]);
 
-            return response()->json([
-                'id' => $recharge->id,
-                'payment_amount' => $recharge->payment_amount,
-                'razorpay_order_id' => $order['id'],
-                'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
-            ]);
-        } catch (\Exception $razorpayEx) {
-            \Log::error('Razorpay Order Error: ' . $razorpayEx->getMessage(), [
-                'trace' => $razorpayEx->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'error' => 'Razorpay order creation failed. Check logs for details.'
-            ], 500);
-        }
+        return response()->json([
+            'id' => $recharge->id,
+            'payment_amount' => $recharge->payment_amount,
+            'razorpay_order_id' => $order['id'],
+        ]);
 
     } catch (\Illuminate\Validation\ValidationException $ve) {
         return response()->json(['error' => $ve->errors()], 422);
     } catch (\Exception $e) {
-        \Log::error('KYC Recharge Store Error: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'error' => 'Something went wrong while creating payment. Check server logs.'
-        ], 500);
+        \Log::error('KYC Recharge Store Error: ' . $e->getMessage());
+        return response()->json(['error' => 'Something went wrong.'], 500);
     }
 }
-
 
 
     public function paymentCallbackJson(Request $request, $id)
