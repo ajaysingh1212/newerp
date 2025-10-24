@@ -223,7 +223,7 @@ $totalsStatus = [
 $totalsStatusRecharge = [
     'Pending'   => RechargeRequest::where('payment_status', 'pending')->count(),
     'Failed'    => RechargeRequest::where('payment_status', 'failed')->count(),
-    'Completed'=> RechargeRequest::where('payment_status', 'completed')->count(),
+    'Success'=> RechargeRequest::where('payment_status', 'success')->count(),
 ];
 
 

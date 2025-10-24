@@ -50,7 +50,7 @@
 
 <div class="row mt-4">
 
-    @foreach(['Pending', 'Failed', 'Completed'] as $index => $status)
+    @foreach(['Pending', 'Failed', 'Success'] as $index => $status)
         <div class="col-md-3">
             <a href="{{ route('admin.recharge-requests.index', ['status' => $status]) }}" style="text-decoration: none;">
                 <div class="card bg-{{ ['info','danger','success'][$index] }} text-white text-center">

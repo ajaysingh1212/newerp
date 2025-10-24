@@ -163,7 +163,7 @@
 Dropzone.options.insuranceDropzone = {
     url: '{{ route('admin.add-customer-vehicles.storeMedia') }}',
     maxFilesize: 20, // MB
-    acceptedFiles: '.jpeg,.jpg,.png,.gif',
+    acceptedFiles: '.jpeg,.jpg,.png,.gif,.webp,.avif',
     addRemoveLinks: true,
     headers: {
       'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -224,7 +224,7 @@ Dropzone.options.insuranceDropzone = {
 Dropzone.options.pollutionDropzone = {
     url: '{{ route('admin.add-customer-vehicles.storeMedia') }}',
     maxFilesize: 20, // MB
-    acceptedFiles: '.jpeg,.jpg,.png,.gif',
+    acceptedFiles: '.jpeg,.jpg,.png,.gif,.webp,.avif',
     addRemoveLinks: true,
     headers: {
       'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -285,7 +285,7 @@ Dropzone.options.pollutionDropzone = {
 Dropzone.options.registrationCertificateDropzone = {
     url: '{{ route('admin.add-customer-vehicles.storeMedia') }}',
     maxFilesize: 20, // MB
-    acceptedFiles: '.jpeg,.jpg,.png,.gif',
+    acceptedFiles: '.jpeg,.jpg,.png,.gif,.webp,.avif',
     addRemoveLinks: true,
     headers: {
       'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -345,7 +345,7 @@ Dropzone.options.registrationCertificateDropzone = {
     Dropzone.options.idProofsDropzone = {
     url: '{{ route('admin.add-customer-vehicles.storeMedia') }}',
     maxFilesize: 20, // MB
-    acceptedFiles: '.jpeg,.jpg,.png,.gif',
+    acceptedFiles: '.jpeg,.jpg,.png,.gif,.webp,.avif',
     maxFiles: 1,
     addRemoveLinks: true,
     headers: {
@@ -400,7 +400,7 @@ Dropzone.options.registrationCertificateDropzone = {
     Dropzone.options.vehiclePhotosDropzone = {
     url: '{{ route('admin.add-customer-vehicles.storeMedia') }}',
     maxFilesize: 20, // MB
-    acceptedFiles: '.jpeg,.jpg,.png,.gif',
+    acceptedFiles: '.jpeg,.jpg,.png,.gif,.webp,.avif',
     maxFiles: 1,
     addRemoveLinks: true,
     headers: {
@@ -455,7 +455,7 @@ Dropzone.options.registrationCertificateDropzone = {
     Dropzone.options.productImagesDropzone = {
     url: '{{ route('admin.add-customer-vehicles.storeMedia') }}',
     maxFilesize: 20, // MB
-    acceptedFiles: '.jpeg,.jpg,.png,.gif',
+    acceptedFiles: '.jpeg,.jpg,.png,.gif,.webp,.avif',
     maxFiles: 1,
     addRemoveLinks: true,
     headers: {

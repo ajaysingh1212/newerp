@@ -45,6 +45,7 @@ class RechargeRequest extends Model implements HasMedia
         'payment_date',
         'payment_id',
         'created_by_id',
+        'vehicle_status',
     ];
 
     protected function serializeDate(DateTimeInterface $date)

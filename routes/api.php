@@ -133,6 +133,10 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
 
    Route::post('create-kyc-recharge', 'CustomerVehicleApiController@createKycRecharge')->name('kyc-recharge.create');
 
+   // 🚗 Get Vehicle by Vehicle Number
+    Route::get('vehicle-by-number/{vehicle_number}', 'CustomerVehicleApiController@getVehicleByNumber')->name('vehicle.by-number');
+
+
     
    
     

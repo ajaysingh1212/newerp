@@ -26,9 +26,12 @@
                     <th width="10"></th>
                     <th>{{ trans('cruds.rechargeRequest.fields.id') }}</th>
                     <th>{{ trans('cruds.rechargeRequest.fields.user') }}</th>
-                    <th style=>{{ trans('cruds.rechargeRequest.fields.vehicle_number') }}</th>
+                    <th>{{ trans('cruds.rechargeRequest.fields.vehicle_number') }}</th>
                     <th>{{ trans('cruds.rechargeRequest.fields.select_recharge') }}</th>
                     <th>{{ trans('cruds.rechargePlan.fields.plan_name') }}</th>
+                    <th>{{ trans('cruds.rechargeRequest.fields.vehicle_status') }}</th>
+                    <th>{{ trans('cruds.rechargeRequest.fields.payment_status') }}</th>
+                    <th>{{ trans('cruds.rechargeRequest.fields.date') }}</th>
                     <th>{{ trans('cruds.rechargeRequest.fields.attechment') }}</th>
                     <th>&nbsp;</th>
                 </tr>
@@ -86,6 +89,9 @@
                 { data: 'vehicle_number', name: 'vehicle_number' },
                 { data: 'select_recharge_type', name: 'select_recharge.type' },
                 { data: 'select_recharge.plan_name', name: 'select_recharge.plan_name' },
+                { data: 'vehicle_status', name: 'vehicle_status' },      // ✅ corrected
+                { data: 'payment_status', name: 'payment_status' },      // ✅ corrected
+                { data: 'created_at', name: 'created_at' },             // ✅ corrected
                 { data: 'attechment', name: 'attechment', sortable: false, searchable: false },
                 { data: 'actions', name: '{{ trans('global.actions') }}' }
             ],

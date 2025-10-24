@@ -56,15 +56,24 @@
 
 <div class="vehicle-card">
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-4 text-center">
             @if(!empty($vehicle['vehicle_photos']))
-                {!! $vehicle['vehicle_photos'] !!}
+                {!! preg_replace(
+                    '/<img(.*?)>/i',
+                    '<img$1 style="width:300px; height:200px; border: 3px double blue; border-radius:10px;">',
+                    $vehicle['vehicle_photos']
+                ) !!}
             @else
-                <img src="{{ asset('img/99192.gif') }}" alt="Default Car Image" style="width: 300px;">
+                <img src="{{ asset('img/99192.gif') }}" alt="Default Car Image" style="width: 300px; height:200px; border: 3px double blue; border-radius:10px;">
             @endif
-            <strong>Vehicle Model:</strong> {{ $vehicle['vehicle_model'] }}<br>
-            <strong>Vehicle Number:</strong> {{ $vehicle['vehicle_number'] }}
+
+            <div class="mt-2 text-left">
+                <strong>Vehicle Model:</strong> {{ $vehicle['vehicle_model'] }}<br>
+                <strong>Vehicle Number:</strong> {{ $vehicle['vehicle_number'] }}
+            </div>
         </div>
+
+
 
         <div class="col-md-5">
             <div class="row">
