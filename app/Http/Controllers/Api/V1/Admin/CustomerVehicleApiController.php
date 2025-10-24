@@ -356,35 +356,19 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Base relations without media
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
+            'product_master.imei',
+            'product_master.vts',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // Try to extract IMEI & SIM from product_master with fallback keys
         $product = $vehicle->product_master;
 
-        $imei = null;
-        if ($product) {
-            $imei = $product->imei_id
-                ?? $product->imei
-                ?? $product->imei_number
-                ?? $product->imei_no
-                ?? null;
-        }
+        $imeiNumber = $product->imei?->imei_number ?? null; // imei table ka column
+        $simNumber  = $product->vts?->sim_number ?? null;  // vts table ka column
 
-        $simNumber = null;
-        if ($product) {
-            $simNumber = $product->sim_number
-                ?? $product->sim
-                ?? $product->mobile_number
-                ?? $product->sim_no
-                ?? null;
-        }
-
-        // Core vehicle details
         $vehicleDetails = [
             'status' => $vehicle->status,
             'product_model' => $vehicle->product_master?->product_model?->product_model ?? null,
@@ -400,12 +384,10 @@ public function getVehicleByNumber($vehicle_number)
             'password' => $vehicle->password,
             'title' => $vehicle->appLink?->title ?? null,
             'link' => $vehicle->appLink?->link ?? null,
-            // New fields from product_master
-            'imei' => $imei,
+            'imei' => $imeiNumber,
             'sim_number' => $simNumber,
         ];
 
-        // Media collections
         $mediaCollections = [
             'vehicle_photos' => $vehicle->getMedia('vehicle_photos'),
             'id_proofs' => $vehicle->getMedia('id_proofs'),
@@ -415,13 +397,12 @@ public function getVehicleByNumber($vehicle_number)
             'product_images' => $vehicle->getMedia('product_images'),
         ];
 
-        // Map media to simplified structure (name + url at the end)
         foreach ($mediaCollections as $key => $collection) {
             $mediaCollections[$key] = $collection->map(function ($file) {
                 return [
                     'id' => $file->id,
                     'file_name' => $file->file_name,
-                    'url' => $file->getUrl(), // public URL
+                    'url' => $file->getUrl(),
                     'thumbnail' => $file->getUrl('thumb'),
                     'preview' => $file->getUrl('preview'),
                 ];
@@ -451,6 +432,7 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
