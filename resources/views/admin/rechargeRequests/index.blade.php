@@ -49,6 +49,9 @@
 
         <!-- TOTAL PLAN AMOUNT -->
         <div class="mb-3" style="padding:10px; background-color:#f8f9fa; border:1px solid #ddd;">
+            {{-- @php
+                dd($totalAmount);
+            @endphp --}}
             <h5>Total Plan Amount: <strong>₹{{ number_format($totalAmount, 2) }}</strong></h5>
         </div>
 
