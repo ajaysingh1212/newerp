@@ -81,7 +81,7 @@
                     <td><span style="text-transform: uppercase;">{{ $request->vehicle_number }}</span></td>
                     <td>{{ $request->select_recharge?->type ?? '' }}</td>
                     <td>{{ $request->select_recharge?->plan_name ?? '' }}</td>
-                    <td>₹{{ $request->select_recharge?->price ?? 0 }}</td>
+                    <td>₹{{ $request->payment_amount ?? 0 }}</td>
                     <td>{{ $request->vehicle_status }}</td>
                     <td>{{ ucfirst($request->payment_status) }}</td>
                     <td>
