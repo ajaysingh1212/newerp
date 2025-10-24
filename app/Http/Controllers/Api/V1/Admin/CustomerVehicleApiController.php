@@ -356,26 +356,41 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Base relations
+        // Load vehicle with core relations
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Try loading media safely without restricting columns
+        // ✅ Safely try to load media using Spatie accessor
         try {
-            $media = $vehicle->media()->get(); // get all columns so URL/accessor works
-            $vehicle->setRelation('media', $media);
+            // Use model accessors instead of direct DB columns
+            $mediaData = [
+                'vehicle_photos' => $vehicle->vehicle_photos,
+                'id_proofs' => $vehicle->id_proofs,
+                'insurance' => $vehicle->insurance,
+                'pollution' => $vehicle->pollution,
+                'registration_certificate' => $vehicle->registration_certificate,
+                'product_images' => $vehicle->product_images,
+            ];
         } catch (\Exception $e) {
-            // If error (like missing column), just set media as empty collection
-            $vehicle->setRelation('media', collect([]));
+            \Log::warning('Media fetch issue for vehicle: ' . $vehicle_number, [
+                'error' => $e->getMessage(),
+            ]);
+            $mediaData = [];
         }
+
+        // ✅ Combine vehicle info and media safely
+        $responseData = [
+            'vehicle' => new VehicleResource($vehicle),
+            'media' => $mediaData,
+        ];
 
         return response()->json([
             'status' => true,
             'message' => 'Vehicle details fetched successfully.',
-            'data' => new VehicleResource($vehicle)
+            'data' => $responseData
         ], Response::HTTP_OK);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -392,6 +407,7 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
