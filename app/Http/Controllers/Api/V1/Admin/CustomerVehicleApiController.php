@@ -356,19 +356,19 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Try to get vehicle with safe eager loading
+        // Base relations
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Try to attach media safely
+        // ✅ Try loading media safely without restricting columns
         try {
-            $media = $vehicle->media()->get(['id', 'file_name']); // Only safe columns
+            $media = $vehicle->media()->get(); // get all columns so URL/accessor works
             $vehicle->setRelation('media', $media);
         } catch (\Exception $e) {
-            // If error (like missing 'url' column), just set media as null
+            // If error (like missing column), just set media as empty collection
             $vehicle->setRelation('media', collect([]));
         }
 
@@ -385,7 +385,6 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_NOT_FOUND);
 
     } catch (\Exception $e) {
-        // If any unexpected issue occurs
         return response()->json([
             'status' => false,
             'message' => 'Something went wrong.',
@@ -393,6 +392,8 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
+
 
 
 
