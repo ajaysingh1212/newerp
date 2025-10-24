@@ -15,12 +15,13 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>User ID</th>
+                        <th>Payment Date</th>
+                        <th>User Details</th>
                         <th>Vehicle Number</th>
                         <th>Title</th>
                         <th>Payment Status</th>
+                        <th>Vehicle Status</th>
                         <th>Amount</th>
-                        <th>Payment Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -28,12 +29,13 @@
                     @forelse($recharges as $recharge)
                     <tr>
                         <td>{{ $recharge->id }}</td>
-                        <td>{{ $recharge->user->name }} <br> {{$recharge->user->email}} </td>
+                        <td>{{ $recharge->created_at ? \Carbon\Carbon::parse($recharge->created_at)->format('d-m-Y H:i') : '-' }}</td>
+                        <td>{{ $recharge->user->name }} <br> {{$recharge->user->email}} <br> {{$recharge->user->mobile_number}} </td>
                         <td>{{ $recharge->vehicle_number }}</td>
                         <td>{{ $recharge->title }}</td>
                         <td>{{ ucfirst($recharge->payment_status) }}</td>
+                        <td>{{ ucfirst($recharge->vehicle_status) }}</td>
                         <td>{{ number_format($recharge->payment_amount, 2) }}</td>
-                        <td>{{ $recharge->created_at ? \Carbon\Carbon::parse($recharge->created_at)->format('d-m-Y H:i') : '-' }}</td>
                         <td>
     @can('kyc_recharge_show')
         <a href="{{ route('admin.kyc-recharges.show', $recharge->id) }}" class="btn btn-sm btn-info">

@@ -216,28 +216,27 @@ class KycRechargeController extends Controller
         $users = User::all();
         $vehicles = AddCustomerVehicle::all();
 
-        return view('admin.kyc_recharge.edit', compact('recharge', 'users', 'vehicles'));
+        return view('admin.kyc-recharge.edit', compact('recharge', 'users', 'vehicles'));
     }
 
     // Update recharge
-    public function update(Request $request, $id)
-    {
-        $recharge = KycRecharge::findOrFail($id);
+   public function update(Request $request, $id)
+{
+    $recharge = KycRecharge::findOrFail($id);
 
-        $data = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'payment_status' => 'nullable|in:pending,completed,failed',
-            'payment_method' => 'nullable|string|max:100',
-            'payment_amount' => 'nullable|numeric',
-            'payment_date' => 'nullable|date',
-        ]);
+    // ✅ Sirf vehicle_status validate aur update karein
+    $data = $request->validate([
+        'vehicle_status' => 'required|in:processing,live',
+    ]);
 
-        $recharge->update($data);
+    $recharge->update([
+        'vehicle_status' => $data['vehicle_status'],
+    ]);
 
-        return redirect()->route('admin.kyc-recharges.index')
-                         ->with('success', 'KYC Recharge updated successfully.');
-    }
+    return redirect()->route('admin.kyc-recharges.index')
+                     ->with('success', 'Vehicle status updated successfully.');
+}
+
 
     // Delete recharge
     public function destroy($id)

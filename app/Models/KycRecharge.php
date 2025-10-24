@@ -29,6 +29,7 @@ protected $casts = [
         'location',
         'latitude',
         'longitude',
+        'vehicle_status',
     ];
 
     // 🔗 Relationships

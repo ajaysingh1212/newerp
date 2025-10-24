@@ -367,5 +367,6 @@ Route::get('admin/activationrequests/invoice/{id}', [App\Http\Controllers\Admin\
 Route::get('/report/product-pie-chart', [App\Http\Controllers\HomeController::class, 'productPieChart'])->name('report.product.pie');
 
 Route::post('admin/kyc-recharges', [App\Http\Controllers\Admin\KycRechargeController::class, 'store'])->name('admin.kyc-recharges.store');
+Route::post('admin/kyc-recharges/{id}', [App\Http\Controllers\Admin\KycRechargeController::class, 'edit'])->name('admin.kyc-recharge.update');
 
 Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [App\Http\Controllers\Admin\KycRechargeController::class, 'paymentCallbackJson'])->name('admin.kyc-recharges.payment-callback-json');
