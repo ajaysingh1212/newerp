@@ -27,44 +27,35 @@ class KycRechargeController extends Controller
 
     // Read query parameters
     $paymentStatus = $request->query('payment_status'); 
-    $filterType     = $request->query('filter_type');
-    $fromDate       = $request->query('from_date');
-    $toDate         = $request->query('to_date');
+    $filterType    = $request->query('filter_type');
+    $fromDate      = $request->query('from_date');
+    $toDate        = $request->query('to_date');
 
+    // Apply filters
     $recharges = KycRecharge::with(['user', 'vehicle', 'createdBy'])
-        // Restrict to created_by_id if user is not admin
         ->when(!$user->is_admin, function ($query) use ($user) {
             $query->where('created_by_id', $user->id);
         })
-
-        // 🟢 Payment Status Filter
         ->when($paymentStatus, function ($query) use ($paymentStatus) {
             $query->where('payment_status', strtolower($paymentStatus));
         })
-
-        // 🕒 Date Filters
         ->when($filterType, function ($query) use ($filterType, $fromDate, $toDate) {
             switch ($filterType) {
                 case 'today':
                     $query->whereDate('payment_date', Carbon::today());
                     break;
-
                 case 'yesterday':
                     $query->whereDate('payment_date', Carbon::yesterday());
                     break;
-
                 case '7_days':
                     $query->where('payment_date', '>=', Carbon::now()->subDays(7));
                     break;
-
                 case '15_days':
                     $query->where('payment_date', '>=', Carbon::now()->subDays(15));
                     break;
-
                 case '1_month':
                     $query->where('payment_date', '>=', Carbon::now()->subMonth());
                     break;
-
                 case 'custom':
                     if ($fromDate && $toDate) {
                         $query->whereBetween('payment_date', [
@@ -78,12 +69,16 @@ class KycRechargeController extends Controller
         ->latest('payment_date')
         ->get();
 
+    // Total amount (after filters)
+    $totalAmount = $recharges->sum('payment_amount');
+
     return view('admin.kyc-recharge.index', compact(
         'recharges',
         'paymentStatus',
         'filterType',
         'fromDate',
-        'toDate'
+        'toDate',
+        'totalAmount'
     ));
 }
 
