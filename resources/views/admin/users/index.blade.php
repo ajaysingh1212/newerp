@@ -117,9 +117,7 @@ $(function () {
     @endcan
 
     $('.datatable-User').DataTable({
-        buttons: dtButtons,
-        orderCellsTop: true,
-        order: [[1, 'desc']],
+        order: [[0, 'desc']], // First column descending
         pageLength: 100,
     });
 });
