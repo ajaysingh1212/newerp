@@ -356,26 +356,66 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Try to get vehicle with safe eager loading
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
+            'product_master.imei',
+            'product_master.vts',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Try to attach media safely
-        try {
-            $media = $vehicle->media()->get(['id', 'file_name']); // Only safe columns
-            $vehicle->setRelation('media', $media);
-        } catch (\Exception $e) {
-            // If error (like missing 'url' column), just set media as null
-            $vehicle->setRelation('media', collect([]));
+        $product = $vehicle->product_master;
+
+        $imeiNumber = $product->imei?->imei_number ?? null; // imei table ka column
+        $simNumber  = $product->vts?->sim_number ?? null;  // vts table ka column
+
+        $vehicleDetails = [
+            'status' => $vehicle->status,
+            'product_model' => $vehicle->product_master?->product_model?->product_model ?? null,
+            'vehicle_number' => $vehicle->vehicle_number,
+            'vehicle_type' => $vehicle->select_vehicle_type?->vehicle_type ?? null,
+            'vehicle_model' => $vehicle->vehicle_model,
+            'vehicle_color' => $vehicle->vehicle_color,
+            'chassis_number' => $vehicle->chassis_number,
+            'engine_number' => $vehicle->engine_number,
+            'insurance_expiry_date' => $vehicle->insurance_expiry_date,
+            'request_date' => $vehicle->request_date,
+            'user_id' => $vehicle->user_id,
+            'password' => $vehicle->password,
+            'title' => $vehicle->appLink?->title ?? null,
+            'link' => $vehicle->appLink?->link ?? null,
+            'imei' => $imeiNumber,
+            'sim_number' => $simNumber,
+        ];
+
+        $mediaCollections = [
+            'vehicle_photos' => $vehicle->getMedia('vehicle_photos'),
+            'id_proofs' => $vehicle->getMedia('id_proofs'),
+            'insurance' => $vehicle->getMedia('insurance'),
+            'pollution' => $vehicle->getMedia('pollution'),
+            'registration_certificate' => $vehicle->getMedia('registration_certificate'),
+            'product_images' => $vehicle->getMedia('product_images'),
+        ];
+
+        foreach ($mediaCollections as $key => $collection) {
+            $mediaCollections[$key] = $collection->map(function ($file) {
+                return [
+                    'id' => $file->id,
+                    'file_name' => $file->file_name,
+                    'url' => $file->getUrl(),
+                    'thumbnail' => $file->getUrl('thumb'),
+                    'preview' => $file->getUrl('preview'),
+                ];
+            })->values();
         }
 
         return response()->json([
             'status' => true,
             'message' => 'Vehicle details fetched successfully.',
-            'data' => new VehicleResource($vehicle)
+            'data' => [
+                'vehicle' => $vehicleDetails,
+                'media' => $mediaCollections,
+            ]
         ], Response::HTTP_OK);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -385,7 +425,6 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_NOT_FOUND);
 
     } catch (\Exception $e) {
-        // If any unexpected issue occurs
         return response()->json([
             'status' => false,
             'message' => 'Something went wrong.',
@@ -393,6 +432,11 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
+
+
+
+
 
 
 

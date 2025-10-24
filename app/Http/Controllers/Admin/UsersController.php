@@ -23,115 +23,33 @@ class UsersController extends Controller
 {
     use MediaUploadingTrait, CsvImportTrait;
 
-public function index(Request $request)
+public function index()
 {
     abort_if(Gate::denies('user_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    if ($request->ajax()) {
-        $query = User::withCount('vehicles')->with(['state', 'district', 'roles', 'team']);
+    // Load users with related roles and team
+    $users = User::with(['state', 'district', 'roles', 'team'])->get();
 
+    // For each user, load vehicles and KYC status
+    foreach ($users as $user) {
+        $userVehicles = \App\Models\AddCustomerVehicle::where('owners_name', $user->id)->get();
 
-        // ✅ Only show own created users if not Admin
-        if (!auth()->user()->roles->contains('title', 'Admin')) {
-            $query->where('created_by_id', auth()->id());
+        foreach ($userVehicles as $vehicle) {
+            $kyc = \App\Models\KycRecharge::where('vehicle_number', $vehicle->vehicle_number)
+                    ->where('payment_status', 'Completed') // Assuming payment_status = 'Completed' means KYC done
+                    ->first();
+
+            $vehicle->kyc_status = $kyc ? 'Completed' : 'Pending';
         }
 
-        $query = $query->select(sprintf('%s.*', (new User)->table));
-        $table = Datatables::of($query);
-
-        $table->addColumn('placeholder', '&nbsp;');
-        $table->addColumn('actions', '&nbsp;');
-
-        $table->editColumn('actions', function ($row) {
-            $viewGate      = 'user_show';
-            $editGate      = 'user_edit';
-            $deleteGate    = 'user_delete';
-            $crudRoutePart = 'users';
-
-            return view('partials.datatablesActions', compact(
-                'viewGate',
-                'editGate',
-                'deleteGate',
-                'crudRoutePart',
-                'row'
-            ));
-        });
-
-        $table->editColumn('id', fn($row) => $row->id ?? '');
-        $table->editColumn('name', fn($row) => $row->name ?? '');
-        $table->editColumn('company_name', fn($row) => $row->company_name ?? '');
-        $table->editColumn('email', fn($row) => $row->email ?? '');
-        $table->editColumn('gst_number', fn($row) => $row->gst_number ?? '');
-        $table->editColumn('date_joining', fn($row) => $row->date_joining ?? '');
-        $table->editColumn('mobile_number', fn($row) => $row->mobile_number ?? '');
-        $table->editColumn('whatsapp_number', fn($row) => $row->whatsapp_number ?? '');
-        $table->addColumn('state_state_name', fn($row) => $row->state->state_name ?? '');
-        $table->editColumn('state.country', fn($row) => $row->state ? (is_string($row->state) ? $row->state : $row->state->country) : '');
-        $table->addColumn('district_districts', fn($row) => $row->district->districts ?? '');
-        $table->editColumn('district.country', fn($row) => $row->district ? (is_string($row->district) ? $row->district : $row->district->country) : '');
-        $table->editColumn('pin_code', fn($row) => $row->pin_code ?? '');
-        $table->editColumn('bank_name', fn($row) => $row->bank_name ?? '');
-        $table->editColumn('branch_name', fn($row) => $row->branch_name ?? '');
-        $table->editColumn('ifsc', fn($row) => $row->ifsc ?? '');
-        $table->editColumn('ac_holder_name', fn($row) => $row->ac_holder_name ?? '');
-        $table->editColumn('pan_number', fn($row) => $row->pan_number ?? '');
-        $table->addColumn('vehicle_count', fn($row) => $row->vehicles_count ?? 0);
-
-
-        $table->editColumn('profile_image', function ($row) {
-            if ($photo = $row->profile_image) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px"></a>', $photo->url, $photo->thumbnail);
-            }
-            return '';
-        });
-
-        $table->editColumn('upload_signature', function ($row) {
-            if ($photo = $row->upload_signature) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px"></a>', $photo->url, $photo->thumbnail);
-            }
-            return '';
-        });
-
-        $table->editColumn('upload_pan_aadhar', fn($row) => $row->upload_pan_aadhar ? '<a href="' . $row->upload_pan_aadhar->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '');
-        $table->editColumn('passbook_statement', fn($row) => $row->passbook_statement ? '<a href="' . $row->passbook_statement->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '');
-
-        $table->editColumn('shop_photo', function ($row) {
-            if ($photo = $row->shop_photo) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px"></a>', $photo->url, $photo->thumbnail);
-            }
-            return '';
-        });
-
-        $table->editColumn('gst_certificate', fn($row) => $row->gst_certificate ? '<a href="' . $row->gst_certificate->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '');
-        $table->editColumn('status', fn($row) => $row->status ? User::STATUS_SELECT[$row->status] : '');
-        $table->editColumn('roles', function ($row) {
-            $labels = [];
-            foreach ($row->roles as $role) {
-                $labels[] = sprintf('<span class="label label-info label-many">%s</span>', $role->title);
-            }
-            return implode(' ', $labels);
-        });
-
-        $table->rawColumns([
-            'actions',
-            'placeholder',
-            'state',
-            'district',
-            'profile_image',
-            'upload_signature',
-            'upload_pan_aadhar',
-            'passbook_statement',
-            'shop_photo',
-            'gst_certificate',
-            'roles',
-            'vehicle_count',
-        ]);
-
-        return $table->make(true);
+        $user->vehicles = $userVehicles;
     }
 
-    return view('admin.users.index');
+    return view('admin.users.index', compact('users'));
 }
+
+
+
 
     public function create()
     {
