@@ -16,7 +16,7 @@ class AddCustomerVehicle extends Model implements HasMedia
 {
     use SoftDeletes, MultiTenantModelTrait, InteractsWithMedia, HasFactory;
 
-    protected $table = 'add_customer_vehicles';
+    public $table = 'add_customer_vehicles';
 
     protected $dates = [
         'insurance_expiry_date',
@@ -56,6 +56,7 @@ class AddCustomerVehicle extends Model implements HasMedia
         'vehicle_color',
         'status',
         'team_id',
+        'select_vehicle_type_id',
         'created_by_id',
         'activated',
         'engine_number',
@@ -76,117 +77,118 @@ class AddCustomerVehicle extends Model implements HasMedia
         return $date->format('Y-m-d H:i:s');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Date Mutators (Safe Parsing)
-    |--------------------------------------------------------------------------
-    */
+    // ✅ FIXED: Robust date setters with logging
+
     public function setInsuranceExpiryDateAttribute($value)
     {
-        $this->attributes['insurance_expiry_date'] = $this->safeDate($value);
+        try {
+            $this->attributes['insurance_expiry_date'] = $value ? Carbon::parse($value)->format('Y-m-d') : null;
+        } catch (\Exception $e) {
+            \Log::error('Insurance Date Parse Error', ['value' => $value, 'message' => $e->getMessage()]);
+            $this->attributes['insurance_expiry_date'] = null;
+        }
     }
 
     public function setAmcAttribute($value)
     {
-        $this->attributes['amc'] = $this->safeDate($value);
+        try {
+            $this->attributes['amc'] = $value ? Carbon::parse($value)->format('Y-m-d') : null;
+        } catch (\Exception $e) {
+            \Log::error('AMC Date Parse Error', ['value' => $value, 'message' => $e->getMessage()]);
+            $this->attributes['amc'] = null;
+        }
     }
 
     public function setWarrantyAttribute($value)
     {
-        $this->attributes['warranty'] = $this->safeDate($value);
+        try {
+            $this->attributes['warranty'] = $value ? Carbon::parse($value)->format('Y-m-d') : null;
+        } catch (\Exception $e) {
+            \Log::error('Warranty Date Parse Error', ['value' => $value, 'message' => $e->getMessage()]);
+            $this->attributes['warranty'] = null;
+        }
     }
 
     public function setSubscriptionAttribute($value)
     {
-        $this->attributes['subscription'] = $this->safeDate($value);
-    }
-
-    protected function safeDate($value)
-    {
         try {
-            return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+            $this->attributes['subscription'] = $value ? Carbon::parse($value)->format('Y-m-d') : null;
         } catch (\Exception $e) {
-            \Log::error('Date Parse Error', ['value' => $value, 'message' => $e->getMessage()]);
-            return null;
+            \Log::error('Subscription Date Parse Error', ['value' => $value, 'message' => $e->getMessage()]);
+            $this->attributes['subscription'] = null;
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Spatie Media Accessors (Fully Working)
-    |--------------------------------------------------------------------------
-    */
+    // Media Accessors
+
     public function getInsuranceAttribute()
     {
-        return $this->getMediaData('insurance');
+        $files = $this->getMedia('insurance');
+        $files->each(function ($item) {
+            $item->url = $item->getUrl();
+            $item->thumbnail = $item->getUrl('thumb');
+            $item->preview = $item->getUrl('preview');
+        });
+        return $files;
     }
 
     public function getPollutionAttribute()
     {
-        return $this->getMediaData('pollution');
+        $files = $this->getMedia('pollution');
+        $files->each(function ($item) {
+            $item->url = $item->getUrl();
+            $item->thumbnail = $item->getUrl('thumb');
+            $item->preview = $item->getUrl('preview');
+        });
+        return $files;
     }
 
     public function getRegistrationCertificateAttribute()
     {
-        return $this->getMediaData('registration_certificate');
+        $files = $this->getMedia('registration_certificate');
+        $files->each(function ($item) {
+            $item->url = $item->getUrl();
+            $item->thumbnail = $item->getUrl('thumb');
+            $item->preview = $item->getUrl('preview');
+        });
+        return $files;
     }
 
     public function getIdProofsAttribute()
     {
-        return $this->getMediaData('id_proofs', true);
+        $file = $this->getMedia('id_proofs')->last();
+        if ($file) {
+            $file->url = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview = $file->getUrl('preview');
+        }
+        return $file;
     }
 
     public function getVehiclePhotosAttribute()
     {
-        return $this->getMediaData('vehicle_photos', true);
+        $file = $this->getMedia('vehicle_photos')->last();
+        if ($file) {
+            $file->url = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview = $file->getUrl('preview');
+        }
+        return $file;
     }
 
     public function getProductImagesAttribute()
     {
-        return $this->getMediaData('product_images', true);
-    }
-
-    /**
-     * 🔹 Helper for consistent media formatting
-     */
-    protected function getMediaData(string $collection, bool $single = false)
-    {
-        try {
-            $files = $this->getMedia($collection);
-
-            if ($single) {
-                $file = $files->last();
-                if (!$file) return null;
-
-                return [
-                    'id' => $file->id,
-                    'file_name' => $file->file_name,
-                    'url' => $file->getUrl(),
-                    'thumbnail' => $file->getUrl('thumb'),
-                    'preview' => $file->getUrl('preview'),
-                ];
-            }
-
-            return $files->map(function ($file) {
-                return [
-                    'id' => $file->id,
-                    'file_name' => $file->file_name,
-                    'url' => $file->getUrl(),
-                    'thumbnail' => $file->getUrl('thumb'),
-                    'preview' => $file->getUrl('preview'),
-                ];
-            });
-        } catch (\Exception $e) {
-            \Log::error('Media Load Error', ['collection' => $collection, 'message' => $e->getMessage()]);
-            return $single ? null : [];
+        $file = $this->getMedia('product_images')->last();
+        if ($file) {
+            $file->url = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview = $file->getUrl('preview');
         }
+        return $file;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relations
-    |--------------------------------------------------------------------------
-    */
+    // Relations
+
     public function selectVehicleCheckComplains()
     {
         return $this->belongsToMany(CheckComplain::class);
@@ -217,19 +219,13 @@ class AddCustomerVehicle extends Model implements HasMedia
         return $this->belongsTo(AppLink::class, 'app_link_id');
     }
 
-    public function rechargeRequest()
-    {
-        return $this->hasMany(\App\Models\ActivationRequest::class, 'vehicle_id', 'id');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Spatie Conversions (thumbnails, previews)
-    |--------------------------------------------------------------------------
-    */
     public function registerMediaConversions(Media $media = null): void
     {
         $this->addMediaConversion('thumb')->fit('crop', 50, 50);
         $this->addMediaConversion('preview')->fit('crop', 120, 120);
     }
+    public function rechargeRequest()
+{
+    return $this->hasMany(\App\Models\ActivationRequest::class, 'vehicle_id', 'id');
+}
 }
