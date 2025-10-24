@@ -37,76 +37,60 @@ public function index(Request $request)
 {
     abort_if(Gate::denies('recharge_request_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    if ($request->ajax()) {
-        $user = auth()->user(); // Logged-in user
+    $user = auth()->user();
+    $isAdmin = $user->roles()->where('id', 1)->exists(); // Admin role ID = 1
 
-        $query = RechargeRequest::with(['user', 'product', 'select_recharge', 'team']);
+    $query = RechargeRequest::with(['user', 'select_recharge']);
 
-        // Check if user is admin via roles table (Spatie)
-        $isAdmin = $user->roles()->where('id', 1)->exists(); // Admin role ID = 1
-
-        // Only apply filter for non-admins
-        if (!$isAdmin) {
-            $userId = $user->id;
-            $query->where(function ($q) use ($userId) {
-                $q->where('created_by_id', $userId)
-                  ->orWhere('user_id', $userId);
-            });
-        }
-
-        $query->select(sprintf('%s.*', (new RechargeRequest)->table));
-
-        $table = Datatables::of($query);
-
-        $table->addColumn('placeholder', '&nbsp;');
-        $table->addColumn('actions', '&nbsp;');
-
-        $table->editColumn('actions', function ($row) {
-            $viewGate      = 'recharge_request_show';
-            $editGate      = 'recharge_request_edit';
-            $deleteGate    = 'recharge_request_delete';
-            $crudRoutePart = 'recharge-requests';
-
-            return view('partials.datatablesActions', compact(
-                'viewGate',
-                'editGate',
-                'deleteGate',
-                'crudRoutePart',
-                'row'
-            ));
+    if (!$isAdmin) {
+        $userId = $user->id;
+        $query->where(function ($q) use ($userId) {
+            $q->where('created_by_id', $userId)
+              ->orWhere('user_id', $userId);
         });
-
-        $table->editColumn('id', fn($row) => $row->id ?? '');
-        $table->addColumn('user_name', fn($row) => $row->user?->name ?? '');
-        $table->editColumn('vehicle_number', fn($row) => $row->vehicle_number ? '<span style="text-transform: uppercase;">' . e($row->vehicle_number) . '</span>' : '');
-        $table->addColumn('select_recharge_type', fn($row) => $row->select_recharge?->type ?? '');
-        $table->editColumn('select_recharge.plan_name', fn($row) => $row->select_recharge?->plan_name ?? '');
-        $table->editColumn('attechment', function ($row) {
-            $media = $row->attechment;
-            return $media
-                ? '<a href="' . $media->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>'
-                : '';
-        });
-
-        // ✅ New columns
-        $table->addColumn('vehicle_status', fn($row) => $row->vehicle_status ?? '');
-        $table->addColumn('payment_status', fn($row) => ucfirst($row->payment_status ?? ''));
-        $table->addColumn('created_at', fn($row) => $row->created_at ? $row->created_at->format('d-m-Y H:i') : '');
-
-        $table->rawColumns([
-            'actions', 
-            'placeholder', 
-            'attechment',
-            'vehicle_number',
-            'vehicle_status',   // optional if you want styling
-            'payment_status',   // optional
-            'created_at'        // optional
-        ]);
-
-        return $table->make(true);
     }
 
-    return view('admin.rechargeRequests.index');
+    // FILTERS
+    if ($request->filled('date_filter')) {
+        $today = now()->startOfDay();
+        $end = now()->endOfDay();
+
+        switch ($request->date_filter) {
+            case 'today':
+                $query->whereBetween('created_at', [$today, $end]);
+                break;
+            case 'yesterday':
+                $query->whereBetween('created_at', [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()]);
+                break;
+            case 'this_week':
+                $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                break;
+            case 'this_month':
+                $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
+                break;
+            case 'last_3_months':
+                $query->whereBetween('created_at', [now()->subMonths(3)->startOfMonth(), now()]);
+                break;
+            case 'last_6_months':
+                $query->whereBetween('created_at', [now()->subMonths(6)->startOfMonth(), now()]);
+                break;
+            case 'last_1_year':
+                $query->whereBetween('created_at', [now()->subYear()->startOfYear(), now()]);
+                break;
+        }
+    }
+
+    // Custom date range
+    if ($request->filled('from_date') && $request->filled('to_date')) {
+        $query->whereBetween('created_at', [
+            Carbon\Carbon::parse($request->from_date)->startOfDay(),
+            Carbon\Carbon::parse($request->to_date)->endOfDay()
+        ]);
+    }
+
+    $rechargeRequests = $query->orderBy('id', 'desc')->get();
+
+    return view('admin.rechargeRequests.index', compact('rechargeRequests'));
 }
 
 
