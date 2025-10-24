@@ -365,21 +365,18 @@ public function getVehicleByNumber($vehicle_number)
 
         // ✅ Safely try to load media using Spatie accessor
         try {
-            // Use model accessors instead of direct DB columns
-            $mediaData = [
-                'vehicle_photos' => $vehicle->vehicle_photos,
-                'id_proofs' => $vehicle->id_proofs,
-                'insurance' => $vehicle->insurance,
-                'pollution' => $vehicle->pollution,
-                'registration_certificate' => $vehicle->registration_certificate,
-                'product_images' => $vehicle->product_images,
-            ];
-        } catch (\Exception $e) {
-            \Log::warning('Media fetch issue for vehicle: ' . $vehicle_number, [
-                'error' => $e->getMessage(),
-            ]);
-            $mediaData = [];
-        }
+    $mediaData = [
+        'vehicle_photos' => $vehicle->vehicle_photos,
+        'id_proofs' => $vehicle->id_proofs,
+        'insurance' => $vehicle->insurance,
+        'pollution' => $vehicle->pollution,
+        'registration_certificate' => $vehicle->registration_certificate,
+        'product_images' => $vehicle->product_images,
+    ];
+} catch (\Exception $e) {
+    $mediaData = [];
+}
+
 
         // ✅ Combine vehicle info and media safely
         $responseData = [
