@@ -152,67 +152,74 @@ class UsersApiController extends Controller
     
     
     public function login(Request $request)
-    {
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-    
-        // Attempt login
-        $credentials = $request->only('email', 'password');
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
-    
-        // Authenticated user with roles
-        $user = Auth::user()->load('roles');
-        $token = $user->createToken('api-token')->plainTextToken;
-    
-        return response()->json([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'company_name' => $user->company_name,
-                'email' => $user->email,
-                'gst_number' => $user->gst_number,
-                'date_inc' => $user->date_inc,
-                'date_joining' => $user->date_joining,
-                'mobile_number' => $user->mobile_number,
-                'whatsapp_number' => $user->whatsapp_number,
-                'pin_code' => $user->pin_code,
-                'full_address' => $user->full_address,
-                'bank_name' => $user->bank_name,
-                'branch_name' => $user->branch_name,
-                'ifsc' => $user->ifsc,
-                'ac_holder_name' => $user->ac_holder_name,
-                'pan_number' => $user->pan_number,
-                'status' => $user->status,
-                'email_verified_at' => $user->email_verified_at,
-                'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
-                'deleted_at' => $user->deleted_at,
-                'state_id' => $user->state_id,
-                'district_id' => $user->district_id,
-                'team_id' => $user->team_id,
-                'created_by_id' => $user->created_by_id,
-                'status_cmd' => $user->status_cmd,
-                'profile_image' => $user->profile_image,
-                'upload_signature' => $user->upload_signature,
-                'upload_pan_aadhar' => $user->upload_pan_aadhar,
-                'passbook_statement' => $user->passbook_statement,
-                'shop_photo' => $user->shop_photo,
-                'gst_certificate' => $user->gst_certificate,
-                'media' => $user->media,
-                'roles' => $user->roles->pluck('title')  // Roles ko sirf title ke form me bhej rahe hai
-            ]
-        ]);
+{
+    // Validate the request
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'password' => 'required'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
     }
+
+    // Check if user exists
+    $user = \App\Models\User::where('email', $request->email)->first();
+    if (!$user) {
+        return response()->json(['message' => 'User not found with this email'], 404);
+    }
+
+    // Attempt login
+    $credentials = $request->only('email', 'password');
+    if (!Auth::attempt($credentials)) {
+        return response()->json(['message' => 'Incorrect password'], 401);
+    }
+
+    // Authenticated user with roles
+    $user = Auth::user()->load('roles');
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'token' => $token,
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'company_name' => $user->company_name,
+            'email' => $user->email,
+            'gst_number' => $user->gst_number,
+            'date_inc' => $user->date_inc,
+            'date_joining' => $user->date_joining,
+            'mobile_number' => $user->mobile_number,
+            'whatsapp_number' => $user->whatsapp_number,
+            'pin_code' => $user->pin_code,
+            'full_address' => $user->full_address,
+            'bank_name' => $user->bank_name,
+            'branch_name' => $user->branch_name,
+            'ifsc' => $user->ifsc,
+            'ac_holder_name' => $user->ac_holder_name,
+            'pan_number' => $user->pan_number,
+            'status' => $user->status,
+            'email_verified_at' => $user->email_verified_at,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+            'deleted_at' => $user->deleted_at,
+            'state_id' => $user->state_id,
+            'district_id' => $user->district_id,
+            'team_id' => $user->team_id,
+            'created_by_id' => $user->created_by_id,
+            'status_cmd' => $user->status_cmd,
+            'profile_image' => $user->profile_image,
+            'upload_signature' => $user->upload_signature,
+            'upload_pan_aadhar' => $user->upload_pan_aadhar,
+            'passbook_statement' => $user->passbook_statement,
+            'shop_photo' => $user->shop_photo,
+            'gst_certificate' => $user->gst_certificate,
+            'media' => $user->media,
+            'roles' => $user->roles->pluck('title')
+        ]
+    ]);
+}
+
     
     public function getUserById($id)
     {

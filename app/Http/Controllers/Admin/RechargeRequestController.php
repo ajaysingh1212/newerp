@@ -90,11 +90,13 @@ public function index(Request $request)
 
     $rechargeRequests = $query->orderBy('id', 'desc')->get();
 
-    return view('admin.rechargeRequests.index', compact('rechargeRequests'));
+    // Calculate total plan amount for filtered results
+    $totalAmount = $rechargeRequests->sum(function($item) {
+        return $item->select_recharge?->price ?? 0;
+    });
+
+    return view('admin.rechargeRequests.index', compact('rechargeRequests', 'totalAmount'));
 }
-
-
-
 
 
 
