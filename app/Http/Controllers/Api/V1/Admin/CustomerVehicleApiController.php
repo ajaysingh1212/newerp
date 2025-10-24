@@ -356,25 +356,25 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Try fetching vehicle normally
-        $vehicleQuery = AddCustomerVehicle::with([
+        // Try to get vehicle with safe eager loading
+        $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
             'appLink'
-        ]);
+        ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // Try adding media safely (ignore if it causes SQL error)
+        // ✅ Try to attach media safely
         try {
-            $vehicleQuery->with('media');
+            $media = $vehicle->media()->get(['id', 'file_name']); // Only safe columns
+            $vehicle->setRelation('media', $media);
         } catch (\Exception $e) {
-            // Skip media if it causes SQL/relationship error
+            // If error (like missing 'url' column), just set media as null
+            $vehicle->setRelation('media', collect([]));
         }
-
-        $vehicle = $vehicleQuery->where('vehicle_number', $vehicle_number)->firstOrFail();
 
         return response()->json([
             'status' => true,
-            'message' => 'Vehicle details fetched successfully by vehicle number.',
+            'message' => 'Vehicle details fetched successfully.',
             'data' => new VehicleResource($vehicle)
         ], Response::HTTP_OK);
 
@@ -385,13 +385,15 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_NOT_FOUND);
 
     } catch (\Exception $e) {
+        // If any unexpected issue occurs
         return response()->json([
             'status' => false,
-            'message' => 'Vehicle fetched without some optional relations (like media).',
-            'error' => $e->getMessage() // keep it visible for debugging, can remove later
-        ], Response::HTTP_OK); // ✅ still return success, not 500
+            'message' => 'Something went wrong.',
+            'error' => $e->getMessage()
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
