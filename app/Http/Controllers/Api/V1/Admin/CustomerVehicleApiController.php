@@ -363,48 +363,53 @@ public function getVehicleByNumber($vehicle_number)
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Safely fetch media without selecting any column manually
-        try {
-            $mediaCollections = [
-                'vehicle_photos' => $vehicle->getMedia('vehicle_photos'),
-                'id_proofs' => $vehicle->getMedia('id_proofs'),
-                'insurance' => $vehicle->getMedia('insurance'),
-                'pollution' => $vehicle->getMedia('pollution'),
-                'registration_certificate' => $vehicle->getMedia('registration_certificate'),
-                'product_images' => $vehicle->getMedia('product_images'),
-            ];
+        // Core vehicle details
+        $vehicleDetails = [
+            'status' => $vehicle->status,
+            'product_model' => $vehicle->product_master?->product_model?->product_model ?? null,
+            'vehicle_number' => $vehicle->vehicle_number,
+            'vehicle_type' => $vehicle->select_vehicle_type?->vehicle_type ?? null,
+            'vehicle_model' => $vehicle->vehicle_model,
+            'vehicle_color' => $vehicle->vehicle_color,
+            'chassis_number' => $vehicle->chassis_number,
+            'engine_number' => $vehicle->engine_number,
+            'insurance_expiry_date' => $vehicle->insurance_expiry_date,
+            'request_date' => $vehicle->request_date,
+            'user_id' => $vehicle->user_id,
+            'password' => $vehicle->password,
+            'title' => $vehicle->appLink?->title ?? null,
+            'link' => $vehicle->appLink?->link ?? null,
+        ];
 
-            // Prepare URLs
-            foreach ($mediaCollections as $key => $collection) {
-                $mediaCollections[$key] = $collection->map(function($file) {
-                    return [
-                        'id' => $file->id,
-                        'file_name' => $file->file_name,
-                        'url' => $file->getUrl(),
-                        'thumbnail' => $file->getUrl('thumb'),
-                        'preview' => $file->getUrl('preview'),
-                    ];
-                });
-            }
+        // Media collections
+        $mediaCollections = [
+            'vehicle_photos' => $vehicle->getMedia('vehicle_photos'),
+            'id_proofs' => $vehicle->getMedia('id_proofs'),
+            'insurance' => $vehicle->getMedia('insurance'),
+            'pollution' => $vehicle->getMedia('pollution'),
+            'registration_certificate' => $vehicle->getMedia('registration_certificate'),
+            'product_images' => $vehicle->getMedia('product_images'),
+        ];
 
-        } catch (\Exception $e) {
-            // Agar media fetch me issue aaye, empty collection return karo
-            $mediaCollections = [
-                'vehicle_photos' => collect(),
-                'id_proofs' => collect(),
-                'insurance' => collect(),
-                'pollution' => collect(),
-                'registration_certificate' => collect(),
-                'product_images' => collect(),
-            ];
+        // Map media to simplified structure (name + url at the end)
+        foreach ($mediaCollections as $key => $collection) {
+            $mediaCollections[$key] = $collection->map(function ($file) {
+                return [
+                    'id' => $file->id,
+                    'file_name' => $file->file_name,
+                    'url' => $file->getUrl(), // public URL
+                    'thumbnail' => $file->getUrl('thumb'),
+                    'preview' => $file->getUrl('preview'),
+                ];
+            });
         }
 
         return response()->json([
             'status' => true,
             'message' => 'Vehicle details fetched successfully.',
             'data' => [
-                'vehicle' => $vehicle,
-                'media' => $mediaCollections
+                'vehicle' => $vehicleDetails,
+                'media' => $mediaCollections,
             ]
         ], Response::HTTP_OK);
 
@@ -422,8 +427,6 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
-
-
 
 
 
