@@ -28,7 +28,10 @@ public function index()
     abort_if(Gate::denies('user_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
     // Load users with related roles and team
-    $users = User::with(['state', 'district', 'roles', 'team'])->get();
+   $users = User::with(['state', 'district', 'roles', 'team'])
+    ->orderBy('id', 'desc') // or 'created_at' if you prefer
+    ->get();
+
 
     // For each user, load vehicles and KYC status
     foreach ($users as $user) {
