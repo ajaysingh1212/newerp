@@ -356,46 +356,73 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Fetch the vehicle without 'media' relation
+        // Base relations without media
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Use the model accessors to safely get media URLs
-        $mediaData = [
-            'vehicle_photos'          => $vehicle->vehicle_photos,           // uses accessor
-            'id_proofs'               => $vehicle->id_proofs,
-            'insurance'               => $vehicle->insurance,
-            'pollution'               => $vehicle->pollution,
-            'registration_certificate'=> $vehicle->registration_certificate,
-            'product_images'          => $vehicle->product_images,
-        ];
+        // ✅ Safely fetch media without selecting any column manually
+        try {
+            $mediaCollections = [
+                'vehicle_photos' => $vehicle->getMedia('vehicle_photos'),
+                'id_proofs' => $vehicle->getMedia('id_proofs'),
+                'insurance' => $vehicle->getMedia('insurance'),
+                'pollution' => $vehicle->getMedia('pollution'),
+                'registration_certificate' => $vehicle->getMedia('registration_certificate'),
+                'product_images' => $vehicle->getMedia('product_images'),
+            ];
+
+            // Prepare URLs
+            foreach ($mediaCollections as $key => $collection) {
+                $mediaCollections[$key] = $collection->map(function($file) {
+                    return [
+                        'id' => $file->id,
+                        'file_name' => $file->file_name,
+                        'url' => $file->getUrl(),
+                        'thumbnail' => $file->getUrl('thumb'),
+                        'preview' => $file->getUrl('preview'),
+                    ];
+                });
+            }
+
+        } catch (\Exception $e) {
+            // Agar media fetch me issue aaye, empty collection return karo
+            $mediaCollections = [
+                'vehicle_photos' => collect(),
+                'id_proofs' => collect(),
+                'insurance' => collect(),
+                'pollution' => collect(),
+                'registration_certificate' => collect(),
+                'product_images' => collect(),
+            ];
+        }
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Vehicle details fetched successfully.',
-            'data'    => [
-                'vehicle' => new VehicleResource($vehicle), // other details
-                'media'   => $mediaData,                    // media safely
-            ],
+            'data' => [
+                'vehicle' => $vehicle,
+                'media' => $mediaCollections
+            ]
         ], Response::HTTP_OK);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
         return response()->json([
-            'status'  => false,
+            'status' => false,
             'message' => 'Vehicle not found for the given number.',
         ], Response::HTTP_NOT_FOUND);
 
     } catch (\Exception $e) {
         return response()->json([
-            'status'  => false,
+            'status' => false,
             'message' => 'Something went wrong.',
-            'error'   => $e->getMessage()
+            'error' => $e->getMessage()
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
