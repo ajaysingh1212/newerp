@@ -38,7 +38,7 @@ public function index(Request $request)
     abort_if(Gate::denies('recharge_request_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
     $user = auth()->user();
-    $isAdmin = $user->roles()->where('id', 1)->exists(); // Admin role ID = 1
+    $isAdmin = $user->roles()->where('id', 1)->exists();
 
     $query = RechargeRequest::with(['user', 'select_recharge']);
 
@@ -88,15 +88,15 @@ public function index(Request $request)
         ]);
     }
 
-    $rechargeRequests = $query->orderBy('id', 'desc')->get();
+    // ✅ Clone query before executing to avoid data reset
+    $totalAmount = (clone $query)->sum('payment_amount'); // Accurate total from DB
 
-    // Calculate total plan amount for filtered results
-    $totalAmount = $rechargeRequests->sum(function($item) {
-        return $item->select_recharge?->price ?? 0;
-    });
+    // Fetch paginated or all data
+    $rechargeRequests = $query->orderBy('id', 'desc')->get();
 
     return view('admin.rechargeRequests.index', compact('rechargeRequests', 'totalAmount'));
 }
+
 
 
 
