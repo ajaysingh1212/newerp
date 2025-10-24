@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Gate;
 use Symfony\Component\HttpFoundation\Response;
  
+use Carbon;
 
 class KycRechargeController extends Controller
 {
@@ -20,22 +21,54 @@ class KycRechargeController extends Controller
   public function index(Request $request)
 {
     abort_if(Gate::denies('kyc_recharge_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
     $user = auth()->user();
-    $status = $request->query('status'); // e.g., Pending, Completed, Failed, Total
+    $status = $request->query('status'); 
+    $filter = $request->query('filter_type'); // must match Blade
+    $from = $request->query('from_date');
+    $to = $request->query('to_date');
 
     $recharges = KycRecharge::with('user', 'vehicle', 'createdBy')
         ->when(!$user->is_admin, function ($query) use ($user) {
-            // Normal users only see recharges they created
             $query->where('created_by_id', $user->id);
         })
         ->when($status && strtolower($status) !== 'total', function ($query) use ($status) {
             $query->where('payment_status', strtolower($status));
         })
-        ->latest()
+        ->when($filter, function ($query) use ($filter, $from, $to) {
+            switch ($filter) {
+                case 'today':
+                    $query->whereDate('created_at', Carbon\Carbon::today());
+                    break;
+                case 'yesterday':
+                    $query->whereDate('created_at', Carbon\Carbon::yesterday());
+                    break;
+                case '7_days':
+                    $query->where('created_at', '>=', Carbon\Carbon::now()->subDays(7));
+                    break;
+                case '15_days':
+                    $query->where('created_at', '>=', Carbon\Carbon::now()->subDays(15));
+                    break;
+                case '1_month':
+                    $query->where('created_at', '>=', Carbon\Carbon::now()->subMonth());
+                    break;
+                case 'custom':
+                    if ($from && $to) {
+                        $query->whereBetween('payment_date', [
+                            Carbon\Carbon::parse($from)->startOfDay(),
+                            Carbon\Carbon::parse($to)->endOfDay(),
+                        ]);
+                    }
+                    break;
+            }
+        })
+        ->latest('payment_date')
         ->get();
 
-    return view('admin.kyc-recharge.index', compact('recharges', 'status'));
+    return view('admin.kyc-recharge.index', compact('recharges', 'status', 'filter', 'from', 'to'));
 }
+
+
 
 
 
