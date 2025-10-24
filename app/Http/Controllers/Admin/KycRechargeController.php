@@ -99,11 +99,21 @@ class KycRechargeController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
-        $data['user_id'] = $user->id;
+        // 🔍 Vehicle fetch karo (to get owner id)
+        $vehicle = \App\Models\AddCustomerVehicle::findOrFail($data['vehicle_id']);
+
+        // ✅ Agar admin hai, to recharge user_id = vehicle owner
+        // ✅ Agar normal user hai, to recharge user_id = logged in user
+        $data['user_id'] = $user->is_admin ? $vehicle->owners_name : $user->id;
+
+        // Always set created_by_id = creator
         $data['created_by_id'] = $user->id;
 
+        // Default vehicle_status = processing
+        $data['vehicle_status'] = 'processing';
+
         // Create recharge record (without image)
-        $recharge = KycRecharge::create($data);
+        $recharge = \App\Models\KycRecharge::create($data);
 
         // Handle uploaded file
         if ($request->hasFile('image')) {
@@ -127,51 +137,50 @@ class KycRechargeController extends Controller
             @unlink($tempPath);
         }
 
-        // ✅ Admin: directly mark as completed, no Razorpay
-        if (!$user->is_admin) {
-            // Normal user -> create Razorpay order
-            try {
-                $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
-                $order = $api->order->create([
-                    'receipt' => 'rcpt_' . $recharge->id,
-                    'amount' => intval($data['payment_amount'] * 100),
-                    'currency' => 'INR',
-                    'payment_capture' => 1,
-                ]);
-
-                $recharge->razorpay_order_id = $order['id'];
-                $recharge->save();
-
-                return response()->json([
-                    'id' => $recharge->id,
-                    'payment_amount' => $recharge->payment_amount,
-                    'razorpay_order_id' => $order['id'],
-                    'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
-                ]);
-            } catch (\Exception $razorpayEx) {
-                Log::error('Razorpay Order Error: ' . $razorpayEx->getMessage(), [
-                    'trace' => $razorpayEx->getTraceAsString()
-                ]);
-
-                return response()->json([
-                    'error' => 'Razorpay order creation failed. Check logs for details.'
-                ], 500);
-            }
+        // ✅ Admin: directly mark as completed, skip Razorpay
+        if ($user->is_admin) {
+            return response()->json([
+                'success' => true,
+                'id' => $recharge->id,
+                'payment_amount' => $recharge->payment_amount,
+                'payment_status' => 'completed',
+                'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+            ]);
         }
 
-        // ✅ Admin: return success directly
-        return response()->json([
-            'success' => true,
-            'id' => $recharge->id,
-            'payment_amount' => $recharge->payment_amount,
-            'payment_status' => 'completed',
-            'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
-        ]);
+        // ✅ Normal user: create Razorpay order
+        try {
+            $api = new \Razorpay\Api\Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+            $order = $api->order->create([
+                'receipt' => 'rcpt_' . $recharge->id,
+                'amount' => intval($data['payment_amount'] * 100),
+                'currency' => 'INR',
+                'payment_capture' => 1,
+            ]);
+
+            $recharge->razorpay_order_id = $order['id'];
+            $recharge->save();
+
+            return response()->json([
+                'id' => $recharge->id,
+                'payment_amount' => $recharge->payment_amount,
+                'razorpay_order_id' => $order['id'],
+                'image_url' => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+            ]);
+        } catch (\Exception $razorpayEx) {
+            \Log::error('Razorpay Order Error: ' . $razorpayEx->getMessage(), [
+                'trace' => $razorpayEx->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Razorpay order creation failed. Check logs for details.'
+            ], 500);
+        }
 
     } catch (\Illuminate\Validation\ValidationException $ve) {
         return response()->json(['error' => $ve->errors()], 422);
     } catch (\Exception $e) {
-        Log::error('KYC Recharge Store Error: ' . $e->getMessage(), [
+        \Log::error('KYC Recharge Store Error: ' . $e->getMessage(), [
             'trace' => $e->getTraceAsString()
         ]);
 
@@ -180,6 +189,7 @@ class KycRechargeController extends Controller
         ], 500);
     }
 }
+
 
 
     public function paymentCallbackJson(Request $request, $id)
