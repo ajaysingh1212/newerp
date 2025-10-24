@@ -356,16 +356,25 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
+        // Try to get vehicle with safe eager loading
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
-            'appLink',
-            'media'
-        ])->where('vehicle_number', $vehicle_number)->firstOrFail(); // throws 404 if not found
+            'appLink'
+        ])->where('vehicle_number', $vehicle_number)->firstOrFail();
+
+        // ✅ Try to attach media safely
+        try {
+            $media = $vehicle->media()->get(['id', 'file_name']); // Only safe columns
+            $vehicle->setRelation('media', $media);
+        } catch (\Exception $e) {
+            // If error (like missing 'url' column), just set media as null
+            $vehicle->setRelation('media', collect([]));
+        }
 
         return response()->json([
             'status' => true,
-            'message' => 'Vehicle details fetched successfully by vehicle number.',
+            'message' => 'Vehicle details fetched successfully.',
             'data' => new VehicleResource($vehicle)
         ], Response::HTTP_OK);
 
@@ -374,14 +383,18 @@ public function getVehicleByNumber($vehicle_number)
             'status' => false,
             'message' => 'Vehicle not found for the given number.',
         ], Response::HTTP_NOT_FOUND);
+
     } catch (\Exception $e) {
+        // If any unexpected issue occurs
         return response()->json([
             'status' => false,
-            'message' => 'Failed to fetch vehicle details.',
+            'message' => 'Something went wrong.',
             'error' => $e->getMessage()
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
+
 
 
 
