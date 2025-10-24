@@ -51,6 +51,11 @@
                     <th>
                         {{ trans('cruds.user.fields.profile_image') }}
                     </th>
+
+                    <th>
+    Vehicles
+</th>
+
                    
                    
                    
@@ -117,6 +122,8 @@
 { data: 'status', name: 'status' },
 { data: 'roles', name: 'roles.title' },
 { data: 'profile_image', name: 'profile_image', sortable: false, searchable: false },
+{ data: 'vehicle_count', name: 'vehicle_count' },
+
 { data: 'actions', name: '{{ trans('global.actions') }}' }
     ],
     orderCellsTop: true,

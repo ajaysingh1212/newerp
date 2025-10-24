@@ -250,8 +250,13 @@ public function createdBy()
 
 public function vehicles()
 {
-    return $this->hasMany(AddCustomerVehicle::class);
+    // Agar column user_id hai
+    return $this->hasMany(AddCustomerVehicle::class, 'user_id', 'id');
+
+    // Agar column created_by_id hai to ye mat badlo
+    // return $this->hasMany(AddCustomerVehicle::class, 'created_by_id', 'id');
 }
+
 
 public function userAlerts()
 {

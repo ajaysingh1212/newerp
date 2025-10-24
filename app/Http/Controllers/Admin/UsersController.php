@@ -28,7 +28,8 @@ public function index(Request $request)
     abort_if(Gate::denies('user_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
     if ($request->ajax()) {
-        $query = User::with(['state', 'district', 'roles', 'team']);
+        $query = User::withCount('vehicles')->with(['state', 'district', 'roles', 'team']);
+
 
         // ✅ Only show own created users if not Admin
         if (!auth()->user()->roles->contains('title', 'Admin')) {
@@ -74,6 +75,8 @@ public function index(Request $request)
         $table->editColumn('ifsc', fn($row) => $row->ifsc ?? '');
         $table->editColumn('ac_holder_name', fn($row) => $row->ac_holder_name ?? '');
         $table->editColumn('pan_number', fn($row) => $row->pan_number ?? '');
+        $table->addColumn('vehicle_count', fn($row) => $row->vehicles_count ?? 0);
+
 
         $table->editColumn('profile_image', function ($row) {
             if ($photo = $row->profile_image) {
@@ -120,7 +123,8 @@ public function index(Request $request)
             'passbook_statement',
             'shop_photo',
             'gst_certificate',
-            'roles'
+            'roles',
+            'vehicle_count',
         ]);
 
         return $table->make(true);

@@ -28,12 +28,12 @@
                     @forelse($recharges as $recharge)
                     <tr>
                         <td>{{ $recharge->id }}</td>
-                        <td>{{ $recharge->user_id }}</td>
+                        <td>{{ $recharge->user->name }} <br> {{$recharge->user->email}} </td>
                         <td>{{ $recharge->vehicle_number }}</td>
                         <td>{{ $recharge->title }}</td>
                         <td>{{ ucfirst($recharge->payment_status) }}</td>
                         <td>{{ number_format($recharge->payment_amount, 2) }}</td>
-                        <td>{{ $recharge->payment_date ? \Carbon\Carbon::parse($recharge->payment_date)->format('d-m-Y H:i') : '-' }}</td>
+                        <td>{{ $recharge->created_at ? \Carbon\Carbon::parse($recharge->created_at)->format('d-m-Y H:i') : '-' }}</td>
                         <td>
     @can('kyc_recharge_show')
         <a href="{{ route('admin.kyc-recharges.show', $recharge->id) }}" class="btn btn-sm btn-info">
