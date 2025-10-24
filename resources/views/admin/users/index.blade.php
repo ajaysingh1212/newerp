@@ -24,7 +24,7 @@
                     <th>Name</th>
                     <th>Email</th>
                     <th>Mobile</th>
-                    <th>Status</th>
+                   
                     <th>Roles</th>
                     <th>Vehicle Count</th>
                     <th>Vehicle Numbers (KYC Status)</th>
@@ -38,7 +38,7 @@
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->mobile_number }}</td>
-                    <td>{{ $user->status ? \App\Models\User::STATUS_SELECT[$user->status] : '' }}</td>
+                   
                     <td>
                         @foreach($user->roles as $role)
                             <span class="badge bg-info">{{ $role->title }}</span>
