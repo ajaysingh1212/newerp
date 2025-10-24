@@ -363,6 +363,27 @@ public function getVehicleByNumber($vehicle_number)
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
+        // Try to extract IMEI & SIM from product_master with fallback keys
+        $product = $vehicle->product_master;
+
+        $imei = null;
+        if ($product) {
+            $imei = $product->imei_id
+                ?? $product->imei
+                ?? $product->imei_number
+                ?? $product->imei_no
+                ?? null;
+        }
+
+        $simNumber = null;
+        if ($product) {
+            $simNumber = $product->sim_number
+                ?? $product->sim
+                ?? $product->mobile_number
+                ?? $product->sim_no
+                ?? null;
+        }
+
         // Core vehicle details
         $vehicleDetails = [
             'status' => $vehicle->status,
@@ -379,6 +400,9 @@ public function getVehicleByNumber($vehicle_number)
             'password' => $vehicle->password,
             'title' => $vehicle->appLink?->title ?? null,
             'link' => $vehicle->appLink?->link ?? null,
+            // New fields from product_master
+            'imei' => $imei,
+            'sim_number' => $simNumber,
         ];
 
         // Media collections
@@ -401,7 +425,7 @@ public function getVehicleByNumber($vehicle_number)
                     'thumbnail' => $file->getUrl('thumb'),
                     'preview' => $file->getUrl('preview'),
                 ];
-            });
+            })->values();
         }
 
         return response()->json([
@@ -427,6 +451,7 @@ public function getVehicleByNumber($vehicle_number)
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
