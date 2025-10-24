@@ -23,103 +23,32 @@ class UsersController extends Controller
 {
     use MediaUploadingTrait, CsvImportTrait;
 
-public function index(Request $request)
+public function index()
 {
     abort_if(Gate::denies('user_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    if ($request->ajax()) {
-        // Load necessary relationships including vehicles
-        $query = User::with(['state', 'district', 'roles', 'team', 'vehicles']);
+    // Load users with related roles and team
+    $users = User::with(['state', 'district', 'roles', 'team'])->get();
 
-        // Non-admin users can see only users created by them
-        if (!auth()->user()->roles->contains('title', 'Admin')) {
-            $query->where('created_by_id', auth()->id());
+    // For each user, load vehicles and KYC status
+    foreach ($users as $user) {
+        $userVehicles = \App\Models\AddCustomerVehicle::where('owners_name', $user->id)->get();
+
+        foreach ($userVehicles as $vehicle) {
+            $kyc = \App\Models\KycRecharge::where('vehicle_number', $vehicle->vehicle_number)
+                    ->where('payment_status', 'Completed') // Assuming payment_status = 'Completed' means KYC done
+                    ->first();
+
+            $vehicle->kyc_status = $kyc ? 'Completed' : 'Pending';
         }
 
-        $query = $query->select(sprintf('%s.*', (new User)->table));
-        $table = Datatables::of($query);
-
-        $table->addColumn('placeholder', '&nbsp;');
-        $table->addColumn('actions', '&nbsp;');
-
-        $table->editColumn('actions', function ($row) {
-            $viewGate      = 'user_show';
-            $editGate      = 'user_edit';
-            $deleteGate    = 'user_delete';
-            $crudRoutePart = 'users';
-
-            return view('partials.datatablesActions', compact(
-                'viewGate',
-                'editGate',
-                'deleteGate',
-                'crudRoutePart',
-                'row'
-            ));
-        });
-
-        // Basic user details
-        $table->editColumn('id', fn($row) => $row->id ?? '');
-        $table->editColumn('name', fn($row) => $row->name ?? '');
-        $table->editColumn('company_name', fn($row) => $row->company_name ?? '');
-        $table->editColumn('email', fn($row) => $row->email ?? '');
-        $table->editColumn('gst_number', fn($row) => $row->gst_number ?? '');
-        $table->editColumn('date_joining', fn($row) => $row->date_joining ?? '');
-        $table->editColumn('mobile_number', fn($row) => $row->mobile_number ?? '');
-        $table->editColumn('whatsapp_number', fn($row) => $row->whatsapp_number ?? '');
-
-        // Related data
-        $table->addColumn('state_state_name', fn($row) => $row->state->state_name ?? '');
-        $table->addColumn('district_districts', fn($row) => $row->district->districts ?? '');
-
-        // Vehicle info (Count + Numbers)
-        $table->addColumn('vehicle_count', function ($row) {
-            return $row->vehicles->count(); // Count from loaded relation
-        });
-
-        $table->addColumn('vehicle_numbers', function ($row) {
-            $vehicleNumbers = $row->vehicles->pluck('vehicle_number')->filter()->toArray();
-            if (count($vehicleNumbers) > 0) {
-                return implode(', ', $vehicleNumbers);
-            }
-            return '<span class="text-danger">No Vehicle</span>';
-        });
-
-        // Profile image
-        $table->editColumn('profile_image', function ($row) {
-            if ($photo = $row->profile_image) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px" style="border-radius:5px"></a>', $photo->url, $photo->thumbnail);
-            }
-            return '';
-        });
-
-        // Status
-        $table->editColumn('status', fn($row) => $row->status ? User::STATUS_SELECT[$row->status] : '');
-
-        // Roles
-        $table->editColumn('roles', function ($row) {
-            $labels = [];
-            foreach ($row->roles as $role) {
-                $labels[] = sprintf('<span class="label label-info label-many">%s</span>', $role->title);
-            }
-            return implode(' ', $labels);
-        });
-
-        // Allow HTML in columns
-        $table->rawColumns([
-            'actions',
-            'placeholder',
-            'state_state_name',
-            'district_districts',
-            'profile_image',
-            'roles',
-            'vehicle_numbers',
-        ]);
-
-        return $table->make(true);
+        $user->vehicles = $userVehicles;
     }
 
-    return view('admin.users.index');
+    return view('admin.users.index', compact('users'));
 }
+
+
 
 
     public function create()
