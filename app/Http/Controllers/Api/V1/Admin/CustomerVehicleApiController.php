@@ -356,54 +356,47 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Load vehicle with core relations
+        // Fetch vehicle without 'media' relation to avoid DB errors
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Safely try to load media using Spatie accessor
-        try {
-    $mediaData = [
-        'vehicle_photos' => $vehicle->vehicle_photos,
-        'id_proofs' => $vehicle->id_proofs,
-        'insurance' => $vehicle->insurance,
-        'pollution' => $vehicle->pollution,
-        'registration_certificate' => $vehicle->registration_certificate,
-        'product_images' => $vehicle->product_images,
-    ];
-} catch (\Exception $e) {
-    $mediaData = [];
-}
-
-
-        // ✅ Combine vehicle info and media safely
-        $responseData = [
-            'vehicle' => new VehicleResource($vehicle),
-            'media' => $mediaData,
+        // ✅ Collect media safely using model accessors
+        $mediaData = [
+            'vehicle_photos'          => $vehicle->vehicle_photos,
+            'id_proofs'               => $vehicle->id_proofs,
+            'insurance'               => $vehicle->insurance,
+            'pollution'               => $vehicle->pollution,
+            'registration_certificate'=> $vehicle->registration_certificate,
+            'product_images'          => $vehicle->product_images,
         ];
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Vehicle details fetched successfully.',
-            'data' => $responseData
+            'data'    => [
+                'vehicle' => new VehicleResource($vehicle), // your resource for other fields
+                'media'   => $mediaData,                    // media with URLs from accessors
+            ],
         ], Response::HTTP_OK);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
         return response()->json([
-            'status' => false,
+            'status'  => false,
             'message' => 'Vehicle not found for the given number.',
         ], Response::HTTP_NOT_FOUND);
 
     } catch (\Exception $e) {
         return response()->json([
-            'status' => false,
+            'status'  => false,
             'message' => 'Something went wrong.',
-            'error' => $e->getMessage()
+            'error'   => $e->getMessage()
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
 
