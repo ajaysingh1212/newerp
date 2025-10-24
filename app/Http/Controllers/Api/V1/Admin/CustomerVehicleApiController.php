@@ -356,16 +356,16 @@ public function createKycRecharge(Request $request)
 public function getVehicleByNumber($vehicle_number)
 {
     try {
-        // Fetch vehicle without 'media' relation to avoid DB errors
+        // Fetch the vehicle without 'media' relation
         $vehicle = AddCustomerVehicle::with([
             'select_vehicle_type',
             'product_master.product_model',
             'appLink'
         ])->where('vehicle_number', $vehicle_number)->firstOrFail();
 
-        // ✅ Collect media safely using model accessors
+        // ✅ Use the model accessors to safely get media URLs
         $mediaData = [
-            'vehicle_photos'          => $vehicle->vehicle_photos,
+            'vehicle_photos'          => $vehicle->vehicle_photos,           // uses accessor
             'id_proofs'               => $vehicle->id_proofs,
             'insurance'               => $vehicle->insurance,
             'pollution'               => $vehicle->pollution,
@@ -377,8 +377,8 @@ public function getVehicleByNumber($vehicle_number)
             'status'  => true,
             'message' => 'Vehicle details fetched successfully.',
             'data'    => [
-                'vehicle' => new VehicleResource($vehicle), // your resource for other fields
-                'media'   => $mediaData,                    // media with URLs from accessors
+                'vehicle' => new VehicleResource($vehicle), // other details
+                'media'   => $mediaData,                    // media safely
             ],
         ], Response::HTTP_OK);
 
