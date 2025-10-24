@@ -269,8 +269,6 @@ public function selectUserStockTransfers()
     return $this->hasMany(StockTransfer::class, 'select_user_id', 'id');
 }
 
-
-
 }
 
 

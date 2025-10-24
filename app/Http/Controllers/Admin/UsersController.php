@@ -28,10 +28,10 @@ public function index(Request $request)
     abort_if(Gate::denies('user_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
     if ($request->ajax()) {
-        $query = User::withCount('vehicles')->with(['state', 'district', 'roles', 'team']);
+        // Load necessary relationships including vehicles
+        $query = User::with(['state', 'district', 'roles', 'team', 'vehicles']);
 
-
-        // ✅ Only show own created users if not Admin
+        // Non-admin users can see only users created by them
         if (!auth()->user()->roles->contains('title', 'Admin')) {
             $query->where('created_by_id', auth()->id());
         }
@@ -57,6 +57,7 @@ public function index(Request $request)
             ));
         });
 
+        // Basic user details
         $table->editColumn('id', fn($row) => $row->id ?? '');
         $table->editColumn('name', fn($row) => $row->name ?? '');
         $table->editColumn('company_name', fn($row) => $row->company_name ?? '');
@@ -65,45 +66,36 @@ public function index(Request $request)
         $table->editColumn('date_joining', fn($row) => $row->date_joining ?? '');
         $table->editColumn('mobile_number', fn($row) => $row->mobile_number ?? '');
         $table->editColumn('whatsapp_number', fn($row) => $row->whatsapp_number ?? '');
+
+        // Related data
         $table->addColumn('state_state_name', fn($row) => $row->state->state_name ?? '');
-        $table->editColumn('state.country', fn($row) => $row->state ? (is_string($row->state) ? $row->state : $row->state->country) : '');
         $table->addColumn('district_districts', fn($row) => $row->district->districts ?? '');
-        $table->editColumn('district.country', fn($row) => $row->district ? (is_string($row->district) ? $row->district : $row->district->country) : '');
-        $table->editColumn('pin_code', fn($row) => $row->pin_code ?? '');
-        $table->editColumn('bank_name', fn($row) => $row->bank_name ?? '');
-        $table->editColumn('branch_name', fn($row) => $row->branch_name ?? '');
-        $table->editColumn('ifsc', fn($row) => $row->ifsc ?? '');
-        $table->editColumn('ac_holder_name', fn($row) => $row->ac_holder_name ?? '');
-        $table->editColumn('pan_number', fn($row) => $row->pan_number ?? '');
-        $table->addColumn('vehicle_count', fn($row) => $row->vehicles_count ?? 0);
 
+        // Vehicle info (Count + Numbers)
+        $table->addColumn('vehicle_count', function ($row) {
+            return $row->vehicles->count(); // Count from loaded relation
+        });
 
+        $table->addColumn('vehicle_numbers', function ($row) {
+            $vehicleNumbers = $row->vehicles->pluck('vehicle_number')->filter()->toArray();
+            if (count($vehicleNumbers) > 0) {
+                return implode(', ', $vehicleNumbers);
+            }
+            return '<span class="text-danger">No Vehicle</span>';
+        });
+
+        // Profile image
         $table->editColumn('profile_image', function ($row) {
             if ($photo = $row->profile_image) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px"></a>', $photo->url, $photo->thumbnail);
+                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px" style="border-radius:5px"></a>', $photo->url, $photo->thumbnail);
             }
             return '';
         });
 
-        $table->editColumn('upload_signature', function ($row) {
-            if ($photo = $row->upload_signature) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px"></a>', $photo->url, $photo->thumbnail);
-            }
-            return '';
-        });
-
-        $table->editColumn('upload_pan_aadhar', fn($row) => $row->upload_pan_aadhar ? '<a href="' . $row->upload_pan_aadhar->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '');
-        $table->editColumn('passbook_statement', fn($row) => $row->passbook_statement ? '<a href="' . $row->passbook_statement->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '');
-
-        $table->editColumn('shop_photo', function ($row) {
-            if ($photo = $row->shop_photo) {
-                return sprintf('<a href="%s" target="_blank"><img src="%s" width="50px" height="50px"></a>', $photo->url, $photo->thumbnail);
-            }
-            return '';
-        });
-
-        $table->editColumn('gst_certificate', fn($row) => $row->gst_certificate ? '<a href="' . $row->gst_certificate->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '');
+        // Status
         $table->editColumn('status', fn($row) => $row->status ? User::STATUS_SELECT[$row->status] : '');
+
+        // Roles
         $table->editColumn('roles', function ($row) {
             $labels = [];
             foreach ($row->roles as $role) {
@@ -112,19 +104,15 @@ public function index(Request $request)
             return implode(' ', $labels);
         });
 
+        // Allow HTML in columns
         $table->rawColumns([
             'actions',
             'placeholder',
-            'state',
-            'district',
+            'state_state_name',
+            'district_districts',
             'profile_image',
-            'upload_signature',
-            'upload_pan_aadhar',
-            'passbook_statement',
-            'shop_photo',
-            'gst_certificate',
             'roles',
-            'vehicle_count',
+            'vehicle_numbers',
         ]);
 
         return $table->make(true);
@@ -132,6 +120,7 @@ public function index(Request $request)
 
     return view('admin.users.index');
 }
+
 
     public function create()
     {
