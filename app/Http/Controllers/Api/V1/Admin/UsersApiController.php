@@ -15,6 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
+use Illuminate\Support\Facades\Password;
+
 class UsersApiController extends Controller
 {
     use MediaUploadingTrait;
@@ -303,6 +305,31 @@ public function uploadProfilePhoto(Request $request, $user_id)
     return response()->json([
         'message' => 'Profile photo uploaded successfully'
     ], 200);
+}
+
+public function sendPasswordResetLink(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email|exists:users,email',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $status = Password::sendResetLink(
+        $request->only('email')
+    );
+
+    if ($status === Password::RESET_LINK_SENT) {
+        return response()->json([
+            'message' => 'Password reset link sent to your email.'
+        ], 200);
+    } else {
+        return response()->json([
+            'message' => 'Failed to send password reset link.'
+        ], 500);
+    }
 }
 
     
