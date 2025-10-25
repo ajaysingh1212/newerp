@@ -95,12 +95,12 @@
         </tr>
         <tr>
             <td>
-                <p><strong>SKU:</strong> {{ $checkComplain->vehicle->product_master->sku }}</p>
-                <p><strong>Vts Number:</strong> {{ $checkComplain->vehicle->product_master->vts->vts_number }}</p>
-                <p><strong>Sim Number:</strong> {{ $checkComplain->vehicle->product_master->vts->sim_number }}</p>
-                <p><strong>Operator:</strong> {{ $checkComplain->vehicle->product_master->vts->operator }}</p>
-                <p><strong>Product Model:</strong> {{ $checkComplain->vehicle->product_master->product_model->product_model }}</p>
-                <p><strong>VTS:</strong> {{ $checkComplain->vehicle->product_master->imei->imei_number }}</p>
+                <p><strong>SKU:</strong> {{ $checkComplain->vehicle->product_master->sku ?? 'N/A'}}</p>
+                <p><strong>Vts Number:</strong> {{ $checkComplain->vehicle->product_master->vts->vts_number ?? 'N/A' }}</p>
+                <p><strong>Sim Number:</strong> {{ $checkComplain->vehicle->product_master->vts->sim_number ?? 'N/A'}}</p>
+                <p><strong>Operator:</strong> {{ $checkComplain->vehicle->product_master->vts->operator ?? 'N/A'}}</p>
+                <p><strong>Product Model:</strong> {{ $checkComplain->vehicle->product_master->product_model->product_model ?? 'N/A'}}</p>
+                <p><strong>VTS:</strong> {{ $checkComplain->vehicle->product_master->imei->imei_number ?? 'N/A'}}</p>
 
         </td>
             <td>{{-- Primary Vehicle --}}

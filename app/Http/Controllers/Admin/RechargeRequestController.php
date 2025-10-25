@@ -382,11 +382,13 @@ public function update(Request $request, RechargeRequest $rechargeRequest)
     // Validate only the vehicle_status
     $request->validate([
         'vehicle_status' => 'required|string|in:Processing,Live',
+        'payment_status' => 'nullable|string|in:success,failed',
     ]);
 
     try {
         $rechargeRequest->update([
             'vehicle_status' => $request->vehicle_status,
+            'payment_status' => $request->payment_status ?? $rechargeRequest->payment_status,
         ]);
 
         return redirect()->route('admin.recharge-requests.index')

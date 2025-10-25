@@ -137,26 +137,110 @@
                       @endcan
                   @endif
 
-                    @php
-                        $loggedInUser = auth()->user();
-                        $loggedInUserRole = $loggedInUser->roles->first()?->title ?? null;
-                        $user = auth()->user();
-                        $role = strtolower(optional($user->roles()->first())->title);
+                @php
+                    use App\Models\Commission;
+                    use App\Models\RechargeRequest;
 
-                        $dealerCommission = $role === 'dealer' ? \App\Models\Commission::where('dealer_id', $user->id)->sum('dealer_commission') : 0;
-                        $distributorCommission = $role === 'distributer' ? \App\Models\Commission::where('distributor_id', $user->id)->sum('distributor_commission') : 0;
-                        $totalCommission = $dealerCommission + $distributorCommission;
+                    $user = auth()->user();
+                    $role = strtolower(optional($user->roles()->first())->title);
 
-                        $redeemedAmount = \App\Models\RechargeRequest::where('created_by_id', $user->id)->sum('redeem_amount');
-                        $totalCommission = $totalCommission - $redeemedAmount;
-                    @endphp
-                @if(in_array($role, ['dealer', 'distributer']))
-                    <li class="nav-item pr-3">
-                        <div style="border: 1px dotted rgb(0, 115, 255); padding: 5px 10px; border-radius: 5px; color: #000;">
-                            💰  ₹ {{ number_format($totalCommission, 2) }}
-                        </div>
+                    $dealerCommission = $role === 'dealer'
+                        ? Commission::where('dealer_id', $user->id)->sum('dealer_commission')
+                        : 0;
+
+                    $distributorCommission = in_array($role, ['distributor', 'distributer'])
+                        ? Commission::where('distributor_id', $user->id)->sum('distributor_commission')
+                        : 0;
+
+                    // Total commission
+                    $totalCommission = $dealerCommission + $distributorCommission;
+
+                    // Redeemed amount from recharge_requests
+                    $redeemedAmount = RechargeRequest::where('created_by_id', $user->id)->sum('redeem_amount');
+
+                    // Final available commission
+                    $netCommission = $totalCommission - $redeemedAmount;
+                @endphp
+
+                    @if(in_array($role, ['dealer', 'distributer'])) 
+                    <li class="nav-item pr-3"> 
+                        <div style="border: 1px dotted rgb(0, 115, 255); padding: 5px 10px; border-radius: 5px; color: #000;" data-toggle="modal" data-target="#commissionModal" id="showCommissionHistory"> 💰 ₹ {{ number_format($netCommission, 2) }} 
+                        </div> 
                     </li>
-                @endif
+                    @endif
+                    
+
+                    <!-- Commission History Modal -->
+                    <div class="modal fade" id="commissionModal" tabindex="-1" role="dialog" aria-labelledby="commissionModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title">Commission History</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    @php
+                                        // Fetch commission history with relationships
+                                        $commissionHistory = [];
+                                        if ($role === 'dealer') {
+                                            $commissionHistory = Commission::with(['rechargeRequest', 'customer', 'vehicle'])
+                                                ->where('dealer_id', $user->id)
+                                                ->latest()
+                                                ->get();
+                                        } elseif (in_array($role, ['distributor', 'distributer'])) {
+                                            $commissionHistory = Commission::with(['rechargeRequest', 'customer', 'vehicle'])
+                                                ->where('distributor_id', $user->id)
+                                                ->latest()
+                                                ->get();
+                                        }
+
+                                        $totalHistoryCommission = 0;
+                                    @endphp
+
+                                    <table class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Customer</th>
+                                                <th>Vehicle</th>
+                                                <th>Recharge Redeemed  Amount</th>
+                                                <th>Commission</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($commissionHistory as $row)
+                                                @php
+                                                    $commissionValue = $role === 'dealer'
+                                                        ? $row->dealer_commission
+                                                        : $row->distributor_commission;
+
+                                                    $totalHistoryCommission += $commissionValue;
+                                                @endphp
+                                                <tr>
+                                                    <td>{{ \Carbon\Carbon::parse($row->created_at)->format('d-m-Y') }}</td>
+                                                    <td>{{ $row->customer->name ?? 'N/A' }}</td>
+                                                    <td>{{ $row->vehicle->vehicle_number ?? 'N/A' }}</td>
+                                                    <td>₹ {{ number_format($row->rechargeRequest->redeem_amount ?? 0, 2) }}</td>
+                                                    <td>₹ {{ number_format($commissionValue, 2) }}</td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="5" class="text-center">No history found</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+
+                                    <div class="text-right mt-3">
+                                        <strong>Total Commission Earned:</strong> ₹ {{ number_format($totalHistoryCommission, 2) }} <br>
+                                        <strong>Redeemed Amount:</strong> ₹ {{ number_format($redeemedAmount, 2) }} <br>
+                                        <strong>Available Commission:</strong> ₹ {{ number_format($netCommission, 2) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
 
               <!-- Notifications Menu -->
