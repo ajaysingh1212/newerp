@@ -77,24 +77,37 @@
 
 </div>
 
-<div class="row mt-4">
+<div class="row mt-4 d-flex justify-content-between flex-wrap">
     @php
-        $colors = ['warning', 'info', 'danger', 'success'];
-        $statuses = ['Pending', 'Processing', 'Reject', 'Solved'];
+        $cards = [
+            ['status' => 'Pending', 'color' => 'warning'],
+            ['status' => 'Processing', 'color' => 'info'],
+            ['status' => 'Reject', 'color' => 'danger'],
+            ['status' => 'Solved', 'color' => 'success'],
+            ['status' => 'Total', 'color' => 'primary'],
+        ];
     @endphp
 
-    @foreach($statuses as $index => $status)
-        <div class="col-md-3 mb-3">
-            <a href="{{ route('admin.check-complains.index', ['status' => $status]) }}" style="text-decoration: none;">
-                <div class="card bg-{{ $colors[$index] }} text-white text-center shadow-sm">
-                    <div class="card-body">
-                        <h5>Total {{ $status }} Complaints</h5>
-                        <h3>{{ $totalsStatusComplain[$status] ?? 0 }}</h3>
+    @foreach($cards as $card)
+        <div class="col-md-2 col-sm-4 col-6 mb-3">
+            <a href="{{ route('admin.check-complains.index', ['status' => $card['status']]) }}" style="text-decoration: none;">
+                <div class="card bg-{{ $card['color'] }} text-white text-center shadow-sm">
+                    <div class="card-body p-3">
+                        <h6 class="mb-1">
+                            Total {{ $card['status'] }} Complaints
+                        </h6>
+                        <h3 class="m-0">
+                            {{ $card['status'] === 'Total' 
+                                ? array_sum($totalsStatusComplain) 
+                                : ($totalsStatusComplain[$card['status']] ?? 0) }}
+                        </h3>
                     </div>
                 </div>
             </a>
         </div>
     @endforeach
+
+
 
     {{-- ✅ Total Complaints card --}}
     <div class="col-md-3 mb-3">
