@@ -34,4 +34,34 @@ class UserAlertApiController extends Controller
             'alert_id' => $alert->id,
         ], Response::HTTP_CREATED);
     }
+
+    // Fetch alerts by user ID
+    public function fetchByUserId($user_id)
+    {
+        $user = User::find($user_id);
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found',
+                'alerts' => []
+            ], 404);
+        }
+
+        $alerts = $user->userUserAlerts()->latest()->get();
+
+        $data = $alerts->map(function ($alert) {
+            return [
+                'id' => $alert->id,
+                'alert_text' => $alert->alert_text,
+                'alert_link' => $alert->alert_link,
+                'read' => $alert->pivot->read,
+                'created_at' => $alert->created_at->format('d-m-Y H:i A'),
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Alerts fetched successfully',
+            'alerts' => $data
+        ], Response::HTTP_OK);
+    }
 }
