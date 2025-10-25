@@ -31,110 +31,52 @@ public function index(Request $request)
 {
     abort_if(Gate::denies('check_complain_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    if ($request->ajax()) {
-        $query = CheckComplain::with(['select_complains', 'select_vehicles', 'team', 'created_by'])
-            ->select(sprintf('%s.*', (new CheckComplain)->table));
-
-        // ✅ Filter: Only show current user's data unless the user is Admin
-        if (!auth()->user()->roles->contains('title', 'Admin')) {
-            $query->where('created_by_id', auth()->id());
-        }
-
-        $table = Datatables::of($query);
-
-        $table->addColumn('placeholder', '&nbsp;');
-        $table->addColumn('actions', '&nbsp;');
-
-        $table->editColumn('actions', function ($row) {
-            $viewGate = 'check_complain_show';
-            $editGate = 'check_complain_edit';
-            $deleteGate = 'check_complain_delete';
-            $crudRoutePart = 'check-complains';
-
-            $showDelete = true;
-
-            // ✅ Show delete only if status is "solved" or user is Admin
-            if (!auth()->user()->roles->contains('title', 'Admin') && $row->status !== 'solved') {
-                $showDelete = false;
-            }
-
-            return view('partials.datatablesActions', compact(
-                'viewGate',
-                'editGate',
-                'deleteGate',
-                'crudRoutePart',
-                'row',
-                'showDelete'
-            ));
+    $query = CheckComplain::with(['select_complains', 'created_by'])
+        ->when(!auth()->user()->roles->contains('title', 'Admin'), function ($q) {
+            $q->where('created_by_id', auth()->id());
         });
 
-        $table->editColumn('id', fn($row) => $row->id ?? '');
-
-        $table->editColumn('select_complain', function ($row) {
-            $labels = [];
-            foreach ($row->select_complains as $select_complain) {
-                $labels[] = sprintf('<span class="label label-info label-many">%s</span>', $select_complain->title);
-            }
-            return implode(' ', $labels);
-        });
-
-        $table->editColumn('ticket_number', fn($row) => $row->ticket_number ?? '');
-        $table->editColumn('vehicle_no', fn($row) => $row->vehicle_no ?? '');
-        $table->editColumn('customer_name', fn($row) => $row->customer_name ?? '');
-        $table->editColumn('phone_number', fn($row) => $row->phone_number ?? '');
-        $table->editColumn('status', fn($row) => $row->status ? CheckComplain::STATUS_SELECT[$row->status] : '');
-        $table->addColumn('created_by_name', function ($row) {
-            $name = $row->created_by?->name ?? '-';
-            $mobile = $row->created_by?->mobile_number ?? '-';
-            $roles = $row->created_by && $row->created_by->roles->isNotEmpty()
-                ? $row->created_by->roles->pluck('title')->implode(', ')
-                : '-';
-
-            return "<strong>Name:</strong> {$name}<br><strong>Mobile:</strong> {$mobile}<br><strong>Role:</strong> {$roles}";
-        });
-
-
-        $table->editColumn('attechment', function ($row) {
-            if (!$row->attechment) return '';
-            $links = [];
-            foreach ($row->attechment as $media) {
-                $links[] = '<a href="' . $media->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>';
-            }
-            return implode(', ', $links);
-        });
-
-        $table->editColumn('admin_message', fn($row) => strip_tags($row->admin_message) ?? '-');
-
-
-        $table->editColumn('created_at', fn($row) => $row->created_at ? $row->created_at->format('d-m-Y H:i') : '');
-        $table->editColumn('updated_at', fn($row) => $row->updated_at ? $row->updated_at->format('d-m-Y H:i') : '');
-
-        $table->addColumn('status_duration', function ($row) {
-            $now = \Carbon\Carbon::now();
-            $created = $row->created_at;
-            $updated = $row->updated_at;
-            $status = $row->status;
-
-            if ($status === 'Pending') {
-                return '<span class="text-danger blink">Pending since ' . $created->diffInDays($now) . ' days</span>';
-            } elseif ($status === 'processing') {
-                return '<span class="text-danger blink">Processing since ' . $updated->diffInDays($now) . ' days</span>';
-            } elseif ($status === 'reject') {
-                return '<span class="text-danger blink">Rejected ' . $updated->diffInDays($now) . ' days ago</span>';
-            } elseif ($status === 'solved') {
-                return '<span class="text-success">Solved ' . $updated->diffInDays($now) . ' days ago</span>';
-            } else {
-                return '-';
-            }
-        });
-
-        $table->rawColumns(['actions', 'placeholder', 'select_complain', 'attechment', 'status_duration','created_by_name']);
-
-        return $table->make(true);
+    // ✅ Quick range filter
+    switch ($request->range) {
+        case 'today':
+            $query->whereDate('created_at', today());
+            break;
+        case 'yesterday':
+            $query->whereDate('created_at', today()->subDay());
+            break;
+        case 'this_week':
+            $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+            break;
+        case 'this_month':
+            $query->whereMonth('created_at', now()->month);
+            break;
+        case 'last_3_months':
+            $query->whereBetween('created_at', [now()->subMonths(3), now()]);
+            break;
+        case 'last_6_months':
+            $query->whereBetween('created_at', [now()->subMonths(6), now()]);
+            break;
+        case 'this_year':
+            $query->whereYear('created_at', now()->year);
+            break;
     }
 
-    return view('admin.checkComplains.index');
+    // ✅ Custom date range
+    if ($request->filled('from_date') && $request->filled('to_date')) {
+        $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
+    }
+
+    // ✅ Status filter
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    $checkComplains = $query->latest()->get();
+
+    return view('admin.checkComplains.index', compact('checkComplains'));
 }
+
+
 
 public function create()
 {
