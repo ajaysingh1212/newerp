@@ -310,13 +310,24 @@ public function uploadProfilePhoto(Request $request, $user_id)
 public function sendPasswordResetLink(Request $request)
 {
     $validator = Validator::make($request->all(), [
-        'email' => 'required|email|exists:users,email',
+        'email' => 'required|email',
+    ], [
+        'email.required' => 'Email field is required.',
+        'email.email' => 'Please enter a valid email address.',
     ]);
 
+    // Check basic validation first
     if ($validator->fails()) {
         return response()->json(['errors' => $validator->errors()], 422);
     }
 
+    // Check if email exists in users table
+    $userExists = \App\Models\User::where('email', $request->email)->exists();
+    if (!$userExists) {
+        return response()->json(['errors' => ['email' => ['Email not found.']]], 404);
+    }
+
+    // Send password reset link
     $status = Password::sendResetLink(
         $request->only('email')
     );
@@ -331,6 +342,7 @@ public function sendPasswordResetLink(Request $request)
         ], 500);
     }
 }
+
 
     
     
