@@ -133,6 +133,7 @@
                             @else
                                 <span class="badge badge-success">Solved</span>
                             @endif
+                            {{ $row->updated_at ?? '' }}
                         </td>
                         <td>
                             @foreach($row->attechment as $media)
