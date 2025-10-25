@@ -137,6 +137,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     Route::get('vehicle-by-number/{vehicle_number}', 'CustomerVehicleApiController@getVehicleByNumber')->name('vehicle.by-number');
 
 
+    // ➕ Password Reset Request
+    Route::post('password-reset', 'UsersApiController@sendPasswordResetLink')->name('password.reset');
+
     
    
     
