@@ -44,7 +44,7 @@
         1st Floor, Kamla Bhattacharya Road, Patna (Bihar) - 800 001
     </p>
     <p class="text-blue-700 text-xs mb-1">
-        Phone: <a href="tel:9263906099" class="underline">9263906099</a> | Email: <a href="mailto:marutisuzukiventures@gmail.com" class="underline">marutisuzukiventures@gmail.com</a>
+        Phone: <a href="tel:7857868055" class="underline">78578 68055</a> | Email: <a href="mailto:info@eemotrack.com" class="underline">info@eemotrack.com</a>
     </p>
     <p class="text-blue-700 text-xs">
         GSTIN: 10ABZFM8479K1ZC | State: Bihar
