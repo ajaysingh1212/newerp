@@ -37,14 +37,20 @@
 <div class="max-w-4xl mx-auto">
 
     <!-- Company Header -->
-    <div class="text-center mb-2">
-        <h1 class="text-xl font-bold text-blue-800">MARUTI SUZUKI VENTURES</h1>
-        <p class="text-blue-600 text-xs">Authorized Dealer & Service Center</p>
-        <p class="text-blue-700 text-[10px]">
-            1st Floor, Kamla Bhattacharya Road, Patna (Bihar) - 800001 | Phone: 9263906099 | Email: marutisuzukiventures@gmail.com
-        </p>
-        <p class="text-blue-700 text-[10px]">GSTIN: 10ABZFM8479K1ZC | State: Bihar</p>
-    </div>
+   <div class="text-center mb-4 p-4 bg-blue-50 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-blue-800 mb-1">EEMOTRACK</h1>
+    <p class="text-blue-600 text-sm mb-2">Authorized Dealer & Service Center</p>
+    <p class="text-blue-700 text-xs mb-1">
+        1st Floor, Kamla Bhattacharya Road, Patna (Bihar) - 800 001
+    </p>
+    <p class="text-blue-700 text-xs mb-1">
+        Phone: <a href="tel:7857868055" class="underline">78578 68055</a> | Email: <a href="mailto:info@eemotrack.com" class="underline">info@eemotrack.com</a>
+    </p>
+    <p class="text-blue-700 text-xs">
+        GSTIN: 10ABZFM8479K1ZC | State: Bihar
+    </p>
+</div>
+
 
     <!-- Invoice Container -->
     <div class="invoice-container bg-white rounded-xl overflow-hidden text-xs">
