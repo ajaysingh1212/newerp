@@ -137,24 +137,19 @@
                       @endcan
                   @endif
 
-                @php
-                    $user = auth()->user();
-                    $role = strtolower(optional($user->roles()->first())->title);
+                    @php
+                        $loggedInUser = auth()->user();
+                        $loggedInUserRole = $loggedInUser->roles->first()?->title ?? null;
+                        $user = auth()->user();
+                        $role = strtolower(optional($user->roles()->first())->title);
 
-                    $dealerCommission = 0;
-                    $distributorCommission = 0;
+                        $dealerCommission = $role === 'dealer' ? \App\Models\Commission::where('dealer_id', $user->id)->sum('dealer_commission') : 0;
+                        $distributorCommission = $role === 'distributer' ? \App\Models\Commission::where('distributor_id', $user->id)->sum('distributor_commission') : 0;
+                        $totalCommission = $dealerCommission + $distributorCommission;
 
-                    if ($role === 'dealer') {
-                        $dealerCommission = \App\Models\Commission::where('dealer_id', $user->id)->sum('dealer_commission');
-                    }
-
-                    if ($role === 'distributer') {
-                        $distributorCommission = \App\Models\Commission::where('distributor_id', $user->id)->sum('distributor_commission');
-                    }
-
-                    $totalCommission = $dealerCommission + $distributorCommission;
-                @endphp
-
+                        $redeemedAmount = \App\Models\RechargeRequest::where('created_by_id', $user->id)->sum('redeem_amount');
+                        $totalCommission = $totalCommission - $redeemedAmount;
+                    @endphp
                 @if(in_array($role, ['dealer', 'distributer']))
                     <li class="nav-item pr-3">
                         <div style="border: 1px dotted rgb(0, 115, 255); padding: 5px 10px; border-radius: 5px; color: #000;">
