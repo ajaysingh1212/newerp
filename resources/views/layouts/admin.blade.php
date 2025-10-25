@@ -261,6 +261,7 @@
                 ->orderBy('created_at', 'ASC')
                 ->get()
                 ->reverse();
+                dd($alerts);
         @endphp
 
         @if(count($alerts) > 0)
