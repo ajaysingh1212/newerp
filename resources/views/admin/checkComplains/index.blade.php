@@ -102,7 +102,7 @@
                         <td class="space-x-1 space-y-1">
     <div class="flex flex-wrap gap-1">
         @foreach($row->select_complains as $comp)
-            <span class="bg-blue-200 text-blue-800 text-xs font-semibold px-2 py-1 rounded inline-block">
+            <span class="badge badge-info">
                 {{ $comp->title }}
             </span>
         @endforeach
@@ -110,7 +110,7 @@
 </td>
 
                         <td>{{ $row->ticket_number }} <br>
-                            <strong>Created At:</strong> {{ $row->created_at->format('d-m-Y H:i') }}
+                            {{ $row->created_at->format('d-m-Y H:i') }}
                         </td>
                         <td>
                             <strong>Name:</strong> {{ $row->created_by->name ?? '-' }}<br>
