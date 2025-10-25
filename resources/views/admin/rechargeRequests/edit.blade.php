@@ -44,6 +44,21 @@
                             @endif
                         </div>
                     </div>
+                    {{-- Payment Status --}}
+                    <div class="form-group">
+                        <label for="payment_status">{{ trans('cruds.rechargeRequest.fields.payment_status') }}</label>
+                        <select class="form-control {{ $errors->has('payment_status') ? 'is-invalid' : '' }}" name="payment_status" id="payment_status">
+                            <option value="pending" {{ old('payment_status', $rechargeRequest->payment_status) == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="success" {{ old('payment_status', $rechargeRequest->payment_status) == 'success' ? 'selected' : '' }}>Success</option>
+                            <option value="failed" {{ old('payment_status', $rechargeRequest->payment_status) == 'failed' ? 'selected' : '' }}>Failed</option>
+                            <option value="refunded" {{ old('payment_status', $rechargeRequest->payment_status) == 'refunded' ? 'selected' : '' }}>Refunded</option>
+                        </select>
+
+                        @if($errors->has('payment_status'))
+                            <span class="text-danger">{{ $errors->first('payment_status') }}</span>
+                        @endif
+                       
+                    </div>
 
                     {{-- Vehicle Number --}}
                     <div class="form-group">

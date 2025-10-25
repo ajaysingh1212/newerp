@@ -341,7 +341,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('/vehicle-sharing/remove', [VehicleSharingController::class, 'remove'])
     ->name('vehicle-sharing.remove');
     Route::resource('kyc-recharges', KycRechargeController::class);
-
+// readom history route
+    Route::get('/commission/total', [App\Http\Controllers\Admin\CommissionController::class, 'totalCommission'])->name('commission.total');
+    Route::get('/commission/history', [App\Http\Controllers\Admin\CommissionController::class, 'history'])->name('commission.history');
 
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
