@@ -108,20 +108,7 @@
     @endforeach
 
 
-
-    {{-- ✅ Total Complaints card --}}
-    <div class="col-md-3 mb-3">
-        <a href="{{ route('admin.check-complains.index', ['status' => 'Total']) }}" style="text-decoration: none;">
-            <div class="card bg-primary text-white text-center shadow-sm">
-                <div class="card-body">
-                    <h5>Total Complaints</h5>
-                    <h3>{{ array_sum($totalsStatusComplain) }}</h3>
-                </div>
-            </div>
-        </a>
-    </div>
 </div>
-
 
 
 
