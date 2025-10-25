@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\UserAlert;
 use Symfony\Component\HttpFoundation\Response;
 
+use App\Models\User;
+
 class UserAlertApiController extends Controller
 {
     // Only submit alert
