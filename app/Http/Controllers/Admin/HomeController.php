@@ -226,6 +226,14 @@ $totalsStatusRecharge = [
     'Success'=> RechargeRequest::where('payment_status', 'success')->count(),
 ];
 
+// ✅ Fetch total counts by status
+    $totalsStatusComplain = [
+        'Pending'    => CheckComplain::where('status', 'Pending')->count(),
+        'Processing' => CheckComplain::where('status', 'processing')->count(),
+        'Reject'     => CheckComplain::where('status', 'reject')->count(),
+        'Solved'     => CheckComplain::where('status', 'solved')->count(),
+    ];
+
 
    $user = Auth::user();
 
@@ -315,6 +323,7 @@ $transferCounts = $transfers->pluck('total');
             'timeFilter', 'selectedRoleType', 'selectedUserId', 'users',
             'activationStatus', 'activationFrom', 'activationTo', 'activationGranularity',
             'activationChartLabels', 'activationChartValues','chartData','totalStock', 'totalActivations', 'combinedChartData','transferLabels','transferCounts','totalsStatus', 'totalsStatusRecharge'
+           ,'totalsStatusComplain'
         ));
 
 

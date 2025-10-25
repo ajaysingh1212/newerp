@@ -77,6 +77,39 @@
 
 </div>
 
+<div class="row mt-4">
+    @php
+        $colors = ['warning', 'info', 'danger', 'success'];
+        $statuses = ['Pending', 'Processing', 'Reject', 'Solved'];
+    @endphp
+
+    @foreach($statuses as $index => $status)
+        <div class="col-md-3 mb-3">
+            <a href="{{ route('admin.check-complains.index', ['status' => $status]) }}" style="text-decoration: none;">
+                <div class="card bg-{{ $colors[$index] }} text-white text-center shadow-sm">
+                    <div class="card-body">
+                        <h5>Total {{ $status }} Complaints</h5>
+                        <h3>{{ $totalsStatusComplain[$status] ?? 0 }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+    @endforeach
+
+    {{-- ✅ Total Complaints card --}}
+    <div class="col-md-3 mb-3">
+        <a href="{{ route('admin.check-complains.index', ['status' => 'Total']) }}" style="text-decoration: none;">
+            <div class="card bg-primary text-white text-center shadow-sm">
+                <div class="card-body">
+                    <h5>Total Complaints</h5>
+                    <h3>{{ array_sum($totalsStatusComplain) }}</h3>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+
 
 
     <div class="row">
