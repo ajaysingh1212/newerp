@@ -124,10 +124,7 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     Route::get('activation-requests-by-user/{user_id}', 'ActivationRequestApiController@getActivationRequestsByUser')->name('activation-requests.by-user');
     
     Route::post('submit-alert', 'UserAlertApiController@submit')->name('submit-alert');
-    Route::get('alerts', 'UserAlertApiController@fetch')->name('alerts.fetch');
-    Route::post('alerts/mark-read', 'UserAlertApiController@markAsRead')->name('alerts.mark-read');
-    Route::get('alerts/all', 'UserAlertApiController@fetchAll')->name('alerts.all');
-
+    
     // ➕ Upload Profile Photo (no auth)
    Route::post('user/{user_id}/upload-profile-photo', 'UsersApiController@uploadProfilePhoto')->name('user.upload-profile-photo');
 
