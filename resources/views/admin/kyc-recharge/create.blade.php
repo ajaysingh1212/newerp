@@ -86,9 +86,8 @@
     </form>
 </div>
 
-@if(!auth()->user()->is_admin)
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-@endif
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_KEY') }}&libraries=geometry"></script>
 
