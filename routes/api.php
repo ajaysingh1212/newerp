@@ -141,7 +141,7 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
 
     
    
-    
+    newly added routes can go here
     
 });
 
