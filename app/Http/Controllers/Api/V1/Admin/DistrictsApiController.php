@@ -56,15 +56,15 @@ class DistrictsApiController extends Controller
 
     public function getAllDistricts(Request $request)
 {
-    // Agar frontend se state_id aaya ho to filter lagao
-    $query = District::select('id', 'name', 'state_id')
+    $query = District::select('id', 'districts as name', 'select_state_id')
         ->with('select_state:id,state_name');
 
+    // Filter by state_id if passed
     if ($request->has('state_id')) {
-        $query->where('state_id', $request->state_id);
+        $query->where('select_state_id', $request->state_id);
     }
 
-    $districts = $query->orderBy('name', 'asc')->get();
+    $districts = $query->orderBy('districts', 'asc')->get();
 
     return response()->json([
         'status' => true,
@@ -72,6 +72,7 @@ class DistrictsApiController extends Controller
         'data' => $districts
     ], 200);
 }
+
 
 
 }
