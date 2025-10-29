@@ -53,4 +53,26 @@ class DistrictsApiController extends Controller
 
         return response(null, Response::HTTP_NO_CONTENT);
     }
+
+    public function getAllDistricts(Request $request)
+{
+    $query = District::select('id', 'districts as name', 'select_state_id')
+        ->with('select_state:id,state_name');
+
+    // Filter by state_id if passed
+    if ($request->has('state_id')) {
+        $query->where('select_state_id', $request->state_id);
+    }
+
+    $districts = $query->orderBy('districts', 'asc')->get();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Districts fetched successfully',
+        'data' => $districts
+    ], 200);
+}
+
+
+
 }
