@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Gate;
 use Symfony\Component\HttpFoundation\Response;
-
  
 
 use Carbon\Carbon;
@@ -154,12 +153,14 @@ class KycRechargeController extends Controller
 
         // ✅ Handle uploaded image
         if ($request->hasFile('image')) {
-            $recharge->addMediaFromRequest('image')->toMediaCollection('kyc_recharge_images');
+            $recharge->addMediaFromRequest('image')
+                ->toMediaCollection('kyc_recharge_images');
         }
 
         // ✅ Handle Base64 camera image
         if ($request->filled('image_base64')) {
             $imageData = $request->image_base64;
+
             if (str_contains($imageData, 'base64,')) {
                 $imageData = explode('base64,', $imageData)[1];
             }
@@ -177,17 +178,11 @@ class KycRechargeController extends Controller
         // ✅ Non-admin → create Razorpay order
         if (!$user->is_admin) {
             try {
-                $keyId     = trim(env('RAZORPAY_KEY_ID'));
-                $keySecret = trim(env('RAZORPAY_KEY_SECRET'));
-
-                // 🧩 Log what Laravel actually reads (debug)
-                Log::info('🔍 Razorpay Debug', [
-                    'RAZORPAY_KEY_ID' => $keyId,
-                    'RAZORPAY_KEY_SECRET_PREFIX' => substr($keySecret, 0, 5),
-                ]);
+                $keyId     = env('RAZORPAY_KEY_ID');
+                $keySecret = env('RAZORPAY_KEY_SECRET');
 
                 if (empty($keyId) || empty($keySecret)) {
-                    throw new \Exception('Razorpay credentials are missing or not loaded.');
+                    throw new \Exception('Razorpay credentials are missing.');
                 }
 
                 $api = new Api($keyId, $keySecret);
@@ -214,18 +209,12 @@ class KycRechargeController extends Controller
                     'image_url'         => $recharge->getFirstMediaUrl('kyc_recharge_images'),
                 ]);
             } catch (\Exception $razorpayEx) {
-                // 🧠 Auto-clear config if env not loading properly
-                if (str_contains($razorpayEx->getMessage(), 'Authentication failed')) {
-                    Artisan::call('config:clear');
-                    Artisan::call('cache:clear');
-                }
-
                 Log::error('🚨 Razorpay Order Error: ' . $razorpayEx->getMessage(), [
                     'trace' => $razorpayEx->getTraceAsString(),
                 ]);
 
                 return response()->json([
-                    'error'   => 'Razorpay order creation failed. Please contact admin.',
+                    'error' => 'Razorpay order creation failed. Please contact admin.',
                     'message' => $razorpayEx->getMessage(),
                 ], 500);
             }
@@ -252,7 +241,7 @@ class KycRechargeController extends Controller
         ]);
 
         return response()->json([
-            'error'   => 'Something went wrong while creating recharge.',
+            'error' => 'Something went wrong while creating recharge. Please try again later.',
             'message' => $e->getMessage(),
         ], 500);
     }
