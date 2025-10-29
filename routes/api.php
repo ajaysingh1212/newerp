@@ -139,7 +139,8 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // ➕ Password Reset Request
     Route::post('password-reset', 'UsersApiController@sendPasswordResetLink')->name('password.reset');
 
-    
+    // 🗺️ Get All States (Public API)
+    Route::get('all-states', 'StateApiController@getAllStates')->name('states.all');
    
     
     
