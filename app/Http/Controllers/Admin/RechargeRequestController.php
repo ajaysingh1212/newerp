@@ -400,13 +400,17 @@ public function update(Request $request, RechargeRequest $rechargeRequest)
 
 
     public function show(RechargeRequest $rechargeRequest)
-    {
-        abort_if(Gate::denies('recharge_request_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+{
+    abort_if(Gate::denies('recharge_request_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $rechargeRequest->load('user', 'product', 'select_recharge', 'team', 'vehicle', 'created_by');
+    // eager load relationships
+    $rechargeRequest->load('user', 'product', 'select_recharge', 'team', 'vehicle', 'created_by');
 
-        return view('admin.rechargeRequests.show', compact('rechargeRequest'));
-    }
+    // alias to the variable name your Blade expects
+    $recharge = $rechargeRequest;
+
+    return view('admin.rechargeRequests.show', compact('recharge'));
+}
 
     public function downloadPdf(RechargeRequest $rechargeRequest)
 {

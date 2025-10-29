@@ -32,28 +32,36 @@
             Phone: <a href="tel:7857868055" class="underline">78578 68055</a> | Email: <a href="mailto:info@eemotrack.com" class="underline">info@eemotrack.com</a>
         </p>
         <p class="text-blue-700 text-xs">
-            GSTIN: 10ABZFM8479K1ZC | State: Bihar
+            GSTIN: 10AQFPK9218D1ZA | State: Bihar
         </p>
     </div>
 
     <!-- Invoice Container -->
-    <div class="invoice-container bg-white rounded-xl shadow-lg overflow-hidden text-xs">
+    <div class="bg-gradient-to-r from-blue-700 to-indigo-700 text-white p-4 flex justify-between items-center">
+    
+    <!-- 🔹 Left Section -->
+    <div class="flex flex-col items-start">
+        <h1 class="text-lg font-bold">KYC RECHARGE</h1>
+        <p class="text-blue-200 mt-1 text-xs">ORIGINAL FOR RECORD</p>
+    </div>
 
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-700 text-white p-4 flex justify-between items-start">
-            <div>
-                <h1 class="text-lg font-bold">KYC RECHARGE</h1>
-                <p class="text-blue-200 mt-1 text-xs">ORIGINAL FOR RECORD</p>
-            </div>
-            <div class="text-right bg-white p-2 rounded-lg text-xs text-blue-900">
-                <p class="font-semibold">Recharge ID: {{ $recharge->id }}</p>
-                <p>Status:
-                    <span class="px-2 py-1 rounded-full {{ $recharge->payment_status == 'paid' ? 'bg-green-600' : 'bg-yellow-500' }} text-white">
-                        {{ ucfirst($recharge->payment_status) }}
-                    </span>
-                </p>
-            </div>
-        </div>
+    <!-- 🔹 Center Section -->
+    <div class="text-center">
+        <p class="text-sm">
+            
+            <h1 class="px-3 py-1 {{ $recharge->payment_status == 'success' ? 'text-green-600' : 'text-yellow-500' }} ">
+                {{ ucfirst($recharge->payment_status) }}
+    </h1>
+        </p>
+    </div>
+
+    <!-- 🔹 Right Section -->
+    <div class="text-right bg-white p-2 rounded-lg text-xs text-blue-900 shadow">
+        <p class="font-semibold">Recharge ID: {{ $recharge->id }}</p>
+    </div>
+
+</div>
+
 
         <!-- User & Vehicle Info -->
         <div class="p-4 flex flex-col md:flex-row gap-4">
@@ -82,14 +90,7 @@
                     </tbody>
                 </table>
 
-                <!-- KYC Image -->
-                <div class="mt-4 flex justify-center">
-                    @if($recharge->getFirstMediaUrl('kyc_recharge_images'))
-                        <img src="{{ $recharge->getFirstMediaUrl('kyc_recharge_images') }}" alt="KYC Image" class="rounded-lg max-w-xs">
-                    @else
-                        <img src="{{ asset('images/add-image.png') }}" alt="Add KYC Image" class="rounded-lg max-w-xs">
-                    @endif
-                </div>
+               
             </div>
 
             <!-- Vehicle & Payment Details -->
