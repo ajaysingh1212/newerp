@@ -141,6 +141,10 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
 
     // 🗺️ Get All States (Public API)
     Route::get('all-states', 'StateApiController@getAllStates')->name('states.all');
+
+    // 🏙️ Get All Districts (Public API)
+    Route::get('all-districts', 'DistrictsApiController@getAllDistricts')->name('districts.all');
+
    
     
     
