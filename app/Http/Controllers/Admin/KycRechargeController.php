@@ -126,18 +126,12 @@ class KycRechargeController extends Controller
     try {
         $user = auth()->user();
 
-        // ✅ Default payment status
-        $paymentStatus = $user->is_admin ? 'completed' : 'pending';
-        $request->merge(['payment_status' => $paymentStatus]);
-
-        // ✅ Validation
         $data = $request->validate([
             'vehicle_number'  => 'required|string|max:50',
             'vehicle_id'      => 'required|exists:add_customer_vehicles,id',
             'title'           => 'nullable|string|max:255',
             'description'     => 'nullable|string',
             'payment_amount'  => 'required|numeric|min:1',
-            'payment_status'  => 'required|in:pending,completed,failed',
             'image'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'image_base64'    => 'nullable|string',
             'location'        => 'nullable|string|max:255',
@@ -145,88 +139,67 @@ class KycRechargeController extends Controller
             'longitude'       => 'nullable|numeric',
         ]);
 
-        $data['user_id']       = $user->id;
-        $data['created_by_id'] = $user->id;
+        $data['user_id']        = $user->id;
+        $data['created_by_id']  = $user->id;
+        $data['payment_status'] = $user->is_admin ? 'completed' : 'pending';
 
-        // ✅ Create recharge record
         $recharge = KycRecharge::create($data);
 
-        // ✅ Handle uploaded image
+        // ✅ Image upload
         if ($request->hasFile('image')) {
-            $recharge->addMediaFromRequest('image')
-                ->toMediaCollection('kyc_recharge_images');
-        }
-
-        // ✅ Handle Base64 camera image
-        if ($request->filled('image_base64')) {
-            $imageData = $request->image_base64;
-
-            if (str_contains($imageData, 'base64,')) {
-                $imageData = explode('base64,', $imageData)[1];
-            }
-
-            $tempPath = storage_path('app/tmp_camera_' . time() . '.png');
-            file_put_contents($tempPath, base64_decode($imageData));
-
-            $recharge->addMedia($tempPath)
-                ->usingFileName('camera_' . time() . '.png')
-                ->toMediaCollection('kyc_recharge_images');
-
+            $recharge->addMediaFromRequest('image')->toMediaCollection('kyc_recharge_images');
+        } elseif ($request->filled('image_base64')) {
+            $base64Image = preg_replace('#^data:image/\w+;base64,#i', '', $request->image_base64);
+            $tempPath = storage_path('app/tmp_' . uniqid() . '.png');
+            file_put_contents($tempPath, base64_decode($base64Image));
+            $recharge->addMedia($tempPath)->usingFileName('camera_' . time() . '.png')->toMediaCollection('kyc_recharge_images');
             @unlink($tempPath);
         }
 
-        // ✅ Non-admin → create Razorpay order
+        // ✅ Non-admin: create Razorpay order
         if (!$user->is_admin) {
-            try {
-                $keyId     = env('RAZORPAY_KEY_ID');
-                $keySecret = env('RAZORPAY_KEY_SECRET');
+            $keyId     = env('RAZORPAY_KEY_ID');
+            $keySecret = env('RAZORPAY_KEY_SECRET');
 
-                if (empty($keyId) || empty($keySecret)) {
-                    throw new \Exception('Razorpay credentials are missing.');
-                }
-
-                $api = new Api($keyId, $keySecret);
-
-                $amount = intval($data['payment_amount'] * 100); // in paise
-                if ($amount <= 0) {
-                    throw new \Exception('Invalid payment amount.');
-                }
-
-                $order = $api->order->create([
-                    'receipt'         => 'rcpt_' . $recharge->id,
-                    'amount'          => $amount,
-                    'currency'        => 'INR',
-                    'payment_capture' => 1,
-                ]);
-
-                $recharge->update(['razorpay_order_id' => $order['id']]);
-
-                return response()->json([
-                    'success'           => true,
-                    'id'                => $recharge->id,
-                    'payment_amount'    => $recharge->payment_amount,
-                    'razorpay_order_id' => $order['id'],
-                    'image_url'         => $recharge->getFirstMediaUrl('kyc_recharge_images'),
-                ]);
-            } catch (\Exception $razorpayEx) {
-                Log::error('🚨 Razorpay Order Error: ' . $razorpayEx->getMessage(), [
-                    'trace' => $razorpayEx->getTraceAsString(),
-                ]);
-
-                return response()->json([
-                    'error' => 'Razorpay order creation failed. Please contact admin.',
-                    'message' => $razorpayEx->getMessage(),
-                ], 500);
+            if (!$keyId || !$keySecret) {
+                throw new \Exception('Razorpay credentials missing.');
             }
+
+            $api = new Api($keyId, $keySecret);
+            $amount = intval($data['payment_amount'] * 100);
+
+            if ($amount <= 0) throw new \Exception('Invalid payment amount.');
+
+            $order = $api->order->create([
+                'receipt'         => 'rcpt_' . $recharge->id,
+                'amount'          => $amount,
+                'currency'        => 'INR',
+                'payment_capture' => 1,
+            ]);
+
+            if (!isset($order['id'])) {
+                throw new \Exception('Razorpay order creation failed.');
+            }
+
+            $recharge->update(['razorpay_order_id' => $order['id']]);
+
+            return response()->json([
+                'success'           => true,
+                'id'                => $recharge->id,
+                'payment_amount'    => $recharge->payment_amount,
+                'razorpay_order_id' => $order['id'],
+                'image_url'         => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+            ]);
         }
 
-        // ✅ Admin → mark completed immediately
+        // ✅ Admin direct success
         return response()->json([
             'success'        => true,
             'id'             => $recharge->id,
             'payment_amount' => $recharge->payment_amount,
             'payment_status' => 'completed',
             'image_url'      => $recharge->getFirstMediaUrl('kyc_recharge_images'),
+            'redirect'       => route('admin.kyc-recharges.index'),
         ]);
 
     } catch (\Illuminate\Validation\ValidationException $ve) {
@@ -234,18 +207,15 @@ class KycRechargeController extends Controller
             'error'   => 'Validation failed',
             'details' => $ve->errors(),
         ], 422);
-
     } catch (\Exception $e) {
-        Log::error('❌ KYC Recharge Store Error: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString(),
-        ]);
-
+        Log::error('❌ KYC Recharge Store Error: ' . $e->getMessage());
         return response()->json([
-            'error' => 'Something went wrong while creating recharge. Please try again later.',
+            'error'   => 'Something went wrong while creating recharge.',
             'message' => $e->getMessage(),
         ], 500);
     }
 }
+
 
     public function paymentCallbackJson(Request $request, $id)
     {
