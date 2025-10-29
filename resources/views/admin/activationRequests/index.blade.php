@@ -1,147 +1,136 @@
 @extends('layouts.admin')
+
 @section('content')
 @can('activation_request_create')
-    <div style="margin-bottom: 10px;" class="row">
-        <div class="col-lg-12">
+    <div class="row mb-2">
+        <div class="col-lg-12 d-flex gap-2">
             <a class="btn btn-success" href="{{ route('admin.activation-requests.create') }}">
                 {{ trans('global.add') }} {{ trans('cruds.activationRequest.title_singular') }}
             </a>
             <button class="btn btn-warning" data-toggle="modal" data-target="#csvImportModal">
                 {{ trans('global.app_csvImport') }}
             </button>
-            @include('csvImport.modal', ['model' => 'ActivationRequest', 'route' => 'admin.activation-requests.parseCsvImport'])
         </div>
     </div>
+    @include('csvImport.modal', ['model' => 'ActivationRequest', 'route' => 'admin.activation-requests.parseCsvImport'])
 @endcan
+
 <div class="card">
-     @include('watermark')
+    @include('watermark')
+
     <div class="card-header">
         {{ trans('cruds.activationRequest.title_singular') }} {{ trans('global.list') }}
     </div>
 
     <div class="card-body">
-        <table class=" table table-bordered table-striped table-hover ajaxTable datatable datatable-ActivationRequest">
+        <table class="table table-bordered table-striped table-hover datatable datatable-ActivationRequest">
             <thead>
                 <tr>
-                    <th width="10">
-
-                    </th>
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.id') }}
-                    </th>
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.party_type') }}
-                    </th>
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.select_party') }}
-                    </th>
-                    <th>
-                        {{ trans('cruds.user.fields.email') }}
-                    </th>
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.product') }}
-                    </th>
-         
-                   
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.request_date') }}
-                    </th>
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.vehicle_model') }}
-                    </th>
-                    <th>
-                        {{ trans('cruds.activationRequest.fields.vehicle_reg_no') }}
-                    </th>
-                    <th>Activation Status</th>
-                  
-                   
-                    <th  class="px-5">
-                        &nbsp;
-                    </th>
+                    <th>check</th>
+                    <th>ID</th>
+                    <th>Party Type</th>
+                    <th>Party Name</th>
+                    <th>Email</th>
+                    <th>Product Details</th>
+                    <th>Request Date</th>
+                    <th>Vehicle Model</th>
+                    <th>Vehicle Reg No</th>
+                    <th>Device Details (AMC / Warranty / Subscription)</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
+
+            <tbody>
+                @foreach($activationRequests as $row)
+                    <tr>
+                        <td></td>
+                        <td>{{ $row->id }}</td>
+                        <td>{{ $row->party_type->title ?? '' }}</td>
+                        <td>{{ $row->select_party->name ?? '' }}</td>
+                        <td>{{ $row->select_party->email ?? '' }}</td>
+                        
+                        {{-- Product Details --}}
+                        <td>
+                            @if($row->product_master)
+                                @php
+                                    $p = $row->product_master;
+                                @endphp
+                                <strong>SKU:</strong> {{ $p->sku ?? 'N/A' }}<br>
+                                <a href="javascript:void(0);" class="view-more-toggle" data-target="pdetails-{{ $row->id }}">View More</a>
+                                <div id="pdetails-{{ $row->id }}" style="display:none; margin-top:5px;">
+                                    <strong>Model:</strong> {{ $p->product_model->product_model ?? 'N/A' }}<br>
+                                    <strong>IMEI:</strong> {{ $p->imei->imei_number ?? 'N/A' }}<br>
+                                    <strong>VTS:</strong> {{ $p->vts->vts_number ?? 'N/A' }}
+                                </div>
+                            @else
+                                No Product Info
+                            @endif
+                        </td>
+
+                        <td>{{ $row->request_date ? date('d M Y', strtotime($row->request_date)) : '' }}</td>
+                        <td>{{ $row->vehicle_model ?? '' }}</td>
+                        <td>{{ $row->vehicle_reg_no ?? '' }}</td>
+
+                        {{-- Device Details --}}
+                        <td>
+                            @if($row->product_master)
+                                @php
+                                    $p = $row->product_master;
+                                @endphp
+                                <strong>AMC:</strong> {{ $row->amc ? date('d M Y', strtotime($row->amc)) : '-' }}<br>
+                                <strong>Warranty:</strong> {{ $row->warranty ? date('d M Y', strtotime($row->warranty)) : '-' }}<br>
+                                <strong>Subscription:</strong> {{ $row->subscription ? date('d M Y', strtotime($row->subscription)) : '-' }}
+                            @endif
+                        </td>
+
+                        {{-- Status --}}
+                        <td>
+                            @php
+                                $statusClass = match($row->status) {
+                                    'pending' => 'badge badge-warning',
+                                    'processing' => 'badge badge-primary',
+                                    'activated' => 'badge badge-success',
+                                    'rejected' => 'badge badge-danger',
+                                    default => 'badge badge-secondary'
+                                };
+                            @endphp
+                            <span class="{{ $statusClass }}">{{ ucfirst($row->status ?? '') }}</span>
+                        </td>
+
+                        {{-- Actions --}}
+                        <td>
+                            @include('partials.datatablesActions', [
+                                'viewGate' => 'activation_request_show',
+                                'editGate' => 'activation_request_edit',
+                                'deleteGate' => 'activation_request_delete',
+                                'crudRoutePart' => 'activation-requests',
+                                'row' => $row
+                            ])
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
         </table>
     </div>
 </div>
-
-
-
 @endsection
+
 @section('scripts')
 @parent
 <script>
+$(function () {
+    // “View More” Toggle for Product Details
     $(document).on('click', '.view-more-toggle', function () {
-        let targetId = $(this).data('target');
-        $('#' + targetId).slideToggle();
+        let target = $(this).data('target');
+        $('#' + target).slideToggle(200);
     });
-</script>
 
-<script>
-    $(function () {
-  let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
-@can('activation_request_delete')
-  let deleteButtonTrans = '{{ trans('global.datatables.delete') }}';
-  let deleteButton = {
-    text: deleteButtonTrans,
-    url: "{{ route('admin.activation-requests.massDestroy') }}",
-    className: 'btn-danger',
-    action: function (e, dt, node, config) {
-      var ids = $.map(dt.rows({ selected: true }).data(), function (entry) {
-          return entry.id
-      });
-
-      if (ids.length === 0) {
-        alert('{{ trans('global.datatables.zero_selected') }}')
-
-        return
-      }
-
-      if (confirm('{{ trans('global.areYouSure') }}')) {
-        $.ajax({
-          headers: {'x-csrf-token': _token},
-          method: 'POST',
-          url: config.url,
-          data: { ids: ids, _method: 'DELETE' }})
-          .done(function () { location.reload() })
-      }
-    }
-  }
-  dtButtons.push(deleteButton)
-@endcan
-
-  let dtOverrideGlobals = {
-    buttons: dtButtons,
-    processing: true,
-    serverSide: true,
-    retrieve: true,
-    aaSorting: [],
-    ajax: "{{ route('admin.activation-requests.index') }}",
-    columns: [
-      { data: 'placeholder', name: 'placeholder' },
-{ data: 'id', name: 'id' },
-{ data: 'party_type_title', name: 'party_type.title' },
-{ data: 'select_party_name', name: 'select_party.name' },
-{ data: 'select_party.email', name: 'select_party.email' },
- { data: 'product_details', name: 'product_details' },
-
-{ data: 'request_date', name: 'request_date' },
-{ data: 'vehicle_model', name: 'vehicle_model' },
-{ data: 'vehicle_reg_no', name: 'vehicle_reg_no' },
-{ data: 'status', name: 'status' },
-
-{ data: 'actions', name: '{{ trans('global.actions') }}' }
-    ],
-    orderCellsTop: true,
-    order: [[ 1, 'desc' ]],
-    pageLength: 100,
-  };
-  let table = $('.datatable-ActivationRequest').DataTable(dtOverrideGlobals);
-  $('a[data-toggle="tab"]').on('shown.bs.tab click', function(e){
-      $($.fn.dataTable.tables(true)).DataTable()
-          .columns.adjust();
-  });
-  
+    // Initialize DataTable (client-side only)
+    $('.datatable-ActivationRequest').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25
+    });
 });
-
 </script>
 @endsection

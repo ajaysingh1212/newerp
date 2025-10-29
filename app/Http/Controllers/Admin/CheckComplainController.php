@@ -156,24 +156,24 @@ public function store(StoreCheckComplainRequest $request)
 
 public function update(UpdateCheckComplainRequest $request, CheckComplain $checkComplain)
 {
-    // Update the main complaint record
+    // ✅ Update the main complaint record
     $checkComplain->update($request->all());
 
-    // Handle select_complains: use submitted data or fallback to existing IDs
+    // ✅ Handle select_complains relation
     $checkComplain->select_complains()->sync(
         $request->has('select_complains') 
             ? $request->input('select_complains') 
             : $checkComplain->select_complains->pluck('id')->toArray()
     );
 
-    // Handle select_vehicles: same fallback logic if needed
+    // ✅ Handle select_vehicles relation
     $checkComplain->select_vehicles()->sync(
         $request->has('select_vehicles') 
             ? $request->input('select_vehicles') 
             : $checkComplain->select_vehicles->pluck('id')->toArray()
     );
 
-    // Handle media attachments
+    // ✅ Handle media attachments
     if (count($checkComplain->attechment) > 0) {
         foreach ($checkComplain->attechment as $media) {
             if (! in_array($media->file_name, $request->input('attechment', []))) {
@@ -189,9 +189,26 @@ public function update(UpdateCheckComplainRequest $request, CheckComplain $check
         }
     }
 
+    // ✅ Create User Alert
+    $alertText = "Complaint #{$checkComplain->ticket_number} updated.\n"
+        . "Customer: {$checkComplain->customer_name}\n"
+        . "Vehicle: {$checkComplain->vehicle_no}\n"
+        . "Status: {$checkComplain->status}\n"
+        . "Reason: {$checkComplain->reason}\n"
+        . ($checkComplain->notes ? "Notes: {$checkComplain->notes}\n" : '');
+
+    $alert = \App\Models\UserAlert::create([
+        'alert_text' => $alertText,
+        'alert_link' => route('admin.check-complains.show', $checkComplain->id),
+    ]);
+
+    // ✅ Attach alert to the user who created this complaint (or update user)
+    $alert->users()->sync([$checkComplain->created_by_id]);
+
     return redirect()->route('admin.check-complains.index')
-                     ->with('success', 'Complaint updated successfully.');
+                     ->with('success', 'Complaint updated successfully and user notified.');
 }
+
 
 
    public function show(CheckComplain $checkComplain)

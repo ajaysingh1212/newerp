@@ -38,118 +38,35 @@ public function index(Request $request)
 {
     abort_if(Gate::denies('activation_request_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    if ($request->ajax()) {
-        $user = auth()->user();
-        $userRole = $user->roles->first()->title ?? null;
+    $user = auth()->user();
+    $userRole = $user->roles->first()->title ?? null;
 
-        $query = ActivationRequest::with([
-            'party_type',
-            'select_party',
-            'product',
-            'state',
-            'district',
-            'vehicle_type',
-            'team',
-            'product_master.product_model',
-            'product_master.imei',
-            'product_master.vts'
-        ]);
+    $query = ActivationRequest::with([
+        'party_type',
+        'select_party',
+        'product',
+        'state',
+        'district',
+        'vehicle_type',
+        'team',
+        'product_master.product_model',
+        'product_master.imei',
+        'product_master.vts'
+    ]);
 
-        if (strtolower($userRole) !== 'admin') {
-            $query->where(function ($query) use ($user) {
-                $query->where('created_by_id', $user->id)
-                      ->orWhere('select_party_id', $user->id);
-            });
-        }
-
-        $query->select(sprintf('%s.*', (new ActivationRequest)->table));
-        $table = Datatables::of($query);
-
-        $table->addColumn('placeholder', '&nbsp;');
-        $table->addColumn('actions', '&nbsp;');
-
-        $table->editColumn('actions', function ($row) {
-            $viewGate = 'activation_request_show';
-            $editGate = 'activation_request_edit';
-            $deleteGate = 'activation_request_delete';
-            $crudRoutePart = 'activation-requests';
-
-            return view('partials.datatablesActions', compact(
-                'viewGate',
-                'editGate',
-                'deleteGate',
-                'crudRoutePart',
-                'row'
-            ));
+    if (strtolower($userRole) !== 'admin') {
+        $query->where(function ($query) use ($user) {
+            $query->where('created_by_id', $user->id)
+                  ->orWhere('select_party_id', $user->id);
         });
-
-        $table->editColumn('id', fn($row) => $row->id ?? '');
-        $table->addColumn('party_type_title', fn($row) => $row->party_type->title ?? '');
-        $table->addColumn('select_party_name', fn($row) => $row->select_party->name ?? '');
-        $table->editColumn('select_party.email', fn($row) => $row->select_party->email ?? '');
-        $table->addColumn('product_sku', fn($row) => $row->product->sku ?? '');
-        $table->addColumn('product_name', fn($row) => $row->product->product_name ?? '');
-        $table->editColumn('vehicle_model', fn($row) => $row->vehicle_model ?? '');
-        $table->editColumn('vehicle_reg_no', fn($row) => $row->vehicle_reg_no ?? '');
-
-        $table->editColumn('status', function ($row) {
-            if (!$row->status) return '';
-
-            $classes = [
-                'pending'    => 'badge badge-warning',
-                'processing' => 'badge badge-primary',
-                'activated'  => 'badge badge-success',
-                'rejected'   => 'badge badge-danger',
-            ];
-
-            $class = $classes[$row->status] ?? 'badge badge-secondary';
-            return '<span class="' . $class . '">' . ucfirst($row->status) . '</span>';
-        });
-
-        $table->addColumn('product_details', function ($row) {
-            $product = $row->product_master;
-
-            if ($product) {
-                $sku   = $product->sku ?? 'N/A';
-                $model = $product->product_model->product_model ?? 'N/A';
-                $imei  = $product->imei->imei_number ?? 'N/A';
-                $vts   = $product->vts->vts_number ?? 'N/A';
-
-                return '
-                    <div>
-                        <strong>SKU:</strong> ' . $sku . '<br>
-                        <a href="javascript:void(0);" class="view-more-toggle" data-target="details-' . $row->id . '">View More</a>
-                        <div id="details-' . $row->id . '" class="product-more-details" style="display:none; margin-top: 5px;">
-                            <strong>Model:</strong> ' . $model . '<br>
-                            <strong>IMEI:</strong> ' . $imei . '<br>
-                            <strong>VTS:</strong> ' . $vts . '
-                        </div>
-                    </div>
-                ';
-            }
-
-            return 'No Product Info';
-        });
-
-
-
-        $table->rawColumns([
-            'actions',
-            'placeholder',
-            'party_type_title',
-            'select_party_name',
-            'product_name',
-            'product_sku',
-            'status',
-            'product_details'
-            // Remove extra fields unless you define them: 'state', 'district', 'vehicle_type', 'id_proofs', etc.
-        ]);
-
-        return $table->make(true);
     }
 
-    return view('admin.activationRequests.index');
+    $activationRequests = $query->latest()->get();
+
+    return view('admin.activationRequests.index', compact('activationRequests'));
 }
+
+
 
 
 
