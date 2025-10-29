@@ -12,8 +12,8 @@
     <form id="kycRechargeForm" method="POST" enctype="multipart/form-data">
         @csrf
 
-        <input type="hidden" name="user_id" value="{{ Auth::id() ?? 0 }}">
-        <input type="hidden" name="created_by_id" value="{{ Auth::id() ?? 0 }}">
+        <input type="hidden" name="user_id" value="{{ Auth::id() }}">
+        <input type="hidden" name="created_by_id" value="{{ Auth::id() }}">
         <input type="hidden" name="vehicle_number" id="vehicle_number" value="{{ $selectedVehicle->vehicle_number ?? '' }}">
         <input type="hidden" name="image_base64" id="captured_image">
 
@@ -76,35 +76,38 @@
         <!-- Payment Amount -->
         <div class="mb-3">
             <label>Payment Amount (INR)</label>
-            <input type="number" step="0.01" name="payment_amount" id="payment_amount" class="form-control" value="299" readonly required>
+            <input type="number" step="0.01" name="payment_amount" id="payment_amount"
+                   class="form-control" value="299" readonly required>
         </div>
 
         <button type="button" class="btn btn-success" id="payButton">
-            {{ auth()->user()?->is_admin ? 'Create Recharge' : 'Create & Pay' }}
+            {{ auth()->user()->is_admin ? 'Create Recharge' : 'Create & Pay' }}
         </button>
     </form>
 </div>
 
-<!-- Razorpay -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+@if(!auth()->user()->is_admin)
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+@endif
+
 <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_KEY') }}&libraries=geometry"></script>
 
 <script>
-$(function () {
-    const $vehicleSelect = $('#vehicle_id');
-    const $vehicleNumberInput = $('#vehicle_number');
-    const $formErrors = $('#formErrors');
+$(document).ready(function() {
+    const vehicleSelect = $('#vehicle_id');
+    const vehicleNumberInput = $('#vehicle_number');
+    const formErrorsDiv = $('#formErrors');
 
-    // --- Vehicle auto-fill
-    function updateVehicleNumber() {
-        const num = $vehicleSelect.find('option:selected').data('number') || '';
-        $vehicleNumberInput.val(num);
+    // --- Vehicle select auto-update
+    if(vehicleSelect.val()){
+        vehicleNumberInput.val(vehicleSelect.find('option:selected').data('number'));
     }
-    updateVehicleNumber();
-    $vehicleSelect.on('change', updateVehicleNumber);
+    vehicleSelect.on('change', function(){
+        vehicleNumberInput.val($(this).find('option:selected').data('number') || '');
+    });
 
     // --- Detect location
-    if (navigator.geolocation) {
+    if(navigator.geolocation){
         navigator.geolocation.getCurrentPosition(
             pos => {
                 const lat = pos.coords.latitude;
@@ -114,9 +117,11 @@ $(function () {
 
                 const geocoder = new google.maps.Geocoder();
                 geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-                    $('#location').val(
-                        status === "OK" && results[0] ? results[0].formatted_address : "Location not found"
-                    );
+                    if(status === "OK" && results[0]){
+                        $('#location').val(results[0].formatted_address);
+                    } else {
+                        $('#location').val("Location not found");
+                    }
                 });
             },
             () => $('#location').val("Location access denied")
@@ -125,14 +130,14 @@ $(function () {
         $('#location').val("Geolocation not supported");
     }
 
-    // --- Camera capture
+    // --- Camera setup
     const video = document.getElementById('camera');
     const canvas = document.getElementById('snapshot');
     const captureBtn = document.getElementById('captureBtn');
     const imageInput = document.getElementById('captured_image');
     const captureStatus = document.getElementById('captureStatus');
 
-    if (navigator.mediaDevices?.getUserMedia) {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => video.srcObject = stream)
             .catch(() => alert('Camera access denied or unavailable.'));
@@ -144,15 +149,15 @@ $(function () {
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
-        imageInput.value = canvas.toDataURL('image/png');
-        captureStatus.style.display = 'block';
+        imageInput.value = canvas.toDataURL('image/png'); // base64
+
+        if (captureStatus) captureStatus.style.display = 'block';
     });
 
     // --- Form submission
-    $('#payButton').on('click', async function (e) {
+    $('#payButton').on('click', async function(e){
         e.preventDefault();
-        $formErrors.addClass('d-none').find('ul').empty();
-
+        formErrorsDiv.addClass('d-none').find('ul').html('');
         const formData = new FormData($('#kycRechargeForm')[0]);
 
         try {
@@ -164,32 +169,26 @@ $(function () {
 
             const data = await res.json();
 
-            if (res.status === 422) {
-                const ul = Object.values(data.errors || {}).flat()
-                    .map(err => `<li>${err}</li>`).join('');
-                $formErrors.removeClass('d-none').find('ul').html(ul);
+            if(res.status === 422){
+                const ul = Object.values(data.error).flat().map(err => `<li>${err}</li>`).join('');
+                formErrorsDiv.removeClass('d-none').find('ul').html(ul);
                 return;
             }
 
-            if (!res.ok || data.error) {
+            if(!res.ok){
                 console.error('Server error:', data);
-                alert('❌ ' + (data.message || data.error || 'Something went wrong.'));
+                alert('Error: ' + (data.error || 'Something went wrong.'));
                 return;
             }
 
-            // ✅ Admin direct success
-            @if(auth()->user()?->is_admin)
+            // --- Admin: Direct store, no Razorpay
+            @if(auth()->user()->is_admin)
                 alert('✅ KYC Recharge created successfully!');
                 window.location.href = data.redirect || "{{ route('admin.kyc-recharges.index') }}";
                 return;
             @endif
 
-            // ✅ User payment flow
-            if (!data.razorpay_order_id || !data.payment_amount) {
-                alert('Payment details missing.');
-                return;
-            }
-
+            // --- Normal user: Razorpay Payment
             const options = {
                 key: "{{ env('RAZORPAY_KEY_ID') }}",
                 amount: data.payment_amount * 100,
@@ -197,10 +196,8 @@ $(function () {
                 name: "Studio Capella",
                 description: "KYC Recharge Payment",
                 order_id: data.razorpay_order_id,
-                handler: async function (response) {
-                    const callbackUrl = "{{ route('admin.kyc-recharges.payment-callback-json', ['id' => '__ID__']) }}"
-                        .replace('__ID__', data.id);
-
+                handler: async function(response){
+                    const callbackUrl = "{{ route('admin.kyc-recharges.payment-callback-json', ['id' => 'REPLACE_ID']) }}".replace('REPLACE_ID', data.id);
                     const callbackRes = await fetch(callbackUrl, {
                         method: "POST",
                         headers: {
@@ -209,27 +206,25 @@ $(function () {
                         },
                         body: JSON.stringify(response)
                     });
-
                     const result = await callbackRes.json();
-                    if (result.success) {
-                        window.location.href = result.redirect || "{{ route('admin.kyc-recharges.index') }}";
+                    if(result.success){
+                        window.location.href = result.redirect;
                     } else {
-                        alert(result.message || 'Payment verification failed.');
+                        alert(result.message || 'Payment callback failed.');
                     }
                 },
-                prefill: {
-                    name: "{{ addslashes(Auth::user()->name ?? '') }}",
-                    email: "{{ addslashes(Auth::user()->email ?? '') }}"
+                prefill: { 
+                    name: "{{ addslashes(Auth::user()->name) }}", 
+                    email: "{{ addslashes(Auth::user()->email) }}" 
                 },
                 theme: { color: "#F37254" }
             };
-
             const rzp = new Razorpay(options);
             rzp.open();
 
         } catch (err) {
             console.error('Error:', err);
-            alert('⚠️ Something went wrong. Please check console.');
+            alert('Something went wrong. Check console for details.');
         }
     });
 });

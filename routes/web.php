@@ -368,11 +368,7 @@ Route::get('admin/activationrequests/invoice/{id}', [App\Http\Controllers\Admin\
   Route::get('admin/current-stocks/{id}/invoice', [CurrentStockController::class, 'invoice'])->name('admin.current-stocks.invoice');
 Route::get('/report/product-pie-chart', [App\Http\Controllers\HomeController::class, 'productPieChart'])->name('report.product.pie');
 
-Route::post('/admin/kyc-recharges', [App\Http\Controllers\Admin\KycRechargeController::class, 'store'])
-    ->name('admin.kyc-recharges.store');
+Route::post('admin/kyc-recharges', [App\Http\Controllers\Admin\KycRechargeController::class, 'store'])->name('admin.kyc-recharges.store');
+Route::post('admin/kyc-recharges/{id}', [App\Http\Controllers\Admin\KycRechargeController::class, 'edit'])->name('admin.kyc-recharge.update');
 
-Route::post('/admin/kyc-recharges/{id}', [App\Http\Controllers\Admin\KycRechargeController::class, 'update'])
-    ->name('admin.kyc-recharges.update');
-
-Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [App\Http\Controllers\Admin\KycRechargeController::class, 'paymentCallbackJson'])
-    ->name('admin.kyc-recharges.payment-callback-json');
+Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [App\Http\Controllers\Admin\KycRechargeController::class, 'paymentCallbackJson'])->name('admin.kyc-recharges.payment-callback-json');
