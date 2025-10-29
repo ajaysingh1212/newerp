@@ -217,32 +217,97 @@ class KycRechargeController extends Controller
 }
 
 
-    public function paymentCallbackJson(Request $request, $id)
-    {
-        try {
-            $recharge = KycRecharge::findOrFail($id);
-            $recharge->update([
-                'payment_status' => 'completed',
-                'payment_method' => 'Razorpay',
-                'payment_date' => now(),
-            ]);
+  public function paymentCallbackJson(Request $request, $id)
+{
+    try {
+        $user = auth()->user();
+        $recharge = KycRecharge::findOrFail($id);
 
-            return response()->json([
-                'success' => true,
-                'redirect' => route('admin.kyc-recharges.index')
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Payment Callback Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+        // ✅ Razorpay keys
+        $keyId     = env('RAZORPAY_KEY_ID');
+        $keySecret = env('RAZORPAY_KEY_SECRET');
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment callback failed. Check logs.'
-            ], 500);
+        if (!$keyId || !$keySecret) {
+            throw new \Exception('Razorpay credentials missing.');
         }
-    }
 
+        // ✅ Request validation
+        $data = $request->validate([
+            'razorpay_payment_id' => 'required|string',
+            'razorpay_order_id'   => 'required|string',
+            'razorpay_signature'  => 'required|string',
+        ]);
+
+        // ✅ Initialize API
+        $api = new Api($keyId, $keySecret);
+
+        // ✅ Signature verification
+        $attributes = [
+            'razorpay_order_id'   => $data['razorpay_order_id'],
+            'razorpay_payment_id' => $data['razorpay_payment_id'],
+            'razorpay_signature'  => $data['razorpay_signature'],
+        ];
+
+        $api->utility->verifyPaymentSignature($attributes);
+
+        // ✅ Fetch payment details
+        $payment = $api->payment->fetch($data['razorpay_payment_id']);
+
+        // ✅ Update recharge record
+        $recharge->update([
+            'payment_status'      => 'completed',
+            'razorpay_payment_id' => $data['razorpay_payment_id'],
+            'razorpay_signature'  => $data['razorpay_signature'],
+            'paid_at'             => now(),
+        ]);
+
+        Log::info('✅ Razorpay payment success', [
+            'recharge_id' => $recharge->id,
+            'payment_id'  => $data['razorpay_payment_id'],
+            'user_id'     => $user->id,
+        ]);
+
+        return response()->json([
+            'success'  => true,
+            'message'  => 'Payment verified successfully.',
+            'redirect' => route('admin.kyc-recharges.index'),
+        ]);
+
+    } catch (\Razorpay\Api\Errors\SignatureVerificationError $e) {
+        Log::error('❌ Razorpay signature mismatch: ' . $e->getMessage());
+        $recharge = KycRecharge::find($id);
+        if ($recharge) {
+            $recharge->update(['payment_status' => 'failed']);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Signature verification failed. Payment not valid.',
+        ], 400);
+
+    } catch (\Illuminate\Validation\ValidationException $ve) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid payment data.',
+            'errors'  => $ve->errors(),
+        ], 422);
+
+    } catch (\Exception $e) {
+        Log::error('❌ Razorpay Callback Error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        $recharge = KycRecharge::find($id);
+        if ($recharge) {
+            $recharge->update(['payment_status' => 'failed']);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Something went wrong during payment verification.',
+        ], 500);
+    }
+}
     // Show edit form
     public function edit($id)
     {
