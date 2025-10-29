@@ -53,4 +53,17 @@ class StateApiController extends Controller
 
         return response(null, Response::HTTP_NO_CONTENT);
     }
+
+    public function getAllStates()
+{
+    // Saare states ko fetch karo (agar 'team' relation chahiye to with(['team']) use karo)
+    $states = State::select('id', 'name')->orderBy('name', 'asc')->get();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'All states fetched successfully',
+        'data' => $states
+    ], 200);
+}
+
 }
