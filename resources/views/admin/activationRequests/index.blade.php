@@ -28,12 +28,12 @@
                 <tr>
                     <th>check</th>
                     <th>ID</th>
-                    <th>Party Type</th>
+                    
                     <th>Party Name</th>
                     <th>Email</th>
                     <th>Product Details</th>
                     <th>Request Date</th>
-                    <th>Vehicle Model</th>
+                    
                     <th>Vehicle Reg No</th>
                     <th>Device Details (AMC / Warranty / Subscription)</th>
                     <th>Status</th>
@@ -46,7 +46,7 @@
                     <tr>
                         <td></td>
                         <td>{{ $row->id }}</td>
-                        <td>{{ $row->party_type->title ?? '' }}</td>
+                       
                         <td>{{ $row->select_party->name ?? '' }}</td>
                         <td>{{ $row->select_party->email ?? '' }}</td>
                         
@@ -69,20 +69,60 @@
                         </td>
 
                         <td>{{ $row->request_date ? date('d M Y', strtotime($row->request_date)) : '' }}</td>
-                        <td>{{ $row->vehicle_model ?? '' }}</td>
+                        
                         <td>{{ $row->vehicle_reg_no ?? '' }}</td>
 
                         {{-- Device Details --}}
-                        <td>
-                            @if($row->product_master)
-                                @php
-                                    $p = $row->product_master;
-                                @endphp
-                                <strong>AMC:</strong> {{ $row->amc ? date('d M Y', strtotime($row->amc)) : '-' }}<br>
-                                <strong>Warranty:</strong> {{ $row->warranty ? date('d M Y', strtotime($row->warranty)) : '-' }}<br>
-                                <strong>Subscription:</strong> {{ $row->subscription ? date('d M Y', strtotime($row->subscription)) : '-' }}
-                            @endif
-                        </td>
+                     <style>
+    /* 🔹 Blink animation */
+    @keyframes blink {
+        50% { opacity: 0; }
+    }
+    .blink {
+        animation: blink 1s step-start infinite;
+        font-weight: 600;
+    }
+</style>
+
+<td>
+    @if($row->product_master)
+        @php
+            $now = \Carbon\Carbon::now();
+
+            // AMC
+            $amcDate = $row->amc ? \Carbon\Carbon::parse($row->amc) : null;
+            $amcDays = $amcDate ? $now->diffInDays($amcDate, false) : null;
+            $amcText = is_null($amcDays) ? '-' : ($amcDays > 0 ? $amcDays . ' days left' : abs($amcDays) . ' days expired');
+            $amcClass = is_null($amcDays) ? '' : ($amcDays < 0 ? 'text-danger blink' : 'text-success blink');
+
+            // Warranty
+            $warrantyDate = $row->warranty ? \Carbon\Carbon::parse($row->warranty) : null;
+            $warrantyDays = $warrantyDate ? $now->diffInDays($warrantyDate, false) : null;
+            $warrantyText = is_null($warrantyDays) ? '-' : ($warrantyDays > 0 ? $warrantyDays . ' days left' : abs($warrantyDays) . ' days expired');
+            $warrantyClass = is_null($warrantyDays) ? '' : ($warrantyDays < 0 ? 'text-danger blink' : 'text-success blink');
+
+            // Subscription
+            $subDate = $row->subscription ? \Carbon\Carbon::parse($row->subscription) : null;
+            $subDays = $subDate ? $now->diffInDays($subDate, false) : null;
+            $subText = is_null($subDays) ? '-' : ($subDays > 0 ? $subDays . ' days left' : abs($subDays) . ' days expired');
+            $subClass = is_null($subDays) ? '' : ($subDays < 0 ? 'text-danger blink' : 'text-success blink');
+        @endphp
+
+        <strong>AMC:</strong>
+        {{ $row->amc ? date('d M Y', strtotime($row->amc)) : '-' }}
+        <small class="{{ $amcClass }}">({{ $amcText }})</small><br>
+
+        <strong>Warranty:</strong>
+        {{ $row->warranty ? date('d M Y', strtotime($row->warranty)) : '-' }}
+        <small class="{{ $warrantyClass }}">({{ $warrantyText }})</small><br>
+
+        <strong>Subscription:</strong>
+        {{ $row->subscription ? date('d M Y', strtotime($row->subscription)) : '-' }}
+        <small class="{{ $subClass }}">({{ $subText }})</small>
+    @endif
+</td>
+
+
 
                         {{-- Status --}}
                         <td>
