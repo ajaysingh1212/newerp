@@ -19,6 +19,7 @@
         </div>
         @endforeach
         </div>
+        @if(auth()->id() == 1)
         <div class="row mt-4">
   
     @foreach(['Pending', 'Failed', 'Completed'] as $index => $status)
@@ -109,6 +110,7 @@
 
 
 </div>
+@endif
 
 
 

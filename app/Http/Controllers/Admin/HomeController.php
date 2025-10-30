@@ -213,26 +213,11 @@ foreach ($grouped as $modelName => $items) {
 }
 
 
-$totalsStatus = [
-    'Pending' => KycRecharge::where('payment_status', 'pending')->count(),
-    'Failed' => KycRecharge::where('payment_status', 'failed')->count(),
-    'Completed' => KycRecharge::where('payment_status', 'completed')->count(),
-];
-
+$totalsStatus = [ 'Pending' => KycRecharge::where('payment_status', 'pending')->count(), 'Failed' => KycRecharge::where('payment_status', 'failed')->count(), 'Completed' => KycRecharge::where('payment_status', 'completed')->count(), ]; 
 // Controller method
-$totalsStatusRecharge = [
-    'Pending'   => RechargeRequest::where('payment_status', 'pending')->count(),
-    'Failed'    => RechargeRequest::where('payment_status', 'failed')->count(),
-    'Success'=> RechargeRequest::where('payment_status', 'success')->count(),
-];
-
-// ✅ Fetch total counts by status
-    $totalsStatusComplain = [
-        'Pending'    => CheckComplain::where('status', 'Pending')->count(),
-        'Processing' => CheckComplain::where('status', 'processing')->count(),
-        'Reject'     => CheckComplain::where('status', 'reject')->count(),
-        'Solved'     => CheckComplain::where('status', 'solved')->count(),
-    ];
+   $totalsStatusRecharge = [ 'Pending' => RechargeRequest::where('payment_status', 'pending')->count(), 'Failed' => RechargeRequest::where('payment_status', 'failed')->count(), 'Success'=> RechargeRequest::where('payment_status', 'success')->count(), ];
+    // ✅ Fetch total counts by status
+      $totalsStatusComplain = [ 'Pending' => CheckComplain::where('status', 'Pending')->count(), 'Processing' => CheckComplain::where('status', 'processing')->count(), 'Reject' => CheckComplain::where('status', 'reject')->count(), 'Solved' => CheckComplain::where('status', 'solved')->count(), ];
 
 
    $user = Auth::user();
