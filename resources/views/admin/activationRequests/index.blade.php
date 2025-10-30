@@ -73,8 +73,7 @@
                         <td>{{ $row->vehicle_reg_no ?? '' }}</td>
 
                         {{-- Device Details --}}
-                     <style>
-    /* 🔹 Blink animation */
+                  <style>
     @keyframes blink {
         50% { opacity: 0; }
     }
@@ -85,42 +84,46 @@
 </style>
 
 <td>
-    @if($row->product_master)
+    @if($row->product_master && $row->product_master->product_model)
         @php
             $now = \Carbon\Carbon::now();
+            $requestDate = $row->request_date ? \Carbon\Carbon::parse($row->request_date) : null;
+            $model = $row->product_master->product_model;
 
-            // AMC
-            $amcDate = $row->amc ? \Carbon\Carbon::parse($row->amc) : null;
-            $amcDays = $amcDate ? $now->diffInDays($amcDate, false) : null;
-            $amcText = is_null($amcDays) ? '-' : ($amcDays > 0 ? $amcDays . ' days left' : abs($amcDays) . ' days expired');
-            $amcClass = is_null($amcDays) ? '' : ($amcDays < 0 ? 'text-danger blink' : 'text-success blink');
+            $getDaysLeft = function ($baseDate, $months) use ($now) {
+                if (!$baseDate || !$months) return ['days' => '-', 'class' => ''];
 
-            // Warranty
-            $warrantyDate = $row->warranty ? \Carbon\Carbon::parse($row->warranty) : null;
-            $warrantyDays = $warrantyDate ? $now->diffInDays($warrantyDate, false) : null;
-            $warrantyText = is_null($warrantyDays) ? '-' : ($warrantyDays > 0 ? $warrantyDays . ' days left' : abs($warrantyDays) . ' days expired');
-            $warrantyClass = is_null($warrantyDays) ? '' : ($warrantyDays < 0 ? 'text-danger blink' : 'text-success blink');
+                $expiryDate = (clone $baseDate)->addMonths($months);
+                $days = $now->diffInDays($expiryDate, false);
 
-            // Subscription
-            $subDate = $row->subscription ? \Carbon\Carbon::parse($row->subscription) : null;
-            $subDays = $subDate ? $now->diffInDays($subDate, false) : null;
-            $subText = is_null($subDays) ? '-' : ($subDays > 0 ? $subDays . ' days left' : abs($subDays) . ' days expired');
-            $subClass = is_null($subDays) ? '' : ($subDays < 0 ? 'text-danger blink' : 'text-success blink');
+                $class = $days < 0 ? 'text-danger blink' : 'text-success blink';
+                return ['days' => $days, 'class' => $class];
+            };
+
+            $amc = $getDaysLeft($requestDate, $model->amc ?? 0);
+            $warranty = $getDaysLeft($requestDate, $model->warranty ?? 0);
+            $sub = $getDaysLeft($requestDate, $model->subscription ?? 0);
         @endphp
 
         <strong>AMC:</strong>
-        {{ $row->amc ? date('d M Y', strtotime($row->amc)) : '-' }}
-        <small class="{{ $amcClass }}">({{ $amcText }})</small><br>
+        <span class="{{ $amc['class'] }}">
+            {{ $amc['days'] === '-' ? '-' : ($amc['days'] >= 0 ? $amc['days'].' days left' : abs($amc['days']).' days expired') }}
+        </span><br>
 
         <strong>Warranty:</strong>
-        {{ $row->warranty ? date('d M Y', strtotime($row->warranty)) : '-' }}
-        <small class="{{ $warrantyClass }}">({{ $warrantyText }})</small><br>
+        <span class="{{ $warranty['class'] }}">
+            {{ $warranty['days'] === '-' ? '-' : ($warranty['days'] >= 0 ? $warranty['days'].' days left' : abs($warranty['days']).' days expired') }}
+        </span><br>
 
         <strong>Subscription:</strong>
-        {{ $row->subscription ? date('d M Y', strtotime($row->subscription)) : '-' }}
-        <small class="{{ $subClass }}">({{ $subText }})</small>
+        <span class="{{ $sub['class'] }}">
+            {{ $sub['days'] === '-' ? '-' : ($sub['days'] >= 0 ? $sub['days'].' days left' : abs($sub['days']).' days expired') }}
+        </span>
+    @else
+        <em>-</em>
     @endif
 </td>
+
 
 
 
