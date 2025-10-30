@@ -125,7 +125,7 @@ class KycRechargeController extends Controller
 {
     try {
         $user = auth()->user();
-
+        $vehicle = AddCustomerVehicle::find($request->vehicle_id);
         // ✅ Default payment status
         $paymentStatus = $user->is_admin ? 'completed' : 'pending';
         $request->merge(['payment_status' => $paymentStatus]);
@@ -145,7 +145,7 @@ class KycRechargeController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
-        $data['user_id'] = $user->id;
+        $data['user_id'] = $vehicle->id;
         $data['created_by_id'] = $user->id;
 
         // ✅ Create recharge record (without image)
