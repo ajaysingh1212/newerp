@@ -145,7 +145,7 @@ class KycRechargeController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
-        $data['user_id'] = $vehicle->id;
+        $data['user_id'] = $vehicle->owner_name;
         $data['created_by_id'] = $user->id;
 
         // ✅ Create recharge record (without image)
