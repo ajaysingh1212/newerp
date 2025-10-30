@@ -90,6 +90,7 @@
                         <th>Title</th>
                         <th>Payment Status</th>
                         <th>Vehicle Status</th>
+                        <th>Description</th>
                         <th>Amount</th>
                         <th>Actions</th>
                     </tr>
@@ -116,6 +117,7 @@
                                 {{ ucfirst($recharge->vehicle_status) }}
                             </span>
                         </td>
+                        <td>{{$recharge->description}}</td>
                         <td>{{ number_format($recharge->payment_amount, 2) }}</td>
                         <td>
                             @can('kyc_recharge_show')
