@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\CurrentStockController;
 use App\Http\Controllers\Admin\UserAlertsControlle;
 use App\Http\Controllers\Admin\KycRechargeController;
 use App\Http\Controllers\Admin\VehicleSharingController;
+use App\Http\Controllers\Admin\DeleteDataController;
+
 
 Route::redirect('/', '/login');
 Route::get('/home', function () {
@@ -345,6 +347,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::get('/commission/total', [App\Http\Controllers\Admin\CommissionController::class, 'totalCommission'])->name('commission.total');
     Route::get('/commission/history', [App\Http\Controllers\Admin\CommissionController::class, 'history'])->name('commission.history');
 
+    Route::resource('delete-data', DeleteDataController::class);
+     // ✅ CSV Import route
+    Route::post('delete-data/parse-csv-import', [DeleteDataController::class, 'parseCsvImport'])
+        ->name('delete-data.parseCsvImport');
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
     // Change password
@@ -372,3 +378,6 @@ Route::post('admin/kyc-recharges', [App\Http\Controllers\Admin\KycRechargeContro
 Route::post('admin/kyc-recharges/{id}', [App\Http\Controllers\Admin\KycRechargeController::class, 'edit'])->name('admin.kyc-recharge.update');
 
 Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [App\Http\Controllers\Admin\KycRechargeController::class, 'paymentCallbackJson'])->name('admin.kyc-recharges.payment-callback-json');
+
+
+
