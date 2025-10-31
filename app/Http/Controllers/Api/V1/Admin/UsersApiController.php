@@ -277,7 +277,6 @@ class UsersApiController extends Controller
 
     public function UserRegistration(Request $request)
 {
-    // ✅ Validation rules
     $validator = Validator::make($request->all(), [
         'name'          => 'required|string|max:255',
         'email'         => 'required|email|max:255|unique:users,email',
@@ -288,25 +287,30 @@ class UsersApiController extends Controller
         'state_id'      => 'required|integer|exists:states,id',
         'district_id'   => 'required|integer|exists:districts,id',
         'role_id'       => 'required|integer|exists:roles,id',
-    ], [
-        // Custom messages
-        'email.unique' => 'This email is already registered.',
-        'mobile_number.unique' => 'This mobile number is already registered.',
-        'state_id.exists' => 'Invalid state selected.',
-        'district_id.exists' => 'Invalid district selected.',
-        'role_id.exists' => 'Invalid role selected.',
     ]);
 
-    // ❌ Validation failed
     if ($validator->fails()) {
+        // Custom short message logic
+        $errors = $validator->errors();
+        $message = 'Please check entered details.';
+
+        if ($errors->has('email') && $errors->has('mobile_number')) {
+            $message = 'Email & Mobile already registered.';
+        } elseif ($errors->has('email')) {
+            $message = 'Email already registered.';
+        } elseif ($errors->has('mobile_number')) {
+            $message = 'Mobile already registered.';
+        } elseif ($errors->has('password')) {
+            $message = 'Weak or invalid password.';
+        }
+
         return response()->json([
             'status' => false,
-            'errors' => $validator->errors()
+            'message' => $message
         ], 422);
     }
 
     try {
-        // ✅ Create new user
         $user = User::create([
             'name'          => $request->name,
             'email'         => $request->email,
@@ -318,26 +322,19 @@ class UsersApiController extends Controller
             'district_id'   => $request->district_id,
         ]);
 
-        // ✅ Assign selected role
         $user->roles()->sync([$request->role_id]);
 
-        // ✅ Create API token
         $token = $user->createToken('api-token')->plainTextToken;
 
-        // ✅ Success response
         return response()->json([
             'status' => true,
-            'message' => 'User registered successfully.',
+            'message' => 'Registration successful.',
             'token' => $token,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'mobile_number' => $user->mobile_number,
-                'pin_code' => $user->pin_code,
-                'full_address' => $user->full_address,
-                'state_id' => $user->state_id,
-                'district_id' => $user->district_id,
                 'role_id' => $request->role_id,
                 'role_name' => $user->roles->pluck('title')->first(),
             ]
@@ -346,11 +343,11 @@ class UsersApiController extends Controller
     } catch (\Exception $e) {
         return response()->json([
             'status' => false,
-            'message' => 'Something went wrong while registering user.',
-            'error' => $e->getMessage()
+            'message' => 'Something went wrong. Please try again.'
         ], 500);
     }
 }
+
 
 
 
