@@ -145,6 +145,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🏙️ Get All Districts (Public API)
     Route::get('all-districts', 'DistrictsApiController@getAllDistricts')->name('districts.all');
 
+    // 🧾 New User Registration API (with address & location)
+    Route::post('user-registration', 'UsersApiController@UserRegistration')->name('user.registration');
+
    
     
     

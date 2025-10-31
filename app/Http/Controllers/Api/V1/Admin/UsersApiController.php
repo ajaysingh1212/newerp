@@ -275,6 +275,85 @@ class UsersApiController extends Controller
         ], 201);
     }
 
+    public function UserRegistration(Request $request)
+{
+    // ✅ Validation rules
+    $validator = Validator::make($request->all(), [
+        'name'          => 'required|string|max:255',
+        'email'         => 'required|email|max:255|unique:users,email',
+        'mobile_number' => 'required|string|max:20|unique:users,mobile_number',
+        'password'      => 'required|string|min:6',
+        'pin_code'      => 'required|string|max:10',
+        'full_address'  => 'required|string|max:500',
+        'state_id'      => 'required|integer|exists:states,id',
+        'district_id'   => 'required|integer|exists:districts,id',
+        'role_id'       => 'required|integer|exists:roles,id',
+    ], [
+        // Custom messages
+        'email.unique' => 'This email is already registered.',
+        'mobile_number.unique' => 'This mobile number is already registered.',
+        'state_id.exists' => 'Invalid state selected.',
+        'district_id.exists' => 'Invalid district selected.',
+        'role_id.exists' => 'Invalid role selected.',
+    ]);
+
+    // ❌ Validation failed
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => false,
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        // ✅ Create new user
+        $user = User::create([
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'mobile_number' => $request->mobile_number,
+            'password'      => bcrypt($request->password),
+            'pin_code'      => $request->pin_code,
+            'full_address'  => $request->full_address,
+            'state_id'      => $request->state_id,
+            'district_id'   => $request->district_id,
+        ]);
+
+        // ✅ Assign selected role
+        $user->roles()->sync([$request->role_id]);
+
+        // ✅ Create API token
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        // ✅ Success response
+        return response()->json([
+            'status' => true,
+            'message' => 'User registered successfully.',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'mobile_number' => $user->mobile_number,
+                'pin_code' => $user->pin_code,
+                'full_address' => $user->full_address,
+                'state_id' => $user->state_id,
+                'district_id' => $user->district_id,
+                'role_id' => $request->role_id,
+                'role_name' => $user->roles->pluck('title')->first(),
+            ]
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong while registering user.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
 
     // Profile photo upload without auth
 public function uploadProfilePhoto(Request $request, $user_id)
