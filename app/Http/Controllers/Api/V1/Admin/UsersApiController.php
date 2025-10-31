@@ -275,6 +275,82 @@ class UsersApiController extends Controller
         ], 201);
     }
 
+    public function UserRegistration(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'name'          => 'required|string|max:255',
+        'email'         => 'required|email|max:255|unique:users,email',
+        'mobile_number' => 'required|string|max:20|unique:users,mobile_number',
+        'password'      => 'required|string|min:6',
+        'pin_code'      => 'required|string|max:10',
+        'full_address'  => 'required|string|max:500',
+        'state_id'      => 'required|integer|exists:states,id',
+        'district_id'   => 'required|integer|exists:districts,id',
+        'role_id'       => 'required|integer|exists:roles,id',
+    ]);
+
+    if ($validator->fails()) {
+        // Custom short message logic
+        $errors = $validator->errors();
+        $message = 'Please check entered details.';
+
+        if ($errors->has('email') && $errors->has('mobile_number')) {
+            $message = 'Email & Mobile already registered.';
+        } elseif ($errors->has('email')) {
+            $message = 'Email already registered.';
+        } elseif ($errors->has('mobile_number')) {
+            $message = 'Mobile already registered.';
+        } elseif ($errors->has('password')) {
+            $message = 'Weak or invalid password.';
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => $message
+        ], 422);
+    }
+
+    try {
+        $user = User::create([
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'mobile_number' => $request->mobile_number,
+            'password'      => bcrypt($request->password),
+            'pin_code'      => $request->pin_code,
+            'full_address'  => $request->full_address,
+            'state_id'      => $request->state_id,
+            'district_id'   => $request->district_id,
+        ]);
+
+        $user->roles()->sync([$request->role_id]);
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Registration successful.',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'mobile_number' => $user->mobile_number,
+                'role_id' => $request->role_id,
+                'role_name' => $user->roles->pluck('title')->first(),
+            ]
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong. Please try again.'
+        ], 500);
+    }
+}
+
+
+
+
 
     // Profile photo upload without auth
 public function uploadProfilePhoto(Request $request, $user_id)
