@@ -420,39 +420,33 @@ class UsersApiController extends Controller
     {
         // Step 1️⃣: Validate input
         $validator = Validator::make($request->all(), [
-            'email'    => 'required|email',
-            'password' => 'required|string|min:6',
+            'email_or_mobile' => 'required|string',
+            'password'        => 'required|string|min:6',
         ]);
 
         if ($validator->fails()) {
-            $errors = $validator->errors();
-            $message = 'Please check your credentials.';
-
-            if ($errors->has('email') && $errors->has('password')) {
-                $message = 'Email & Password required.';
-            } elseif ($errors->has('email')) {
-                $message = 'Invalid email address.';
-            } elseif ($errors->has('password')) {
-                $message = 'Password must be at least 6 characters.';
-            }
-
             return response()->json([
                 'status'  => false,
-                'message' => $message
+                'message' => 'Email/Mobile & Password required.'
             ], 422);
         }
 
-        // Step 2️⃣: Check user exists
-        $user = User::where('email', $request->email)->first();
+        $loginInput = $request->email_or_mobile;
+
+        // Step 2️⃣: Find user by email OR mobile number
+        $user = User::where('email', $loginInput)
+            ->orWhere('mobile_number', $loginInput)
+            ->first();
+
         if (!$user) {
             return response()->json([
                 'status'  => false,
-                'message' => 'No account found with this email.'
+                'message' => 'No account found with this email or mobile number.'
             ], 404);
         }
 
-        // Step 3️⃣: Verify password
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        // Step 3️⃣: Verify password manually (since we used OR condition)
+        if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status'  => false,
                 'message' => 'Invalid password.'
@@ -460,10 +454,10 @@ class UsersApiController extends Controller
         }
 
         // Step 4️⃣: Fetch full user with relationships
-        $user = Auth::user()->load(['roles', 'state', 'district']);
+        $user->load(['roles', 'state', 'district']);
         $token = $user->createToken('api-token')->plainTextToken;
 
-        // Step 5️⃣: Build full detailed response (same as old login)
+        // Step 5️⃣: Return full response (same format as before)
         return response()->json([
             'status'  => true,
             'message' => 'Login successful.',
@@ -497,23 +491,24 @@ class UsersApiController extends Controller
                 'status_cmd'       => $user->status_cmd,
 
                 // 🖼 Profile & Docs Media URLs
-                'profile_image'    => $user->getFirstMediaUrl('profile_image'),
-                'upload_signature' => $user->getFirstMediaUrl('upload_signature'),
-                'upload_pan_aadhar'=> $user->getFirstMediaUrl('upload_pan_aadhar'),
+                'profile_image'     => $user->getFirstMediaUrl('profile_image'),
+                'upload_signature'  => $user->getFirstMediaUrl('upload_signature'),
+                'upload_pan_aadhar' => $user->getFirstMediaUrl('upload_pan_aadhar'),
                 'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
-                'shop_photo'       => $user->getFirstMediaUrl('shop_photo'),
-                'gst_certificate'  => $user->getFirstMediaUrl('gst_certificate'),
+                'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
+                'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
 
                 // 🌍 Relations
-                'state'            => $user->state ? $user->state->name : null,
-                'district'         => $user->district ? $user->district->name : null,
+                'state'             => $user->state ? $user->state->name : null,
+                'district'          => $user->district ? $user->district->name : null,
 
                 // 🔐 Role Info
-                'role_id'          => $user->roles->pluck('id')->first(),
-                'role_name'        => $user->roles->pluck('title')->first(),
+                'role_id'           => $user->roles->pluck('id')->first(),
+                'role_name'         => $user->roles->pluck('title')->first(),
             ]
         ], 200);
     }
+
 
 
 
