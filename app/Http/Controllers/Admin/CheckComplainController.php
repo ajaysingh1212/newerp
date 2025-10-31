@@ -191,11 +191,13 @@ public function update(UpdateCheckComplainRequest $request, CheckComplain $check
 
     // ✅ Create User Alert
     $alertText = "Complaint #{$checkComplain->ticket_number} updated.\n"
-        . "Customer: {$checkComplain->customer_name}\n"
-        . "Vehicle: {$checkComplain->vehicle_no}\n"
-        . "Status: {$checkComplain->status}\n"
-        . "Reason: {$checkComplain->reason}\n"
-        . ($checkComplain->notes ? "Notes: {$checkComplain->notes}\n" : '');
+    . "Customer: {$checkComplain->customer_name}\n"
+    . "Vehicle: {$checkComplain->vehicle_no}\n"
+    . "Status: {$checkComplain->status}\n"
+    . "Reason: " . strip_tags($checkComplain->reason) . "\n"
+    . "Assigned To: " . strip_tags($checkComplain->admin_message) . "\n"
+    . ($checkComplain->notes ? "Notes: " . strip_tags($checkComplain->notes) . "\n" : '');
+
 
     $alert = \App\Models\UserAlert::create([
         'alert_text' => $alertText,
