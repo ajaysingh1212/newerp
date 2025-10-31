@@ -418,7 +418,7 @@ class UsersApiController extends Controller
 
     public function UserLogin(Request $request)
     {
-        // Step 1️⃣: Validate input fields
+        // Step 1️⃣: Validate input
         $validator = Validator::make($request->all(), [
             'email'    => 'required|email',
             'password' => 'required|string|min:6',
@@ -442,7 +442,7 @@ class UsersApiController extends Controller
             ], 422);
         }
 
-        // Step 2️⃣: Check if user exists
+        // Step 2️⃣: Check user exists
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             return response()->json([
@@ -451,7 +451,7 @@ class UsersApiController extends Controller
             ], 404);
         }
 
-        // Step 3️⃣: Attempt login
+        // Step 3️⃣: Verify password
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
                 'status'  => false,
@@ -459,27 +459,62 @@ class UsersApiController extends Controller
             ], 401);
         }
 
-        // Step 4️⃣: Fetch logged-in user and create token
-        $user = Auth::user()->load('roles');
+        // Step 4️⃣: Fetch full user with relationships
+        $user = Auth::user()->load(['roles', 'state', 'district']);
         $token = $user->createToken('api-token')->plainTextToken;
 
-        // Step 5️⃣: Return final clean response
+        // Step 5️⃣: Build full detailed response (same as old login)
         return response()->json([
             'status'  => true,
             'message' => 'Login successful.',
             'token'   => $token,
             'user'    => [
-                'id'             => $user->id,
-                'name'           => $user->name,
-                'email'          => $user->email,
-                'mobile_number'  => $user->mobile_number,
-                'state_id'       => $user->state_id,
-                'district_id'    => $user->district_id,
-                'role_id'        => $user->roles->pluck('id')->first(),
-                'role_name'      => $user->roles->pluck('title')->first(),
+                'id'               => $user->id,
+                'name'             => $user->name,
+                'company_name'     => $user->company_name,
+                'email'            => $user->email,
+                'gst_number'       => $user->gst_number,
+                'date_inc'         => $user->date_inc,
+                'date_joining'     => $user->date_joining,
+                'mobile_number'    => $user->mobile_number,
+                'whatsapp_number'  => $user->whatsapp_number,
+                'pin_code'         => $user->pin_code,
+                'full_address'     => $user->full_address,
+                'bank_name'        => $user->bank_name,
+                'branch_name'      => $user->branch_name,
+                'ifsc'             => $user->ifsc,
+                'ac_holder_name'   => $user->ac_holder_name,
+                'pan_number'       => $user->pan_number,
+                'status'           => $user->status,
+                'email_verified_at'=> $user->email_verified_at,
+                'created_at'       => $user->created_at,
+                'updated_at'       => $user->updated_at,
+                'deleted_at'       => $user->deleted_at,
+                'state_id'         => $user->state_id,
+                'district_id'      => $user->district_id,
+                'team_id'          => $user->team_id,
+                'created_by_id'    => $user->created_by_id,
+                'status_cmd'       => $user->status_cmd,
+
+                // 🖼 Profile & Docs Media URLs
+                'profile_image'    => $user->getFirstMediaUrl('profile_image'),
+                'upload_signature' => $user->getFirstMediaUrl('upload_signature'),
+                'upload_pan_aadhar'=> $user->getFirstMediaUrl('upload_pan_aadhar'),
+                'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
+                'shop_photo'       => $user->getFirstMediaUrl('shop_photo'),
+                'gst_certificate'  => $user->getFirstMediaUrl('gst_certificate'),
+
+                // 🌍 Relations
+                'state'            => $user->state ? $user->state->name : null,
+                'district'         => $user->district ? $user->district->name : null,
+
+                // 🔐 Role Info
+                'role_id'          => $user->roles->pluck('id')->first(),
+                'role_name'        => $user->roles->pluck('title')->first(),
             ]
         ], 200);
     }
+
 
 
 
