@@ -190,12 +190,14 @@ public function update(UpdateCheckComplainRequest $request, CheckComplain $check
     }
 
     // ✅ Create User Alert
-    $alertText = "Complaint #{$checkComplain->ticket_number} updated.\n"
+    $complainTitles = $checkComplain->select_complains->pluck('title')->implode(', ');
+
+$alertText = "Complaint #{$checkComplain->ticket_number} updated.\n"
     . "Customer: {$checkComplain->customer_name}\n"
     . "Vehicle: {$checkComplain->vehicle_no}\n"
     . "Status: {$checkComplain->status}\n"
-    . "Reason: " . strip_tags($checkComplain->reason) . "\n"
-    . "Assigned To: " . strip_tags($checkComplain->admin_message) . "\n"
+    . "Reason: " . ($complainTitles ?: 'N/A') . "\n"
+    . "Admin Message: " . strip_tags($checkComplain->admin_message) . "\n"
     . ($checkComplain->notes ? "Notes: " . strip_tags($checkComplain->notes) . "\n" : '');
 
 
