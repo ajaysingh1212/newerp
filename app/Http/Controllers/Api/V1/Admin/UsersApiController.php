@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Support\Facades\Password;
 
+use Illuminate\Support\Facades\Hash;
+
+
 class UsersApiController extends Controller
 {
     use MediaUploadingTrait;
