@@ -23,10 +23,11 @@
 
                 <div class="mb-3">
                     <label>Payment Status</label>
-                    <select name="payment_status" class="form-control" disabled>
+                    <select name="payment_status" class="form-control" >
                         <option value="pending" {{ $recharge->payment_status == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="completed" {{ $recharge->payment_status == 'completed' ? 'selected' : '' }}>Completed</option>
                         <option value="failed" {{ $recharge->payment_status == 'failed' ? 'selected' : '' }}>Failed</option>
+                        <option value="rejected" {{ $recharge->payment_status == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </div>
 

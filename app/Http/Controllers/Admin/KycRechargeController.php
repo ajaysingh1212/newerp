@@ -273,18 +273,22 @@ class KycRechargeController extends Controller
 {
     $recharge = KycRecharge::findOrFail($id);
 
-    // ✅ Sirf vehicle_status validate aur update karein
+    // ✅ Validate dono fields
     $data = $request->validate([
         'vehicle_status' => 'required|in:processing,live',
+        'payment_status' => 'required|in:pending,completed,failed,rejected', // apne project ke options ke hisab se
     ]);
 
+    // ✅ Update both fields
     $recharge->update([
         'vehicle_status' => $data['vehicle_status'],
+        'payment_status' => $data['payment_status'],
     ]);
 
     return redirect()->route('admin.kyc-recharges.index')
-                     ->with('success', 'Vehicle status updated successfully.');
+                     ->with('success', 'Vehicle and Payment status updated successfully.');
 }
+
 
 
     // Delete recharge
