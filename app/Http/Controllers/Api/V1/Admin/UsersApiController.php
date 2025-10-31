@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Support\Facades\Password;
 
+use Illuminate\Support\Facades\Hash;
+
+
 class UsersApiController extends Controller
 {
     use MediaUploadingTrait;
@@ -154,73 +157,73 @@ class UsersApiController extends Controller
     
     
     public function login(Request $request)
-{
-    // Validate the request
-    $validator = Validator::make($request->all(), [
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Check if user exists
+        $user = \App\Models\User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found with this email'], 404);
+        }
+
+        // Attempt login
+        $credentials = $request->only('email', 'password');
+        if (!Auth::attempt($credentials)) {
+            return response()->json(['message' => 'Incorrect password'], 401);
+        }
+
+        // Authenticated user with roles
+        $user = Auth::user()->load('roles');
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'company_name' => $user->company_name,
+                'email' => $user->email,
+                'gst_number' => $user->gst_number,
+                'date_inc' => $user->date_inc,
+                'date_joining' => $user->date_joining,
+                'mobile_number' => $user->mobile_number,
+                'whatsapp_number' => $user->whatsapp_number,
+                'pin_code' => $user->pin_code,
+                'full_address' => $user->full_address,
+                'bank_name' => $user->bank_name,
+                'branch_name' => $user->branch_name,
+                'ifsc' => $user->ifsc,
+                'ac_holder_name' => $user->ac_holder_name,
+                'pan_number' => $user->pan_number,
+                'status' => $user->status,
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+                'deleted_at' => $user->deleted_at,
+                'state_id' => $user->state_id,
+                'district_id' => $user->district_id,
+                'team_id' => $user->team_id,
+                'created_by_id' => $user->created_by_id,
+                'status_cmd' => $user->status_cmd,
+                'profile_image' => $user->profile_image,
+                'upload_signature' => $user->upload_signature,
+                'upload_pan_aadhar' => $user->upload_pan_aadhar,
+                'passbook_statement' => $user->passbook_statement,
+                'shop_photo' => $user->shop_photo,
+                'gst_certificate' => $user->gst_certificate,
+                'media' => $user->media,
+                'roles' => $user->roles->pluck('title')
+            ]
+        ]);
     }
-
-    // Check if user exists
-    $user = \App\Models\User::where('email', $request->email)->first();
-    if (!$user) {
-        return response()->json(['message' => 'User not found with this email'], 404);
-    }
-
-    // Attempt login
-    $credentials = $request->only('email', 'password');
-    if (!Auth::attempt($credentials)) {
-        return response()->json(['message' => 'Incorrect password'], 401);
-    }
-
-    // Authenticated user with roles
-    $user = Auth::user()->load('roles');
-    $token = $user->createToken('api-token')->plainTextToken;
-
-    return response()->json([
-        'token' => $token,
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'company_name' => $user->company_name,
-            'email' => $user->email,
-            'gst_number' => $user->gst_number,
-            'date_inc' => $user->date_inc,
-            'date_joining' => $user->date_joining,
-            'mobile_number' => $user->mobile_number,
-            'whatsapp_number' => $user->whatsapp_number,
-            'pin_code' => $user->pin_code,
-            'full_address' => $user->full_address,
-            'bank_name' => $user->bank_name,
-            'branch_name' => $user->branch_name,
-            'ifsc' => $user->ifsc,
-            'ac_holder_name' => $user->ac_holder_name,
-            'pan_number' => $user->pan_number,
-            'status' => $user->status,
-            'email_verified_at' => $user->email_verified_at,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
-            'deleted_at' => $user->deleted_at,
-            'state_id' => $user->state_id,
-            'district_id' => $user->district_id,
-            'team_id' => $user->team_id,
-            'created_by_id' => $user->created_by_id,
-            'status_cmd' => $user->status_cmd,
-            'profile_image' => $user->profile_image,
-            'upload_signature' => $user->upload_signature,
-            'upload_pan_aadhar' => $user->upload_pan_aadhar,
-            'passbook_statement' => $user->passbook_statement,
-            'shop_photo' => $user->shop_photo,
-            'gst_certificate' => $user->gst_certificate,
-            'media' => $user->media,
-            'roles' => $user->roles->pluck('title')
-        ]
-    ]);
-}
 
     
     public function getUserById($id)
@@ -276,148 +279,240 @@ class UsersApiController extends Controller
     }
 
     public function UserRegistration(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'name'          => 'required|string|max:255',
-        'email'         => 'required|email|max:255|unique:users,email',
-        'mobile_number' => 'required|string|max:20|unique:users,mobile_number',
-        'password'      => 'required|string|min:6',
-        'pin_code'      => 'required|string|max:10',
-        'full_address'  => 'required|string|max:500',
-        'state_id'      => 'required|integer|exists:states,id',
-        'district_id'   => 'required|integer|exists:districts,id',
-        'role_id'       => 'required|integer|exists:roles,id',
-    ]);
-
-    if ($validator->fails()) {
-        // Custom short message logic
-        $errors = $validator->errors();
-        $message = 'Please check entered details.';
-
-        if ($errors->has('email') && $errors->has('mobile_number')) {
-            $message = 'Email & Mobile already registered.';
-        } elseif ($errors->has('email')) {
-            $message = 'Email already registered.';
-        } elseif ($errors->has('mobile_number')) {
-            $message = 'Mobile already registered.';
-        } elseif ($errors->has('password')) {
-            $message = 'Weak or invalid password.';
-        }
-
-        return response()->json([
-            'status' => false,
-            'message' => $message
-        ], 422);
-    }
-
-    try {
-        $user = User::create([
-            'name'          => $request->name,
-            'email'         => $request->email,
-            'mobile_number' => $request->mobile_number,
-            'password'      => bcrypt($request->password),
-            'pin_code'      => $request->pin_code,
-            'full_address'  => $request->full_address,
-            'state_id'      => $request->state_id,
-            'district_id'   => $request->district_id,
+    {
+        $validator = Validator::make($request->all(), [
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|max:255|unique:users,email',
+            'mobile_number' => 'required|string|max:20|unique:users,mobile_number',
+            'password'      => 'required|string|min:6',
+            'pin_code'      => 'required|string|max:10',
+            'full_address'  => 'required|string|max:500',
+            'state_id'      => 'required|integer|exists:states,id',
+            'district_id'   => 'required|integer|exists:districts,id',
+            'role_id'       => 'required|integer|exists:roles,id',
         ]);
 
-        $user->roles()->sync([$request->role_id]);
+        if ($validator->fails()) {
+            // Custom short message logic
+            $errors = $validator->errors();
+            $message = 'Please check entered details.';
 
-        $token = $user->createToken('api-token')->plainTextToken;
+            if ($errors->has('email') && $errors->has('mobile_number')) {
+                $message = 'Email & Mobile already registered.';
+            } elseif ($errors->has('email')) {
+                $message = 'Email already registered.';
+            } elseif ($errors->has('mobile_number')) {
+                $message = 'Mobile already registered.';
+            } elseif ($errors->has('password')) {
+                $message = 'Weak or invalid password.';
+            }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Registration successful.',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'mobile_number' => $user->mobile_number,
-                'role_id' => $request->role_id,
-                'role_name' => $user->roles->pluck('title')->first(),
-            ]
-        ], 201);
+            return response()->json([
+                'status' => false,
+                'message' => $message
+            ], 422);
+        }
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Something went wrong. Please try again.'
-        ], 500);
+        try {
+            $user = User::create([
+                'name'          => $request->name,
+                'email'         => $request->email,
+                'mobile_number' => $request->mobile_number,
+                'password'      => bcrypt($request->password),
+                'pin_code'      => $request->pin_code,
+                'full_address'  => $request->full_address,
+                'state_id'      => $request->state_id,
+                'district_id'   => $request->district_id,
+            ]);
+
+            $user->roles()->sync([$request->role_id]);
+
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Registration successful.',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'mobile_number' => $user->mobile_number,
+                    'role_id' => $request->role_id,
+                    'role_name' => $user->roles->pluck('title')->first(),
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong. Please try again.'
+            ], 500);
+        }
     }
-}
-
-
-
 
 
     // Profile photo upload without auth
-public function uploadProfilePhoto(Request $request, $user_id)
-{
-    $user = User::find($user_id);
-    if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
-    }
+    public function uploadProfilePhoto(Request $request, $user_id)
+    {
+        $user = User::find($user_id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
 
-    // Validate file
-    $validator = Validator::make($request->all(), [
-        'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
-    ]);
+        // Validate file
+        $validator = Validator::make($request->all(), [
+            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-    // Delete existing profile image if any
-    if ($user->profile_image) {
-        $user->profile_image->delete();
-    }
+        // Delete existing profile image if any
+        if ($user->profile_image) {
+            $user->profile_image->delete();
+        }
 
-    // Add new profile image
-    $user->addMedia($request->file('profile_image'))->toMediaCollection('profile_image');
+        // Add new profile image
+        $user->addMedia($request->file('profile_image'))->toMediaCollection('profile_image');
 
-    // Response with only message
-    return response()->json([
-        'message' => 'Profile photo uploaded successfully'
-    ], 200);
-}
-
-public function sendPasswordResetLink(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'email' => 'required|email',
-    ], [
-        'email.required' => 'Email field is required.',
-        'email.email' => 'Please enter a valid email address.',
-    ]);
-
-    // Check basic validation first
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
-    }
-
-    // Check if email exists in users table
-    $userExists = \App\Models\User::where('email', $request->email)->exists();
-    if (!$userExists) {
-        return response()->json(['errors' => ['email' => ['Email not found.']]], 404);
-    }
-
-    // Send password reset link
-    $status = Password::sendResetLink(
-        $request->only('email')
-    );
-
-    if ($status === Password::RESET_LINK_SENT) {
+        // Response with only message
         return response()->json([
-            'message' => 'Password reset link sent to your email.'
+            'message' => 'Profile photo uploaded successfully'
         ], 200);
-    } else {
-        return response()->json([
-            'message' => 'Failed to send password reset link.'
-        ], 500);
     }
-}
+
+    public function sendPasswordResetLink(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ], [
+            'email.required' => 'Email field is required.',
+            'email.email' => 'Please enter a valid email address.',
+        ]);
+
+        // Check basic validation first
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Check if email exists in users table
+        $userExists = \App\Models\User::where('email', $request->email)->exists();
+        if (!$userExists) {
+            return response()->json(['errors' => ['email' => ['Email not found.']]], 404);
+        }
+
+        // Send password reset link
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => 'Password reset link sent to your email.'
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Failed to send password reset link.'
+            ], 500);
+        }
+    }
+
+    public function UserLogin(Request $request)
+    {
+        // Step 1️⃣: Validate input
+        $validator = Validator::make($request->all(), [
+            'email_or_mobile' => 'required|string',
+            'password'        => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Email/Mobile & Password required.'
+            ], 422);
+        }
+
+        $loginInput = $request->email_or_mobile;
+
+        // Step 2️⃣: Find user by email OR mobile number
+        $user = User::where('email', $loginInput)
+            ->orWhere('mobile_number', $loginInput)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No account found with this email or mobile number.'
+            ], 404);
+        }
+
+        // Step 3️⃣: Verify password manually (since we used OR condition)
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Invalid password.'
+            ], 401);
+        }
+
+        // Step 4️⃣: Fetch full user with relationships
+        $user->load(['roles', 'state', 'district']);
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        // Step 5️⃣: Return full response (same format as before)
+        return response()->json([
+            'status'  => true,
+            'message' => 'Login successful.',
+            'token'   => $token,
+            'user'    => [
+                'id'               => $user->id,
+                'name'             => $user->name,
+                'company_name'     => $user->company_name,
+                'email'            => $user->email,
+                'gst_number'       => $user->gst_number,
+                'date_inc'         => $user->date_inc,
+                'date_joining'     => $user->date_joining,
+                'mobile_number'    => $user->mobile_number,
+                'whatsapp_number'  => $user->whatsapp_number,
+                'pin_code'         => $user->pin_code,
+                'full_address'     => $user->full_address,
+                'bank_name'        => $user->bank_name,
+                'branch_name'      => $user->branch_name,
+                'ifsc'             => $user->ifsc,
+                'ac_holder_name'   => $user->ac_holder_name,
+                'pan_number'       => $user->pan_number,
+                'status'           => $user->status,
+                'email_verified_at'=> $user->email_verified_at,
+                'created_at'       => $user->created_at,
+                'updated_at'       => $user->updated_at,
+                'deleted_at'       => $user->deleted_at,
+                'state_id'         => $user->state_id,
+                'district_id'      => $user->district_id,
+                'team_id'          => $user->team_id,
+                'created_by_id'    => $user->created_by_id,
+                'status_cmd'       => $user->status_cmd,
+
+                // 🖼 Profile & Docs Media URLs
+                'profile_image'     => $user->getFirstMediaUrl('profile_image'),
+                'upload_signature'  => $user->getFirstMediaUrl('upload_signature'),
+                'upload_pan_aadhar' => $user->getFirstMediaUrl('upload_pan_aadhar'),
+                'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
+                'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
+                'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
+
+                // 🌍 Relations
+                'state'             => $user->state ? $user->state->name : null,
+                'district'          => $user->district ? $user->district->name : null,
+
+                // 🔐 Role Info
+                'role_id'           => $user->roles->pluck('id')->first(),
+                'role_name'         => $user->roles->pluck('title')->first(),
+            ]
+        ], 200);
+    }
+
+
 
 
     

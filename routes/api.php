@@ -148,6 +148,10 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🧾 New User Registration API (with address & location)
     Route::post('user-registration', 'UsersApiController@UserRegistration')->name('user.registration');
 
+    // 🔑 User Login (new short-response version)
+    Route::post('user-login', 'UsersApiController@UserLogin')->name('user.login');
+
+
    
     
     

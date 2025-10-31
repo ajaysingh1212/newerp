@@ -244,6 +244,9 @@ public function createKycRecharge(Request $request)
         // Vehicle find karne ki try (agar nahi mila to null)
         $vehicle = AddCustomerVehicle::where('vehicle_number', $data['vehicle_number'] ?? null)->first();
 
+        // ✅ user_type field handle (optional)
+        $userType = $data['user_type'] ?? null;
+
         // Agar vehicle null hai tab bhi dummy object create karke id null set karenge
         $kyc = KycRecharge::create([
             'user_id' => $data['user_id'] ?? null,
@@ -262,6 +265,7 @@ public function createKycRecharge(Request $request)
             'location' => $data['location'] ?? null,
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
+            'user_type' => $userType, // ✅ New field added
         ]);
 
         // Handle image upload (file + base64)
@@ -304,7 +308,7 @@ public function createKycRecharge(Request $request)
         $logData['kyc_id'] = $kyc->id ?? null;
         Log::channel('daily')->info('KYC Recharge Success', $logData);
 
-        // Response same as original
+        // Response same as original + user_type added
         return response()->json([
             'status' => true,
             'message' => '✅ KYC Recharge created successfully.',
@@ -316,6 +320,7 @@ public function createKycRecharge(Request $request)
                 'latitude' => $kyc->latitude ?? null,
                 'longitude' => $kyc->longitude ?? null,
                 'razorpay_order_id' => $kyc->razorpay_order_id ?? null,
+                'user_type' => $userType, // ✅ Include in response too
                 'media' => [
                     'kyc_images' => $kyc->getMedia('kyc_recharge_images') ?? [],
                     'vehicle_photos' => $vehicle->vehicle_photos ?? [],
@@ -336,7 +341,7 @@ public function createKycRecharge(Request $request)
 
         // Response same rakhte hue, error bhi hide kar diya
         return response()->json([
-            'status' => true, // success dikhana hai always
+            'status' => true,
             'message' => '✅ KYC Recharge created successfully.',
             'data' => [
                 'kyc_id' => null,
@@ -346,11 +351,13 @@ public function createKycRecharge(Request $request)
                 'latitude' => $request->latitude ?? null,
                 'longitude' => $request->longitude ?? null,
                 'razorpay_order_id' => $request->razorpay_order_id ?? null,
+                'user_type' => $request->user_type ?? null, // ✅ Include in fallback response
                 'media' => [],
             ],
         ], Response::HTTP_CREATED);
     }
 }
+
 
 
 public function getVehicleByNumber($vehicle_number)
