@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\AccountDeletionRequest;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class ChangePasswordController extends Controller
@@ -14,8 +16,12 @@ class ChangePasswordController extends Controller
     public function edit()
     {
         abort_if(Gate::denies('profile_password_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+         $user = Auth::user();
 
-        return view('auth.passwords.edit');
+            $deletionRequest = AccountDeletionRequest::where('user_id', $user->id)
+                        ->latest()
+                        ->first();
+        return view('auth.passwords.edit', compact('deletionRequest'));
     }
 
     public function update(UpdatePasswordRequest $request)

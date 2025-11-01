@@ -68,28 +68,61 @@
     </div>
 </div>
 <div class="row">
+    {{-- Status Section --}}
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                {{ trans('global.delete_account') }}
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <strong>Account Deletion Status</strong>
             </div>
-
-            <!-- resources/views/profile.blade.php (replace delete form) -->
             <div class="card-body">
-                <form method="POST" action="{{ route('account.delete.request') }}" onsubmit="return confirm('Are you sure you want to request account deletion? This will require admin approval.');">
-                    @csrf
-                    <div class="form-group">
-                        <label for="reason">Reason for deletion (optional)</label>
-                        <textarea name="reason" id="reason" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-danger" type="submit">
-                            Request Account Deletion
-                        </button>
-                    </div>
-                </form>
-            </div>
+                @if(isset($deletionRequest))
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>ID</th>
+                            <td>{{ $deletionRequest->id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>
+                                @if($deletionRequest->status == 'pending')
+                                    <span class="badge badge-warning">Pending</span>
+                                @elseif($deletionRequest->status == 'approved')
+                                    <span class="badge badge-success">Approved</span>
+                                @else
+                                    <span class="badge badge-danger">Rejected</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Reason (You Provided)</th>
+                            <td>{{ $deletionRequest->reason ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Admin Note</th>
+                            <td>{{ $deletionRequest->admin_note ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Requested At</th>
+                            <td>{{ $deletionRequest->created_at->format('d M Y h:i A') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Processed At</th>
+                            <td>
+                                {{ $deletionRequest->approved_at ? $deletionRequest->approved_at->format('d M Y h:i A') : '—' }}
 
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Approved By</th>
+                            <td>
+                                {{ $deletionRequest->approver->name ?? '—' }}
+                            </td>
+                        </tr>
+                    </table>
+                @else
+                    <p class="text-muted">No deletion request submitted yet.</p>
+                @endif
+            </div>
         </div>
     </div>
 
