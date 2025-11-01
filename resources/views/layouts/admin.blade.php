@@ -110,7 +110,7 @@
             e.preventDefault();
 
             // Only toggle sidebar if screen width is 768px or less
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 992) {
                 $('body').toggleClass('sidebar-collapse');
                 $('.sidebar-wrapper').toggle(); // Or use .fadeToggle(200)
             }
