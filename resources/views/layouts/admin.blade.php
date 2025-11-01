@@ -104,7 +104,7 @@
 <style>
 /* Default (large screen) */
 .username {
-    font-size: 1rem; /* normal size */
+    font-size: 1.5rem; /* normal size */
 }
 
 /* 👇 Smaller font for screens below 992px */
