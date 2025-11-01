@@ -440,6 +440,107 @@ public function getVehicleByNumber($vehicle_number)
     }
 }
 
+public function AddVehicle(Request $request)
+{
+    try {
+        // 🔹 Validation
+        $data = $request->validate([
+            'select_vehicle_type_id' => 'nullable|integer|exists:vehicle_types,id',
+            'vehicle_number' => 'required|string|unique:add_customer_vehicles,vehicle_number',
+            'owners_name' => 'required|string',
+            'insurance_expiry_date' => 'nullable|string',
+            'chassis_number' => 'nullable|string',
+            'vehicle_model' => 'nullable|string',
+            'vehicle_color' => 'nullable|string',
+            'engine_number' => 'nullable|string',
+            'user_id' => 'required|integer|exists:users,id',
+            'created_by_id' => 'required|integer|exists:users,id',
+            'status' => 'nullable|string',
+            'activated' => 'nullable|string',
+
+            // 📎 File Uploads
+            'vehicle_photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'id_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'insurance_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'pollution_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'rc_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'product_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+
+        // 🔹 Date format convert
+        if (!empty($data['insurance_expiry_date'])) {
+            $panelFormat = config('panel.date_format', 'd/m/Y');
+            try {
+                $data['insurance_expiry_date'] = Carbon::createFromFormat($panelFormat, $data['insurance_expiry_date'])
+                    ->format('Y-m-d');
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid insurance_expiry_date format. Expected ' . $panelFormat,
+                    'data' => null,
+                ]);
+            }
+        }
+
+        // 🔹 Create Vehicle
+        $vehicle = AddCustomerVehicle::create($data);
+
+        // 🔹 Handle Files
+        $fileFields = [
+            'vehicle_photo' => 'vehicle_photos',
+            'id_proof' => 'id_proofs',
+            'insurance_doc' => 'insurance',
+            'pollution_doc' => 'pollution',
+            'rc_doc' => 'registration_certificate',
+            'product_image' => 'product_images',
+        ];
+
+        foreach ($fileFields as $input => $collection) {
+            if ($request->hasFile($input)) {
+                $vehicle->addMediaFromRequest($input)->toMediaCollection($collection);
+            }
+        }
+
+        // ✅ Unified Success Response
+        return response()->json([
+            'status' => true,
+            'message' => 'Vehicle added successfully.',
+            'data' => [
+                'vehicle_id' => $vehicle->id,
+                'vehicle_number' => $vehicle->vehicle_number,
+                'owners_name' => $vehicle->owners_name,
+                'insurance_expiry_date' => $vehicle->insurance_expiry_date,
+                'vehicle_model' => $vehicle->vehicle_model,
+                'vehicle_color' => $vehicle->vehicle_color,
+                'engine_number' => $vehicle->engine_number,
+            ],
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed. Please check your inputs.',
+            'data' => null,
+        ]);
+
+    } catch (\Illuminate\Database\QueryException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Database error: ' . $e->getMessage(),
+            'data' => null,
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong: ' . $e->getMessage(),
+            'data' => null,
+        ]);
+    }
+}
+
+
+
 
 
 
