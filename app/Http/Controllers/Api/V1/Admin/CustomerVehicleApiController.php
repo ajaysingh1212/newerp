@@ -459,12 +459,12 @@ public function AddVehicle(Request $request)
             'activated' => 'nullable|string',
 
             // 📎 File Uploads
-            'vehicle_photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'id_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'insurance_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'pollution_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'rc_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'product_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'vehicle_photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:9048',
+            'id_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:9048',
+            'insurance_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:9048',
+            'pollution_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:9048',
+            'rc_doc' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:9048',
+            'product_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:9048',
         ]);
 
         // 🔹 Date format convert
