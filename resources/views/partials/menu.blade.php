@@ -199,6 +199,18 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('deletion_request_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.deletion.requests.index") }}" class="nav-link {{ request()->is("admin/teams") || request()->is("admin/teams/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-users">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.team.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
                         </ul>
                     </li>
                 @endcan

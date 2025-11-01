@@ -74,16 +74,22 @@
                 {{ trans('global.delete_account') }}
             </div>
 
+            <!-- resources/views/profile.blade.php (replace delete form) -->
             <div class="card-body">
-                <form method="POST" action="{{ route("profile.password.destroyProfile") }}" onsubmit="return prompt('{{ __('global.delete_account_warning') }}') == '{{ auth()->user()->email }}'">
+                <form method="POST" action="{{ route('account.delete.request') }}" onsubmit="return confirm('Are you sure you want to request account deletion? This will require admin approval.');">
                     @csrf
                     <div class="form-group">
+                        <label for="reason">Reason for deletion (optional)</label>
+                        <textarea name="reason" id="reason" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
                         <button class="btn btn-danger" type="submit">
-                            {{ trans('global.delete') }}
+                            Request Account Deletion
                         </button>
                     </div>
                 </form>
             </div>
+
         </div>
     </div>
 

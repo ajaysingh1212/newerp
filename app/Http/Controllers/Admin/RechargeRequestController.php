@@ -132,9 +132,9 @@ public function create()
         }
 
         return [$user->id => $display];
-    })->prepend(trans('global.pleaseSelect'), '');
+    });
 
-    $products = CurrentStock::pluck('sku', 'id')->prepend(trans('global.pleaseSelect'), '');
+    $products = CurrentStock::pluck('sku', 'id');
 
     $select_recharges = RechargePlan::all()->mapWithKeys(function ($plan) {
         return [

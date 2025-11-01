@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\UserAlertsControlle;
 use App\Http\Controllers\Admin\KycRechargeController;
 use App\Http\Controllers\Admin\VehicleSharingController;
 use App\Http\Controllers\Admin\DeleteDataController;
+use App\Http\Controllers\AccountDeletionController;
+use App\Http\Controllers\Admin\AccountDeletionAdminController;
 
 
 Route::redirect('/', '/login');
@@ -351,6 +353,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
      // ✅ CSV Import route
     Route::post('delete-data/parse-csv-import', [DeleteDataController::class, 'parseCsvImport'])
         ->name('delete-data.parseCsvImport');
+    Route::get('deletion-requests', [AccountDeletionAdminController::class, 'index'])->name('deletion.requests.index');
+    Route::get('deletion-requests/{id}', [AccountDeletionAdminController::class, 'show'])->name('deletion.requests.show');
+    Route::post('deletion-requests/{id}/approve', [AccountDeletionAdminController::class, 'approve'])->name('deletion.requests.approve');
+    Route::post('deletion-requests/{id}/reject', [AccountDeletionAdminController::class, 'reject'])->name('deletion.requests.reject');
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
     // Change password
@@ -360,6 +366,16 @@ Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 
         Route::post('profile', 'ChangePasswordController@updateProfile')->name('password.updateProfile');
         Route::post('profile/destroy', 'ChangePasswordController@destroy')->name('password.destroyProfile');
     }
+});
+// routes/web.php (or routes/admin.php)
+
+Route::middleware(['auth'])->group(function(){
+    Route::post('account/delete-request', [AccountDeletionController::class, 'store'])->name('account.delete.request');
+});
+
+// Admin routes (ensure admin middleware / gate)
+Route::prefix('admin')->middleware(['auth','can:admin-access'])->group(function(){
+    
 });
 
 
