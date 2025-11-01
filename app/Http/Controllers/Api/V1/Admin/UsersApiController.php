@@ -416,7 +416,7 @@ class UsersApiController extends Controller
 
         // Validate file
         $validator = Validator::make($request->all(), [
-            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:9048',
         ]);
 
         if ($validator->fails()) {
