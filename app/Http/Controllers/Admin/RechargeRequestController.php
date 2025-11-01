@@ -109,17 +109,30 @@ public function create()
 
     // Load users with createdBy + their roles
     if ($currentUser->roles()->where('role_id', $userRole->id)->exists()) {
-        $users = User::with(['createdBy.roles']) // Load parent roles
+        $users = User::with(['createdBy.roles'])
             ->where('id', $currentUser->id)
             ->get();
     } else {
-        $users = User::with(['createdBy.roles']) // Load parent roles
+        $users = User::with(['createdBy.roles'])
             ->whereHas('roles', function ($q) use ($userRole) {
                 $q->where('role_id', $userRole->id);
             })->get();
     }
 
-    $userOptions = $users->pluck('name', 'id')->prepend(trans('global.pleaseSelect'), '');
+    /**
+     * ✅ Show user name + mobile + email in dropdown
+     */
+    $userOptions = $users->mapWithKeys(function ($user) {
+        $display = $user->name;
+
+        if (!empty($user->mobile_number) || !empty($user->email)) {
+            $mobile = $user->mobile_number ? $user->mobile_number : 'N/A';
+            $email  = $user->email ? $user->email : 'N/A';
+            $display .= " ({$mobile} | {$email})";
+        }
+
+        return [$user->id => $display];
+    })->prepend(trans('global.pleaseSelect'), '');
 
     $products = CurrentStock::pluck('sku', 'id')->prepend(trans('global.pleaseSelect'), '');
 
@@ -137,7 +150,7 @@ public function create()
             ->get()
             ->map(function ($vehicle) {
                 return [
-                    'id'             => $vehicle->id,               // Added vehicle ID here
+                    'id'             => $vehicle->id,
                     'vehicle_number' => $vehicle->vehicle_number,
                     'owners_name'    => $vehicle->owners_name,
                     'status'         => $vehicle->status,
@@ -163,10 +176,8 @@ public function create()
         }
     }
 
-    // Alias $vehiclesData as $customerVehicles for Blade compatibility
-   // Example: get vehicles for current user
-$customerVehicles = $vehiclesData[$currentUser->id] ?? collect();
-
+    // Vehicles for current user
+    $customerVehicles = $vehiclesData[$currentUser->id] ?? collect();
 
     return view('admin.rechargeRequests.create', compact(
         'products',
@@ -175,7 +186,7 @@ $customerVehicles = $vehiclesData[$currentUser->id] ?? collect();
         'users',
         'vehiclesData',
         'parentRoles',
-        'customerVehicles'  // <-- added this alias
+        'customerVehicles'
     ));
 }
 

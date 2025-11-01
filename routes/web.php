@@ -344,8 +344,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     ->name('vehicle-sharing.remove');
     Route::resource('kyc-recharges', KycRechargeController::class);
 // readom history route
-    Route::get('/commission/total', [App\Http\Controllers\Admin\CommissionController::class, 'totalCommission'])->name('commission.total');
-    Route::get('/commission/history', [App\Http\Controllers\Admin\CommissionController::class, 'history'])->name('commission.history');
+    // Route::get('/commission/total', [App\Http\Controllers\Admin\CommissionController::class, 'totalCommission'])->name('commission.total');
+    // Route::get('/commission/history', [App\Http\Controllers\Admin\CommissionController::class, 'history'])->name('commission.history');
 
     Route::resource('delete-data', DeleteDataController::class);
      // ✅ CSV Import route
