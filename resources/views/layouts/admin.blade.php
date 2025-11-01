@@ -94,12 +94,27 @@
                     <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
                 </li>
                 <li class="nav-item">
-                    <h4 class="pt-1 fw-bold">
+                    <h4 class="pt-1 fw-bold username">
     EEMOTRACK INDIA 
-    <span class="ms-2 text-primary">
-       ({{ auth()->user()->name }})
+    <span class="ms-2 text-primary ">
+        ({{ auth()->user()->name }})
     </span>
 </h4>
+
+<style>
+/* Default (large screen) */
+.username {
+    font-size: 1.5rem; /* normal size */
+}
+
+/* 👇 Smaller font for screens below 992px */
+@media (max-width: 992px) {
+    .username {
+        font-size: 0.8rem; /* smaller on tablets/mobiles */
+    }
+}
+</style>
+
 
                 </li>
                 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -110,7 +125,7 @@
             e.preventDefault();
 
             // Only toggle sidebar if screen width is 768px or less
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 992) {
                 $('body').toggleClass('sidebar-collapse');
                 $('.sidebar-wrapper').toggle(); // Or use .fadeToggle(200)
             }
