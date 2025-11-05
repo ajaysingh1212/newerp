@@ -82,6 +82,8 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
      
     // 📄 Get User Details by ID
     Route::get('user-details/{id}', 'UsersApiController@getUserById')->name('user.details');
+
+    Route::get('user-details-v2/{id}', 'UsersApiController@getUserByIdV2')->name('user.details.v2');
     
     // 🧾 User Register API
     Route::post('register', 'UsersApiController@register')->name('register');
@@ -109,6 +111,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     
     // ➕ Add New Customer Vehicle
     Route::post('add-customer-vehicle', 'CustomerVehicleApiController@store')->name('add-customer-vehicle');
+
+    Route::post('add-customer-vehicle-v2', 'CustomerVehicleApiController@AddVehicle')->name('add-customer-vehicle-v2');
+
     
     // 💳 Get All Recharge Plans
     Route::get('all-recharge-plans', 'RechargePlanApiController@getAllPlans')->name('recharge-plans.all');

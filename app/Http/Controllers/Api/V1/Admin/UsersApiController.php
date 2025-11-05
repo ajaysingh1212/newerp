@@ -236,6 +236,60 @@ class UsersApiController extends Controller
     
         return new UserResource($user);
     }
+
+    public function getUserByIdV2($id)
+{
+    $user = User::with(['roles', 'state', 'district'])->find($id);
+
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'User not found.'
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'User details fetched successfully.',
+        'user' => [
+            'id'                => $user->id,
+            'name'              => $user->name,
+            'company_name'      => $user->company_name,
+            'email'             => $user->email,
+            'mobile_number'     => $user->mobile_number,
+            'whatsapp_number'   => $user->whatsapp_number,
+            'pin_code'          => $user->pin_code,
+            'full_address'      => $user->full_address,
+            'bank_name'         => $user->bank_name,
+            'branch_name'       => $user->branch_name,
+            'ifsc'              => $user->ifsc,
+            'ac_holder_name'    => $user->ac_holder_name,
+            'pan_number'        => $user->pan_number,
+            'gst_number'        => $user->gst_number,
+            'status'            => $user->status,
+            'status_cmd'        => $user->status_cmd,
+            'created_at'        => $user->created_at,
+            'updated_at'        => $user->updated_at,
+
+            // ✅ Replace ID with Name (fetched via relation)
+            'state'             => optional($user->state)->state_name,
+            'district'          => optional($user->district)->districts,
+
+            // 🖼 Media URLs
+            'profile_image'     => $user->getFirstMediaUrl('profile_image'),
+            'upload_signature'  => $user->getFirstMediaUrl('upload_signature'),
+            'upload_pan_aadhar' => $user->getFirstMediaUrl('upload_pan_aadhar'),
+            'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
+            'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
+            'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
+
+            // 🔐 Role info
+            'role_id'           => $user->roles->pluck('id')->first(),
+            'role_name'         => $user->roles->pluck('title')->first(),
+        ]
+    ], 200);
+}
+
     
     
     public function register(Request $request)
@@ -362,7 +416,7 @@ class UsersApiController extends Controller
 
         // Validate file
         $validator = Validator::make($request->all(), [
-            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:9048',
         ]);
 
         if ($validator->fails()) {
