@@ -164,7 +164,7 @@ public function create()
 
         $vehiclesData[$user->id] = $vehicles;
     }
-
+   
     // Extract parent role titles for each user
     $parentRoles = [];
     foreach ($users as $user) {
@@ -492,10 +492,10 @@ public function getCustomerVehicles($userId)
 {
     $vehicles = AddCustomerVehicle::with('media')
         ->where('created_by_id', $userId)
-        ->where('activated', 'Activated')
+       
         ->select('id', 'vehicle_number', 'vehicle_model', 'select_vehicle_type_id', 'activated', 'request_date', 'product_id', 'vehicle_color')
         ->get();
-
+    
     $productsData = [];
     $vehicleImages = [];
 
