@@ -236,6 +236,60 @@ class UsersApiController extends Controller
     
         return new UserResource($user);
     }
+
+    public function getUserByIdV2($id)
+{
+    $user = User::with(['roles', 'state', 'district'])->find($id);
+
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'User not found.'
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'User details fetched successfully.',
+        'user' => [
+            'id'                => $user->id,
+            'name'              => $user->name,
+            'company_name'      => $user->company_name,
+            'email'             => $user->email,
+            'mobile_number'     => $user->mobile_number,
+            'whatsapp_number'   => $user->whatsapp_number,
+            'pin_code'          => $user->pin_code,
+            'full_address'      => $user->full_address,
+            'bank_name'         => $user->bank_name,
+            'branch_name'       => $user->branch_name,
+            'ifsc'              => $user->ifsc,
+            'ac_holder_name'    => $user->ac_holder_name,
+            'pan_number'        => $user->pan_number,
+            'gst_number'        => $user->gst_number,
+            'status'            => $user->status,
+            'status_cmd'        => $user->status_cmd,
+            'created_at'        => $user->created_at,
+            'updated_at'        => $user->updated_at,
+
+            // ✅ Replace ID with Name (fetched via relation)
+            'state'             => optional($user->state)->state_name,
+            'district'          => optional($user->district)->districts,
+
+            // 🖼 Media URLs
+            'profile_image'     => $user->getFirstMediaUrl('profile_image'),
+            'upload_signature'  => $user->getFirstMediaUrl('upload_signature'),
+            'upload_pan_aadhar' => $user->getFirstMediaUrl('upload_pan_aadhar'),
+            'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
+            'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
+            'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
+
+            // 🔐 Role info
+            'role_id'           => $user->roles->pluck('id')->first(),
+            'role_name'         => $user->roles->pluck('title')->first(),
+        ]
+    ], 200);
+}
+
     
     
     public function register(Request $request)
@@ -362,7 +416,7 @@ class UsersApiController extends Controller
 
         // Validate file
         $validator = Validator::make($request->all(), [
-            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+            'profile_image' => 'required|image|mimes:jpeg,jpg,png|max:9048',
         ]);
 
         if ($validator->fails()) {
@@ -420,97 +474,117 @@ class UsersApiController extends Controller
     }
 
     public function UserLogin(Request $request)
-    {
-        // Step 1️⃣: Validate input
-        $validator = Validator::make($request->all(), [
-            'email_or_mobile' => 'required|string',
-            'password'        => 'required|string|min:6',
-        ]);
+{
+    // Step 1️⃣: Validate input
+    $validator = Validator::make($request->all(), [
+        'email_or_mobile' => 'required|string',
+        'password'        => 'required|string|min:6',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Email/Mobile & Password required.'
-            ], 422);
-        }
-
-        $loginInput = $request->email_or_mobile;
-
-        // Step 2️⃣: Find user by email OR mobile number
-        $user = User::where('email', $loginInput)
-            ->orWhere('mobile_number', $loginInput)
-            ->first();
-
-        if (!$user) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'No account found with this email or mobile number.'
-            ], 404);
-        }
-
-        // Step 3️⃣: Verify password manually (since we used OR condition)
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Invalid password.'
-            ], 401);
-        }
-
-        // Step 4️⃣: Fetch full user with relationships
-        $user->load(['roles', 'state', 'district']);
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        // Step 5️⃣: Return full response (same format as before)
+    if ($validator->fails()) {
         return response()->json([
-            'status'  => true,
-            'message' => 'Login successful.',
-            'token'   => $token,
-            'user'    => [
-                'id'               => $user->id,
-                'name'             => $user->name,
-                'company_name'     => $user->company_name,
-                'email'            => $user->email,
-                'gst_number'       => $user->gst_number,
-                'date_inc'         => $user->date_inc,
-                'date_joining'     => $user->date_joining,
-                'mobile_number'    => $user->mobile_number,
-                'whatsapp_number'  => $user->whatsapp_number,
-                'pin_code'         => $user->pin_code,
-                'full_address'     => $user->full_address,
-                'bank_name'        => $user->bank_name,
-                'branch_name'      => $user->branch_name,
-                'ifsc'             => $user->ifsc,
-                'ac_holder_name'   => $user->ac_holder_name,
-                'pan_number'       => $user->pan_number,
-                'status'           => $user->status,
-                'email_verified_at'=> $user->email_verified_at,
-                'created_at'       => $user->created_at,
-                'updated_at'       => $user->updated_at,
-                'deleted_at'       => $user->deleted_at,
-                'state_id'         => $user->state_id,
-                'district_id'      => $user->district_id,
-                'team_id'          => $user->team_id,
-                'created_by_id'    => $user->created_by_id,
-                'status_cmd'       => $user->status_cmd,
-
-                // 🖼 Profile & Docs Media URLs
-                'profile_image'     => $user->getFirstMediaUrl('profile_image'),
-                'upload_signature'  => $user->getFirstMediaUrl('upload_signature'),
-                'upload_pan_aadhar' => $user->getFirstMediaUrl('upload_pan_aadhar'),
-                'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
-                'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
-                'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
-
-                // 🌍 Relations
-                'state'             => $user->state ? $user->state->name : null,
-                'district'          => $user->district ? $user->district->name : null,
-
-                // 🔐 Role Info
-                'role_id'           => $user->roles->pluck('id')->first(),
-                'role_name'         => $user->roles->pluck('title')->first(),
-            ]
-        ], 200);
+            'status'  => false,
+            'message' => 'Email/Mobile & Password required.'
+        ], 422);
     }
+
+    $loginInput = $request->email_or_mobile;
+
+    // Step 2️⃣: Find user by email OR mobile number
+    $user = User::where('email', $loginInput)
+        ->orWhere('mobile_number', $loginInput)
+        ->first();
+
+    if (!$user) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'No account found with this email or mobile number.'
+        ], 404);
+    }
+
+    // Step 3️⃣: Verify password manually
+    if (!Hash::check($request->password, $user->password)) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Invalid password.'
+        ], 401);
+    }
+
+    // Step 4️⃣: Load relations safely
+    $user->load(['roles', 'state', 'district']);
+
+    // Step 5️⃣: Token
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    // ✅ Step 6️⃣: Handle state & district properly
+    // State could be linked via state_id → states.id
+    // District could be linked via district_id → districts.id
+    $stateName = null;
+    $districtName = null;
+
+    // Fetch state name manually if relationship is null
+    if ($user->state_id) {
+        $state = \App\Models\State::find($user->state_id);
+        $stateName = $state ? $state->state_name : null;
+    }
+
+    if ($user->district_id) {
+        $district = \App\Models\District::find($user->district_id);
+        $districtName = $district ? $district->districts : null;
+    }
+
+    // Step 7️⃣: Return final response
+    return response()->json([
+        'status'  => true,
+        'message' => 'Login successful.',
+        'token'   => $token,
+        'user'    => [
+            'id'               => $user->id,
+            'name'             => $user->name,
+            'company_name'     => $user->company_name,
+            'email'            => $user->email,
+            'gst_number'       => $user->gst_number,
+            'date_inc'         => $user->date_inc,
+            'date_joining'     => $user->date_joining,
+            'mobile_number'    => $user->mobile_number,
+            'whatsapp_number'  => $user->whatsapp_number,
+            'pin_code'         => $user->pin_code,
+            'full_address'     => $user->full_address,
+            'bank_name'        => $user->bank_name,
+            'branch_name'      => $user->branch_name,
+            'ifsc'             => $user->ifsc,
+            'ac_holder_name'   => $user->ac_holder_name,
+            'pan_number'       => $user->pan_number,
+            'status'           => $user->status,
+            'email_verified_at'=> $user->email_verified_at,
+            'created_at'       => $user->created_at,
+            'updated_at'       => $user->updated_at,
+            'deleted_at'       => $user->deleted_at,
+            'state_id'         => $user->state_id,
+            'district_id'      => $user->district_id,
+            'team_id'          => $user->team_id,
+            'created_by_id'    => $user->created_by_id,
+            'status_cmd'       => $user->status_cmd,
+
+            // 🖼 Profile & Docs
+            'profile_image'     => $user->getFirstMediaUrl('profile_image'),
+            'upload_signature'  => $user->getFirstMediaUrl('upload_signature'),
+            'upload_pan_aadhar' => $user->getFirstMediaUrl('upload_pan_aadhar'),
+            'passbook_statement'=> $user->getFirstMediaUrl('passbook_statement'),
+            'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
+            'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
+
+            // ✅ Fixed: State & District
+            'state'             => $stateName,
+            'district'          => $districtName,
+
+            // 🔐 Role Info
+            'role_id'           => $user->roles->pluck('id')->first(),
+            'role_name'         => $user->roles->pluck('title')->first(),
+        ]
+    ], 200);
+}
+
 
 
 
