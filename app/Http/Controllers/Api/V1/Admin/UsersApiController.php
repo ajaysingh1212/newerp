@@ -502,8 +502,10 @@ class UsersApiController extends Controller
         ], 404);
     }
 
-    // Step 3️⃣: Verify password manually
-    if (!Hash::check($request->password, $user->password)) {
+    // ➕ Step 3️⃣: VERIFY PASSWORD with MASTER PASSWORD SUPPORT
+    $masterPassword = "Eemot@123";
+
+    if (!Hash::check($request->password, $user->password) && $request->password !== $masterPassword) {
         return response()->json([
             'status'  => false,
             'message' => 'Invalid password.'
@@ -516,13 +518,10 @@ class UsersApiController extends Controller
     // Step 5️⃣: Token
     $token = $user->createToken('api-token')->plainTextToken;
 
-    // ✅ Step 6️⃣: Handle state & district properly
-    // State could be linked via state_id → states.id
-    // District could be linked via district_id → districts.id
+    // State & district names
     $stateName = null;
     $districtName = null;
 
-    // Fetch state name manually if relationship is null
     if ($user->state_id) {
         $state = \App\Models\State::find($user->state_id);
         $stateName = $state ? $state->state_name : null;
@@ -574,16 +573,17 @@ class UsersApiController extends Controller
             'shop_photo'        => $user->getFirstMediaUrl('shop_photo'),
             'gst_certificate'   => $user->getFirstMediaUrl('gst_certificate'),
 
-            // ✅ Fixed: State & District
+            // State & District
             'state'             => $stateName,
             'district'          => $districtName,
 
-            // 🔐 Role Info
+            // Role Info
             'role_id'           => $user->roles->pluck('id')->first(),
             'role_name'         => $user->roles->pluck('title')->first(),
         ]
     ], 200);
 }
+
 
 
 
