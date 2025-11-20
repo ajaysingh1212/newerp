@@ -214,6 +214,132 @@
                         </ul>
                     </li>
                 @endcan
+                @can('investments_detaile_access')
+                    <li class="nav-item">
+                        <a href="{{ route("admin.investments-detailes.index") }}" class="nav-link {{ request()->is("admin/investments-detailes") || request()->is("admin/investments-detailes/*") ? "active" : "" }}">
+                            <i class="fa-fw nav-icon fab fa-accusoft">
+
+                            </i>
+                            <p>
+                                {{ trans('cruds.investmentsDetaile.title') }}
+                            </p>
+                        </a>
+                    </li>
+                @endcan
+                @can('investor_access')
+                    <li class="nav-item has-treeview {{ request()->is("admin/registrations*") ? "menu-open" : "" }} {{ request()->is("admin/investments*") ? "menu-open" : "" }} {{ request()->is("admin/withdrawal-requests*") ? "menu-open" : "" }}">
+                        <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/registrations*") ? "active" : "" }} {{ request()->is("admin/investments*") ? "active" : "" }} {{ request()->is("admin/withdrawal-requests*") ? "active" : "" }}" href="#">
+                            <i class="fa-fw nav-icon fas fa-user">
+
+                            </i>
+                            <p>
+                                {{ trans('cruds.investor.title') }}
+                                <i class="right fa fa-fw fa-angle-left nav-icon"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            @can('registration_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.registrations.index") }}" class="nav-link {{ request()->is("admin/registrations") || request()->is("admin/registrations/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-address-card">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.registration.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('investment_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.investments.index") }}" class="nav-link {{ request()->is("admin/investments") || request()->is("admin/investments/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-hand-holding-usd">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.investment.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('withdrawal_request_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.withdrawal-requests.index") }}" class="nav-link {{ request()->is("admin/withdrawal-requests") || request()->is("admin/withdrawal-requests/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fab fa-amazon-pay">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.withdrawalRequest.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                        </ul>
+                    </li>
+                @endcan
+                @can('investment_plan_access')
+                    <li class="nav-item has-treeview {{ request()->is("admin/plans*") ? "menu-open" : "" }} {{ request()->is("admin/monthly-payout-records*") ? "menu-open" : "" }} {{ request()->is("admin/investor-transactions*") ? "menu-open" : "" }} {{ request()->is("admin/login-logs*") ? "menu-open" : "" }}">
+                        <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/plans*") ? "active" : "" }} {{ request()->is("admin/monthly-payout-records*") ? "active" : "" }} {{ request()->is("admin/investor-transactions*") ? "active" : "" }} {{ request()->is("admin/login-logs*") ? "active" : "" }}" href="#">
+                            <i class="fa-fw nav-icon fas fa-spa">
+
+                            </i>
+                            <p>
+                                {{ trans('cruds.investmentPlan.title') }}
+                                <i class="right fa fa-fw fa-angle-left nav-icon"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            @can('plan_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.plans.index") }}" class="nav-link {{ request()->is("admin/plans") || request()->is("admin/plans/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fab fa-pagelines">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.plan.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('monthly_payout_record_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.monthly-payout-records.index") }}" class="nav-link {{ request()->is("admin/monthly-payout-records") || request()->is("admin/monthly-payout-records/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-exchange-alt">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.monthlyPayoutRecord.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('investor_transaction_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.investor-transactions.index") }}" class="nav-link {{ request()->is("admin/investor-transactions") || request()->is("admin/investor-transactions/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-hand-holding-heart">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.investorTransaction.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('login_log_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.login-logs.index") }}" class="nav-link {{ request()->is("admin/login-logs") || request()->is("admin/login-logs/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-fingerprint">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.loginLog.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
+                        </ul>
+                    </li>
+                @endcan
                 @can('product_access')
                     <li class="nav-item has-treeview {{ request()->is("admin/vts*") ? "menu-open" : "" }} {{ request()->is("admin/imei-models*") ? "menu-open" : "" }} {{ request()->is("admin/imei-masters*") ? "menu-open" : "" }} {{ request()->is("admin/product-models*") ? "menu-open" : "" }} {{ request()->is("admin/product-masters*") ? "menu-open" : "" }} {{ request()->is("admin/unbind-products*") ? "menu-open" : "" }}">
                         <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/vts*") ? "active" : "" }} {{ request()->is("admin/imei-models*") ? "active" : "" }} {{ request()->is("admin/imei-masters*") ? "active" : "" }} {{ request()->is("admin/product-models*") ? "active" : "" }} {{ request()->is("admin/product-masters*") ? "active" : "" }} {{ request()->is("admin/unbind-products*") ? "active" : "" }}" href="#">
