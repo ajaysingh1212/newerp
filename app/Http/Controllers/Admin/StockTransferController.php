@@ -126,34 +126,32 @@ public function create()
 
     // Filter CurrentStock based on role and transfer_user_id
     if ($userRole === 'Admin') {
-        // Admin sees only unassigned (not transferred) stocks
-        $select_products = CurrentStock::whereNull('transfer_user_id')
-            ->with(['product.product_model', 'product.imei'])
-            ->get()
-            ->mapWithKeys(function ($stock) {
-                $imei = $stock->product->imei->imei_number ?? 'N/A';
-                $model = $stock->product->product_model;
-                $modelDetails = $model
-                 ? " Model: {$model->product_model}"
-                 : '';
+    $select_products = CurrentStock::where(function ($q) {
+            $q->whereNull('transfer_user_id')
+              ->orWhere('transfer_user_id', auth()->id());
+        })
+        ->with(['product.product_model', 'product.imei'])
+        ->get()
+        ->mapWithKeys(function ($stock) {
+            $imei = $stock->product->imei->imei_number ?? 'N/A';
+            $model = $stock->product->product_model;
+            $modelDetails = $model ? " Model: {$model->product_model}" : '';
 
             return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
-            });
+        });
     } else {
-        // Other users see only stocks assigned to them
         $select_products = CurrentStock::where('transfer_user_id', $user->id)
             ->with(['product.product_model', 'product.imei'])
             ->get()
             ->mapWithKeys(function ($stock) {
                 $imei = $stock->product->imei->imei_number ?? 'N/A';
                 $model = $stock->product->product_model;
-                $modelDetails = $model
-                 ? " Model: {$model->product_model}"
-                 : '';
+                $modelDetails = $model ? " Model: {$model->product_model}" : '';
 
-            return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
+                return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
             });
     }
+
 
     // Dropdowns for form
     $states = State::pluck('state_name', 'id')->prepend(trans('global.pleaseSelect'), '');
