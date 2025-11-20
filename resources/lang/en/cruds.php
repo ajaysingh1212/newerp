@@ -1445,6 +1445,7 @@ return [
                 'created_by'              => 'Created By',
                 'created_by_helper'       => ' ',
             ],
+        ],
     'loginLog' => [
         'title'          => 'Login Logs',
         'title_singular' => 'Login Log',
@@ -1475,5 +1476,4 @@ return [
         'title'          => 'Investments Detailes',
         'title_singular' => 'Investments Detaile',
     ],
-
 ];
