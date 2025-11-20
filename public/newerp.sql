@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1:3306
--- Generation Time: Nov 07, 2025 at 06:12 AM
--- Server version: 11.8.3-MariaDB-log
--- PHP Version: 7.2.34
+-- Host: 127.0.0.1
+-- Generation Time: Nov 20, 2025 at 11:55 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `u173129352_erpsolution`
+-- Database: `newerp`
 --
 
 -- --------------------------------------------------------
@@ -1368,7 +1368,7 @@ INSERT INTO `add_customer_vehicles` (`id`, `vehicle_number`, `owners_name`, `ins
 (707, 'KL13y9502', '765', '2026-11-21', '12345678', '2012', NULL, 'silver', 'Processing', '2025-11-05 14:55:03', '2025-11-05 14:55:03', NULL, 765, '1', 'not-activated', NULL, '123456789', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '765', NULL, NULL),
 (708, 'BR01DM2081', '766', '2025-11-05', 'na', 'na', NULL, 'na', 'activated', '2025-11-05 14:58:24', '2025-11-05 15:53:03', NULL, 766, '1', 'Activated', NULL, NULL, 966, '05-11-2024', 718, 1, '2026-11-05', '2025-11-05', '2025-11-05', '9334610399', 'EEMOT', 'https://live4.tpgpstrack.com/modern/#/livetracking?accessToken=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNzYyMzM1ODk1NjcwIiwiaXNzIjoiZ3BzLXRyYWNrZXIiLCJpYXQiOjE3NjIzMzU4OTV9.hT1kGeAGQySPxd43WEhPzf-qT_D1c4JI_jvIYX4Px3U'),
 (709, 'BR01JR8320', '767', NULL, NULL, 'HUNTER', NULL, 'Blue', 'Processing', '2025-11-05 17:16:57', '2025-11-05 17:16:57', NULL, 767, '2', 'not-activated', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '767', NULL, NULL),
-(710, 'GJ05KV7658', '768', '2025-11-05', '12345', 'INNOVA', NULL, 'White', 'Pending', '2025-11-05 17:28:42', '2025-11-05 17:28:42', NULL, 261, '1', 'not-activated', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(710, 'GJ05KV7658', '768', '2025-11-05', '12345', 'INNOVA', NULL, 'White', 'Pending', '2025-11-05 17:28:42', '2025-11-05 17:28:42', NULL, 768, '1', 'not-activated', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (711, 'KL09AS7584', 'Khalid', '2026-03-13', 'O', '2017', NULL, 'White', 'Pending', '2025-11-06 10:11:57', '2025-11-06 10:11:57', NULL, 771, '1', 'not-activated', 21, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (712, 'GJ05JU5314', '313', '2025-11-06', NULL, 'baleno', NULL, 'white', 'Processing', '2025-11-06 14:06:30', '2025-11-06 14:06:30', NULL, 313, '1', 'not-activated', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '313', NULL, NULL),
 (713, 'BR01FA7018', '772', '2026-02-13', '162662', 'baleno', NULL, 'grey', 'Processing', '2025-11-06 16:48:05', '2025-11-06 17:07:13', NULL, 772, '1', 'not-activated', NULL, '1772737', NULL, NULL, NULL, NULL, '2027-11-06', '2025-11-06', '2025-11-06', '772', NULL, NULL);
@@ -1676,105 +1676,105 @@ INSERT INTO `check_complain_complain_category` (`check_complain_id`, `complain_c
 (3, 1),
 (5, 1),
 (7, 1),
-(9, 1),
-(10, 1),
-(11, 1),
-(12, 1),
 (7, 2),
 (8, 2),
+(9, 1),
+(10, 1),
 (10, 2),
+(11, 1),
 (11, 2),
+(12, 1),
+(13, 4),
 (14, 2),
 (15, 2),
-(18, 2),
-(62, 2),
-(66, 2),
-(71, 2),
-(84, 2),
 (15, 3),
+(16, 5),
+(16, 8),
+(17, 5),
+(17, 8),
+(18, 2),
+(18, 4),
 (19, 3),
 (20, 3),
-(23, 3),
-(26, 3),
-(37, 3),
-(38, 3),
-(46, 3),
-(50, 3),
-(58, 3),
-(59, 3),
-(63, 3),
-(69, 3),
-(73, 3),
-(13, 4),
-(18, 4),
 (20, 4),
+(20, 12),
 (21, 4),
 (22, 4),
+(23, 3),
 (23, 4),
 (24, 4),
 (25, 4),
+(26, 3),
 (27, 4),
 (28, 4),
-(29, 4),
-(34, 4),
-(35, 4),
-(36, 4),
-(39, 4),
-(40, 4),
-(41, 4),
-(43, 4),
-(47, 4),
-(48, 4),
-(51, 4),
-(52, 4),
-(58, 4),
-(59, 4),
-(60, 4),
-(63, 4),
-(68, 4),
-(69, 4),
-(70, 4),
-(72, 4),
-(73, 4),
-(74, 4),
-(76, 4),
-(82, 4),
-(83, 4),
-(85, 4),
-(16, 5),
-(17, 5),
 (28, 5),
+(29, 4),
 (29, 5),
-(42, 5),
-(45, 5),
-(53, 5),
-(54, 5),
-(61, 5),
-(65, 5),
-(66, 5),
-(67, 5),
-(81, 5),
-(44, 6),
-(54, 6),
-(78, 6),
-(79, 6),
 (30, 7),
-(16, 8),
-(17, 8),
 (31, 8),
 (32, 8),
 (33, 8),
-(80, 9),
+(34, 4),
+(35, 4),
+(36, 4),
+(37, 3),
+(38, 3),
+(39, 4),
+(40, 4),
+(41, 4),
+(42, 5),
+(43, 4),
+(44, 6),
+(45, 5),
+(46, 3),
+(47, 4),
+(48, 4),
+(49, 12),
+(50, 3),
+(51, 4),
+(52, 4),
+(53, 5),
+(54, 5),
+(54, 6),
+(55, 12),
 (56, 10),
 (57, 10),
-(75, 11),
-(20, 12),
-(49, 12),
-(55, 12),
+(58, 3),
+(58, 4),
+(59, 3),
+(59, 4),
+(60, 4),
+(61, 5),
+(62, 2),
+(63, 3),
+(63, 4),
 (64, 15),
+(65, 5),
+(66, 2),
+(66, 5),
+(67, 5),
+(68, 4),
+(69, 3),
+(69, 4),
+(70, 4),
+(71, 2),
+(72, 4),
+(73, 3),
+(73, 4),
 (73, 15),
+(74, 4),
 (74, 15),
-(77, 15);
+(75, 11),
+(76, 4),
+(77, 15),
+(78, 6),
+(79, 6),
+(80, 9),
+(81, 5),
+(82, 4),
+(83, 4),
+(84, 2),
+(85, 4);
 
 -- --------------------------------------------------------
 
@@ -6719,6 +6719,44 @@ CREATE TABLE `income_sources` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `investments`
+--
+
+CREATE TABLE `investments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `principal_amount` decimal(15,2) NOT NULL,
+  `secure_interest_percent` varchar(255) DEFAULT NULL,
+  `market_interest_percent` varchar(255) DEFAULT NULL,
+  `total_interest_percent` varchar(255) DEFAULT NULL,
+  `start_date` date NOT NULL,
+  `lockin_end_date` date DEFAULT NULL,
+  `next_payout_date` date DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `investor_transactions`
+--
+
+CREATE TABLE `investor_transactions` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `transaction_type` varchar(255) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `narration` longtext DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `kyc_recharges`
 --
 
@@ -6852,6 +6890,23 @@ INSERT INTO `kyc_recharges` (`id`, `user_id`, `vehicle_id`, `vehicle_number`, `t
 (237, 710, 662, 'kL11BT 9444', 'KYC Recharge From Mobile (kL11BT 9444)', 'N/A', 'completed', 'razorpay', 299.00, '2025-11-06 00:00:00', 710, '2025-11-06 15:55:31', '2025-11-06 15:55:31', 'pay_RcQ7infD0ivHOo', NULL, 'Ground KVS Building, Mavoor Rd, Thondayad, Kozhikode, Kerala 673017, India', '11.2636004', '75.8100298', NULL, 'old'),
 (238, 466, 425, 'BR01JP5705', 'KYC Recharge From Mobile (BR01JP5705)', 'N/A', 'completed', 'razorpay', 1.00, '2025-11-06 00:00:00', 466, '2025-11-06 18:21:46', '2025-11-06 18:21:46', 'pay_RcScXTJnJl3sZ1', NULL, 'J47X+JVW, Salimpur Ahra, Golambar, Patna, Bihar 800003, India', '25.6140999', '85.149603', NULL, 'new'),
 (239, 466, 425, 'BR01JP5705', 'KYC Recharge From Mobile (BR01JP5705)', 'N/A', 'failed', 'razorpay', 1.00, '2025-11-06 00:00:00', 466, '2025-11-07 11:06:07', '2025-11-07 11:06:07', NULL, NULL, 'J47X+JVW, Salimpur Ahra, Golambar, Patna, Bihar 800003, India', '25.6140999', '85.149603', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `login_logs`
+--
+
+CREATE TABLE `login_logs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `ip_address` varchar(255) DEFAULT NULL,
+  `device` varchar(255) DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `logged_in_at` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -8969,7 +9024,32 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (81, '2025_05_15_093318_create_add_customer_vehicles_table', 2),
 (82, '2025_05_19_095806_create_stock_histories_table', 3),
 (83, '2025_05_19_101907_add_activation_request_id_to_stock_histories_table', 4),
-(84, '2025_05_19_102122_add_product_fields_to_stock_histories_table', 5);
+(84, '2025_05_19_102122_add_product_fields_to_stock_histories_table', 5),
+(85, '2025_11_20_000016_create_registrations_table', 6),
+(86, '2025_11_20_000018_create_investments_table', 7),
+(87, '2025_11_20_000019_create_monthly_payout_records_table', 8),
+(88, '2025_11_20_000020_create_withdrawal_requests_table', 9),
+(89, '2025_11_20_000021_create_login_logs_table', 10),
+(90, '2025_11_20_000022_create_investor_transactions_table', 11),
+(91, '2025_11_20_000017_create_plans_table', 12);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `monthly_payout_records`
+--
+
+CREATE TABLE `monthly_payout_records` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `secure_interest_amount` varchar(255) NOT NULL,
+  `market_interest_amount` varchar(255) NOT NULL,
+  `total_payout_amount` decimal(15,2) NOT NULL,
+  `month_for` date NOT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -9299,7 +9379,46 @@ INSERT INTO `permissions` (`id`, `title`, `created_at`, `updated_at`, `deleted_a
 (259, 'kyc_recharge_access', '2025-10-14 13:08:20', '2025-10-14 13:08:20', NULL),
 (260, 'delete_data_create', '2025-10-31 16:24:08', '2025-10-31 16:24:08', NULL),
 (261, 'delete_data_access', '2025-10-31 16:24:26', '2025-10-31 16:24:26', NULL),
-(262, 'deletion_request_access', '2025-11-01 13:08:09', '2025-11-01 13:08:09', NULL);
+(262, 'deletion_request_access', '2025-11-01 13:08:09', '2025-11-01 13:08:09', NULL),
+(263, 'investments_detaile_access', '2025-11-20 09:14:10', '2025-11-20 09:14:10', NULL),
+(264, 'registration_access', '2025-11-20 09:16:17', '2025-11-20 09:16:17', NULL),
+(265, 'registration_create', '2025-11-20 09:16:26', '2025-11-20 09:16:26', NULL),
+(266, 'registration_edit', '2025-11-20 09:16:37', '2025-11-20 09:16:37', NULL),
+(267, 'registration_show', '2025-11-20 09:16:49', '2025-11-20 09:16:49', NULL),
+(268, 'registration_delete', '2025-11-20 09:16:58', '2025-11-20 09:16:58', NULL),
+(269, 'registration_create', '2025-11-20 09:17:10', '2025-11-20 09:17:25', '2025-11-20 09:17:25'),
+(270, 'investor_access', '2025-11-20 09:19:04', '2025-11-20 09:19:04', NULL),
+(271, 'investment_access', '2025-11-20 09:22:30', '2025-11-20 09:22:30', NULL),
+(272, 'investment_create', '2025-11-20 09:23:14', '2025-11-20 09:23:14', NULL),
+(273, 'investment_edit', '2025-11-20 09:23:23', '2025-11-20 09:23:23', NULL),
+(274, 'investment_show', '2025-11-20 09:23:34', '2025-11-20 09:23:34', NULL),
+(275, 'investment_delete', '2025-11-20 09:23:43', '2025-11-20 09:23:43', NULL),
+(276, 'withdrawal_request_access', '2025-11-20 09:23:58', '2025-11-20 09:23:58', NULL),
+(277, 'withdrawal_request_create', '2025-11-20 09:24:12', '2025-11-20 09:24:12', NULL),
+(278, 'withdrawal_request_edit', '2025-11-20 09:24:22', '2025-11-20 09:24:22', NULL),
+(279, 'withdrawal_request_show', '2025-11-20 09:24:31', '2025-11-20 09:24:31', NULL),
+(280, 'withdrawal_request_delete', '2025-11-20 09:24:38', '2025-11-20 09:24:38', NULL),
+(281, 'investment_plan_access', '2025-11-20 09:24:54', '2025-11-20 09:24:54', NULL),
+(282, 'plan_access', '2025-11-20 09:25:48', '2025-11-20 09:25:48', NULL),
+(283, 'plan_create', '2025-11-20 09:25:55', '2025-11-20 09:25:55', NULL),
+(284, 'plan_edit', '2025-11-20 09:26:03', '2025-11-20 09:26:03', NULL),
+(285, 'plan_show', '2025-11-20 09:26:11', '2025-11-20 09:26:11', NULL),
+(286, 'plan_delete', '2025-11-20 09:26:18', '2025-11-20 09:26:18', NULL),
+(287, 'monthly_payout_record_access', '2025-11-20 09:26:34', '2025-11-20 09:26:34', NULL),
+(288, 'monthly_payout_record_create', '2025-11-20 09:26:53', '2025-11-20 09:26:53', NULL),
+(289, 'monthly_payout_record_edit', '2025-11-20 09:27:03', '2025-11-20 09:27:03', NULL),
+(290, 'monthly_payout_record_show', '2025-11-20 09:27:12', '2025-11-20 09:27:12', NULL),
+(291, 'monthly_payout_record_delete', '2025-11-20 09:27:21', '2025-11-20 09:27:21', NULL),
+(292, 'investor_transaction_access', '2025-11-20 09:27:35', '2025-11-20 09:27:35', NULL),
+(293, 'investor_transaction_create', '2025-11-20 09:27:52', '2025-11-20 09:27:52', NULL),
+(294, 'investor_transaction_edit', '2025-11-20 09:28:01', '2025-11-20 09:28:01', NULL),
+(295, 'investor_transaction_show', '2025-11-20 09:28:09', '2025-11-20 09:28:09', NULL),
+(296, 'investor_transaction_delete', '2025-11-20 09:28:18', '2025-11-20 09:28:18', NULL),
+(297, 'login_log_access', '2025-11-20 09:28:33', '2025-11-20 09:28:33', NULL),
+(298, 'login_log_create', '2025-11-20 09:28:49', '2025-11-20 09:28:49', NULL),
+(299, 'login_log_edit', '2025-11-20 09:28:57', '2025-11-20 09:28:57', NULL),
+(300, 'login_log_show', '2025-11-20 09:29:06', '2025-11-20 09:29:06', NULL),
+(301, 'login_log_delete', '2025-11-20 09:29:15', '2025-11-20 09:29:15', NULL);
 
 -- --------------------------------------------------------
 
@@ -10065,7 +10184,45 @@ INSERT INTO `permission_role` (`role_id`, `permission_id`) VALUES
 (2, 259),
 (1, 260),
 (1, 261),
-(1, 262);
+(1, 262),
+(1, 263),
+(1, 264),
+(1, 265),
+(1, 266),
+(1, 267),
+(1, 268),
+(1, 270),
+(1, 271),
+(1, 272),
+(1, 273),
+(1, 274),
+(1, 275),
+(1, 276),
+(1, 277),
+(1, 278),
+(1, 279),
+(1, 280),
+(1, 281),
+(1, 282),
+(1, 283),
+(1, 284),
+(1, 285),
+(1, 286),
+(1, 287),
+(1, 288),
+(1, 289),
+(1, 290),
+(1, 291),
+(1, 292),
+(1, 293),
+(1, 294),
+(1, 295),
+(1, 296),
+(1, 297),
+(1, 298),
+(1, 299),
+(1, 300),
+(1, 301);
 
 -- --------------------------------------------------------
 
@@ -11157,6 +11314,29 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1061, 'App\\Models\\User', 631, 'api-token', '12782e10f4a8d76de6b6a0450e6c59e6312271c2b90df833285e1a5cc389e23c', '[\"*\"]', NULL, NULL, '2025-11-07 02:03:28', '2025-11-07 02:03:28'),
 (1062, 'App\\Models\\User', 674, 'api-token', '4419bc8bb97c4bfd581ab36c87c637cdd7207be7599eadb563cc7a0d3966e4d2', '[\"*\"]', NULL, NULL, '2025-11-07 09:19:07', '2025-11-07 09:19:07'),
 (1063, 'App\\Models\\User', 720, 'api-token', 'ce5e49696ea103380d6f7ca5e926782ef6d8f5b7e765c2e20d31195197a015ed', '[\"*\"]', NULL, NULL, '2025-11-07 11:06:34', '2025-11-07 11:06:34');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `plans`
+--
+
+CREATE TABLE `plans` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `plan_name` varchar(255) NOT NULL,
+  `secure_interest_percent` varchar(255) NOT NULL,
+  `market_interest_percent` varchar(255) NOT NULL,
+  `total_interest_percent` varchar(255) NOT NULL,
+  `payout_frequency` varchar(255) NOT NULL,
+  `min_invest_amount` decimal(15,2) NOT NULL,
+  `max_invest_amount` decimal(15,2) NOT NULL,
+  `lockin_days` varchar(255) NOT NULL,
+  `withdraw_processing_hours` varchar(255) NOT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -12385,6 +12565,45 @@ INSERT INTO `recharge_requests` (`id`, `vehicle_number`, `notes`, `created_at`, 
 (112, 'BR01DM2081', NULL, '2025-11-05 15:53:03', '2025-11-05 15:53:03', NULL, 766, NULL, 3, NULL, 'success', 'admin', 'ADMIN_XUEKXN5UOP', '1799', '0', 'PAY_PLVB5960', '2025-11-05 15:53:03', 1, 'processing'),
 (113, 'BR01FA7018', 'Recharge done from mobile app', '2025-11-06 16:49:28', '2025-11-06 16:49:28', NULL, 772, NULL, 3, NULL, 'failed', 'razorpay', 'FAILED_1762427951631', '1799', '0', 'TXN1762427951632', '2025-11-06 16:49:28', 772, 'processing'),
 (114, 'BR01FA7018', 'Recharge done from mobile app', '2025-11-06 17:07:13', '2025-11-06 17:07:13', NULL, 772, NULL, 3, NULL, 'success', 'razorpay', 'pay_RcRM4JPpQqLK0y', '1799', '0', 'TXN1762429017418', '2025-11-06 17:07:13', 772, 'processing');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `registrations`
+--
+
+CREATE TABLE `registrations` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `reg` varchar(255) DEFAULT NULL,
+  `referral_code` varchar(255) DEFAULT NULL,
+  `aadhaar_number` varchar(255) NOT NULL,
+  `pan_number` varchar(255) NOT NULL,
+  `dob` date DEFAULT NULL,
+  `gender` varchar(255) NOT NULL,
+  `father_name` varchar(255) DEFAULT NULL,
+  `address_line_1` longtext NOT NULL,
+  `address_line_2` longtext DEFAULT NULL,
+  `pincode` varchar(255) NOT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `state` varchar(255) DEFAULT NULL,
+  `country` varchar(255) DEFAULT NULL,
+  `bank_account_holder_name` varchar(255) NOT NULL,
+  `bank_account_number` varchar(255) NOT NULL,
+  `ifsc_code` varchar(255) NOT NULL,
+  `bank_name` varchar(255) DEFAULT NULL,
+  `bank_branch` varchar(255) DEFAULT NULL,
+  `income_range` varchar(255) NOT NULL,
+  `occupation` varchar(255) NOT NULL,
+  `risk_profile` varchar(255) DEFAULT NULL,
+  `investment_experience` varchar(255) DEFAULT NULL,
+  `kyc_status` varchar(255) DEFAULT NULL,
+  `account_status` varchar(255) DEFAULT NULL,
+  `is_email_verified` varchar(255) DEFAULT NULL,
+  `is_phone_verified` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -16651,6 +16870,27 @@ INSERT INTO `vts` (`id`, `vts_number`, `sim_number`, `operator`, `product_status
 (4999, '5754191436470', '8991542404592971924', 'AIRTEL', 'Not Formed', 'Enable', '2025-11-05 12:46:20', '2025-11-05 12:46:20', NULL, NULL),
 (5000, '5754192537038', '8991542404593334890', 'AIRTEL', 'Formed', 'Enable', '2025-11-05 15:04:11', '2025-11-05 15:08:18', NULL, NULL);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `withdrawal_requests`
+--
+
+CREATE TABLE `withdrawal_requests` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `processing_hours` varchar(255) DEFAULT NULL,
+  `requested_at` date DEFAULT NULL,
+  `approved_at` varchar(255) DEFAULT NULL,
+  `notes` longtext NOT NULL,
+  `remarks` longtext DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 --
 -- Indexes for dumped tables
 --
@@ -16905,12 +17145,30 @@ ALTER TABLE `income_sources`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `investments`
+--
+ALTER TABLE `investments`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `investor_transactions`
+--
+ALTER TABLE `investor_transactions`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `kyc_recharges`
 --
 ALTER TABLE `kyc_recharges`
   ADD PRIMARY KEY (`id`),
   ADD KEY `kyc_recharges_user_id_foreign` (`user_id`),
   ADD KEY `kyc_recharges_created_by_id_foreign` (`created_by_id`);
+
+--
+-- Indexes for table `login_logs`
+--
+ALTER TABLE `login_logs`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `media`
@@ -16925,6 +17183,12 @@ ALTER TABLE `media`
 -- Indexes for table `migrations`
 --
 ALTER TABLE `migrations`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `monthly_payout_records`
+--
+ALTER TABLE `monthly_payout_records`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -16960,6 +17224,12 @@ ALTER TABLE `personal_access_tokens`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
   ADD KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`);
+
+--
+-- Indexes for table `plans`
+--
+ALTER TABLE `plans`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `product_masters`
@@ -17024,6 +17294,15 @@ ALTER TABLE `recharge_requests`
   ADD KEY `product_fk_10564703` (`product_id`),
   ADD KEY `select_recharge_fk_10564704` (`select_recharge_id`),
   ADD KEY `team_fk_10564710` (`team_id`);
+
+--
+-- Indexes for table `registrations`
+--
+ALTER TABLE `registrations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `registrations_aadhaar_number_unique` (`aadhaar_number`),
+  ADD UNIQUE KEY `registrations_pan_number_unique` (`pan_number`),
+  ADD UNIQUE KEY `registrations_bank_account_number_unique` (`bank_account_number`);
 
 --
 -- Indexes for table `roles`
@@ -17133,6 +17412,12 @@ ALTER TABLE `vts`
   ADD UNIQUE KEY `vts_vts_number_unique` (`vts_number`),
   ADD UNIQUE KEY `vts_sim_number_unique` (`sim_number`),
   ADD KEY `team_fk_10562826` (`team_id`);
+
+--
+-- Indexes for table `withdrawal_requests`
+--
+ALTER TABLE `withdrawal_requests`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -17313,10 +17598,28 @@ ALTER TABLE `income_sources`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `investments`
+--
+ALTER TABLE `investments`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `investor_transactions`
+--
+ALTER TABLE `investor_transactions`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `kyc_recharges`
 --
 ALTER TABLE `kyc_recharges`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=240;
+
+--
+-- AUTO_INCREMENT for table `login_logs`
+--
+ALTER TABLE `login_logs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `media`
@@ -17328,7 +17631,13 @@ ALTER TABLE `media`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+
+--
+-- AUTO_INCREMENT for table `monthly_payout_records`
+--
+ALTER TABLE `monthly_payout_records`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `notes`
@@ -17340,13 +17649,19 @@ ALTER TABLE `notes`
 -- AUTO_INCREMENT for table `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=263;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=302;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1064;
+
+--
+-- AUTO_INCREMENT for table `plans`
+--
+ALTER TABLE `plans`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `product_masters`
@@ -17395,6 +17710,12 @@ ALTER TABLE `recharge_plans`
 --
 ALTER TABLE `recharge_requests`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+
+--
+-- AUTO_INCREMENT for table `registrations`
+--
+ALTER TABLE `registrations`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -17469,6 +17790,12 @@ ALTER TABLE `vts`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5001;
 
 --
+-- AUTO_INCREMENT for table `withdrawal_requests`
+--
+ALTER TABLE `withdrawal_requests`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- Constraints for dumped tables
 --
 
@@ -17480,281 +17807,11 @@ ALTER TABLE `account_deletion_requests`
   ADD CONSTRAINT `account_deletion_requests_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `activation_requests`
---
-ALTER TABLE `activation_requests`
-  ADD CONSTRAINT `party_type_fk_10564298` FOREIGN KEY (`party_type_id`) REFERENCES `roles` (`id`),
-  ADD CONSTRAINT `select_party_fk_10564299` FOREIGN KEY (`select_party_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `team_fk_10564322` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
 -- Constraints for table `activation_request_attach_veichle`
 --
 ALTER TABLE `activation_request_attach_veichle`
   ADD CONSTRAINT `activation_request_id_fk_10564377` FOREIGN KEY (`activation_request_id`) REFERENCES `activation_requests` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `attach_veichle_id_fk_10564377` FOREIGN KEY (`attach_veichle_id`) REFERENCES `attach_veichles` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `add_customer_vehicle_check_complain`
---
-ALTER TABLE `add_customer_vehicle_check_complain`
-  ADD CONSTRAINT `add_customer_vehicle_id_fk_10576956` FOREIGN KEY (`add_customer_vehicle_id`) REFERENCES `add_customer_vehicles` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `check_complain_id_fk_10576956` FOREIGN KEY (`check_complain_id`) REFERENCES `check_complains` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `app_links`
---
-ALTER TABLE `app_links`
-  ADD CONSTRAINT `team_fk_10564266` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `assets`
---
-ALTER TABLE `assets`
-  ADD CONSTRAINT `assigned_to_fk_10562641` FOREIGN KEY (`assigned_to_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `category_fk_10562634` FOREIGN KEY (`category_id`) REFERENCES `asset_categories` (`id`),
-  ADD CONSTRAINT `location_fk_10562639` FOREIGN KEY (`location_id`) REFERENCES `asset_locations` (`id`),
-  ADD CONSTRAINT `status_fk_10562638` FOREIGN KEY (`status_id`) REFERENCES `asset_statuses` (`id`);
-
---
--- Constraints for table `assets_histories`
---
-ALTER TABLE `assets_histories`
-  ADD CONSTRAINT `asset_fk_10562646` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`),
-  ADD CONSTRAINT `assigned_user_fk_10562649` FOREIGN KEY (`assigned_user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `location_fk_10562648` FOREIGN KEY (`location_id`) REFERENCES `asset_locations` (`id`),
-  ADD CONSTRAINT `status_fk_10562647` FOREIGN KEY (`status_id`) REFERENCES `asset_statuses` (`id`);
-
---
--- Constraints for table `attach_veichles`
---
-ALTER TABLE `attach_veichles`
-  ADD CONSTRAINT `select_user_fk_10564376` FOREIGN KEY (`select_user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `team_fk_10564381` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `check_complains`
---
-ALTER TABLE `check_complains`
-  ADD CONSTRAINT `team_fk_10564122` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `check_party_stocks`
---
-ALTER TABLE `check_party_stocks`
-  ADD CONSTRAINT `team_fk_10564086` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `check_party_stock_user`
---
-ALTER TABLE `check_party_stock_user`
-  ADD CONSTRAINT `check_party_stock_id_fk_10564082` FOREIGN KEY (`check_party_stock_id`) REFERENCES `check_party_stocks` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_id_fk_10564082` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `clients`
---
-ALTER TABLE `clients`
-  ADD CONSTRAINT `status_fk_10562578` FOREIGN KEY (`status_id`) REFERENCES `client_statuses` (`id`);
-
---
--- Constraints for table `current_stocks`
---
-ALTER TABLE `current_stocks`
-  ADD CONSTRAINT `team_fk_10564072` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `current_stock_stock_transfer`
---
-ALTER TABLE `current_stock_stock_transfer`
-  ADD CONSTRAINT `current_stock_id_fk_10564075` FOREIGN KEY (`current_stock_id`) REFERENCES `current_stocks` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `stock_transfer_id_fk_10564075` FOREIGN KEY (`stock_transfer_id`) REFERENCES `stock_transfers` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `districts`
---
-ALTER TABLE `districts`
-  ADD CONSTRAINT `select_state_fk_10564195` FOREIGN KEY (`select_state_id`) REFERENCES `states` (`id`),
-  ADD CONSTRAINT `team_fk_10564199` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `documents`
---
-ALTER TABLE `documents`
-  ADD CONSTRAINT `project_fk_10562599` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
-
---
--- Constraints for table `expenses`
---
-ALTER TABLE `expenses`
-  ADD CONSTRAINT `expense_category_fk_10562526` FOREIGN KEY (`expense_category_id`) REFERENCES `expense_categories` (`id`);
-
---
--- Constraints for table `imei_masters`
---
-ALTER TABLE `imei_masters`
-  ADD CONSTRAINT `imei_model_fk_10562896` FOREIGN KEY (`imei_model_id`) REFERENCES `imei_models` (`id`),
-  ADD CONSTRAINT `team_fk_10562903` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `imei_models`
---
-ALTER TABLE `imei_models`
-  ADD CONSTRAINT `team_fk_10562851` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `incomes`
---
-ALTER TABLE `incomes`
-  ADD CONSTRAINT `income_category_fk_10562534` FOREIGN KEY (`income_category_id`) REFERENCES `income_categories` (`id`);
-
---
--- Constraints for table `kyc_recharges`
---
-ALTER TABLE `kyc_recharges`
-  ADD CONSTRAINT `kyc_recharges_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `kyc_recharges_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `notes`
---
-ALTER TABLE `notes`
-  ADD CONSTRAINT `project_fk_10562593` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
-
---
--- Constraints for table `permission_role`
---
-ALTER TABLE `permission_role`
-  ADD CONSTRAINT `permission_id_fk_10562488` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `role_id_fk_10562488` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `product_masters`
---
-ALTER TABLE `product_masters`
-  ADD CONSTRAINT `imei_fk_10562922` FOREIGN KEY (`imei_id`) REFERENCES `imei_masters` (`id`),
-  ADD CONSTRAINT `product_model_fk_10562921` FOREIGN KEY (`product_model_id`) REFERENCES `product_models` (`id`),
-  ADD CONSTRAINT `team_fk_10562931` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`),
-  ADD CONSTRAINT `vts_fk_10562923` FOREIGN KEY (`vts_id`) REFERENCES `vts` (`id`);
-
---
--- Constraints for table `product_models`
---
-ALTER TABLE `product_models`
-  ADD CONSTRAINT `team_fk_10562919` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `projects`
---
-ALTER TABLE `projects`
-  ADD CONSTRAINT `client_fk_10562584` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`),
-  ADD CONSTRAINT `status_fk_10562588` FOREIGN KEY (`status_id`) REFERENCES `project_statuses` (`id`);
-
---
--- Constraints for table `qa_messages`
---
-ALTER TABLE `qa_messages`
-  ADD CONSTRAINT `qa_messages_sender_id_foreign` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `qa_messages_topic_id_foreign` FOREIGN KEY (`topic_id`) REFERENCES `qa_topics` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `qa_topics`
---
-ALTER TABLE `qa_topics`
-  ADD CONSTRAINT `qa_topics_creator_id_foreign` FOREIGN KEY (`creator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `qa_topics_receiver_id_foreign` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `recharge_plans`
---
-ALTER TABLE `recharge_plans`
-  ADD CONSTRAINT `team_fk_10564476` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `recharge_requests`
---
-ALTER TABLE `recharge_requests`
-  ADD CONSTRAINT `product_fk_10564703` FOREIGN KEY (`product_id`) REFERENCES `current_stocks` (`id`),
-  ADD CONSTRAINT `select_recharge_fk_10564704` FOREIGN KEY (`select_recharge_id`) REFERENCES `recharge_plans` (`id`),
-  ADD CONSTRAINT `team_fk_10564710` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`),
-  ADD CONSTRAINT `user_fk_10564701` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `role_user`
---
-ALTER TABLE `role_user`
-  ADD CONSTRAINT `role_id_fk_10562497` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_id_fk_10562497` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `states`
---
-ALTER TABLE `states`
-  ADD CONSTRAINT `team_fk_10564191` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `stock_histories`
---
-ALTER TABLE `stock_histories`
-  ADD CONSTRAINT `stock_histories_activation_request_id_foreign` FOREIGN KEY (`activation_request_id`) REFERENCES `activation_requests` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `stock_histories_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `stock_histories_select_party_id_foreign` FOREIGN KEY (`select_party_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `stock_transfers`
---
-ALTER TABLE `stock_transfers`
-  ADD CONSTRAINT `select_user_fk_10564074` FOREIGN KEY (`select_user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `team_fk_10564079` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `teams`
---
-ALTER TABLE `teams`
-  ADD CONSTRAINT `owner_fk_10562507` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `transactions`
---
-ALTER TABLE `transactions`
-  ADD CONSTRAINT `currency_fk_10562611` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
-  ADD CONSTRAINT `income_source_fk_10562609` FOREIGN KEY (`income_source_id`) REFERENCES `income_sources` (`id`),
-  ADD CONSTRAINT `project_fk_10562607` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
-  ADD CONSTRAINT `transaction_type_fk_10562608` FOREIGN KEY (`transaction_type_id`) REFERENCES `transaction_types` (`id`);
-
---
--- Constraints for table `users`
---
-ALTER TABLE `users`
-  ADD CONSTRAINT `district_fk_10567190` FOREIGN KEY (`district_id`) REFERENCES `districts` (`id`),
-  ADD CONSTRAINT `state_fk_10567189` FOREIGN KEY (`state_id`) REFERENCES `states` (`id`),
-  ADD CONSTRAINT `team_fk_10562508` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `user_user_alert`
---
-ALTER TABLE `user_user_alert`
-  ADD CONSTRAINT `user_alert_id_fk_10562512` FOREIGN KEY (`user_alert_id`) REFERENCES `user_alerts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_id_fk_10562512` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `vehicle_sharing`
---
-ALTER TABLE `vehicle_sharing`
-  ADD CONSTRAINT `vehicle_sharing_sharing_user_id_foreign` FOREIGN KEY (`sharing_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `vehicle_sharing_vehicle_id_foreign` FOREIGN KEY (`vehicle_id`) REFERENCES `add_customer_vehicles` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `vehicle_types`
---
-ALTER TABLE `vehicle_types`
-  ADD CONSTRAINT `team_fk_10564206` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
---
--- Constraints for table `vts`
---
-ALTER TABLE `vts`
-  ADD CONSTRAINT `team_fk_10562826` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
