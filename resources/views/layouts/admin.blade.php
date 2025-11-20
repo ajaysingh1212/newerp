@@ -142,7 +142,7 @@
               <ul class="navbar-nav" style="display: flex; align-items: center; width: 50%; justify-content: end;">
                   @if(file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))
                       @can('profile_password_edit')
-                          <li class="px-5">
+                          <li class="px-5" >
                               <a class="nav-link px-lg-5 {{ request()->is('profile/password') || request()->is('profile/password/*') ? 'active' : '' }}" href="{{ route('profile.password.edit') }}">
                                   <i class="fa-fw fas fa-key nav-icon" style="display:flex">
                                      <span class="d-lg-block d-none"> {{ trans('global.change_password') }}</span>
@@ -150,6 +150,18 @@
                               </a>
                           </li>
                       @endcan
+                        @can('investments_detaile_access')
+                            <li class="nav-item" style="border: 1px solid blue; border-radius:5px;">
+                                <a href="{{ route("admin.investments-detailes.index") }}" class="nav-link {{ request()->is("admin/investments-detailes") || request()->is("admin/investments-detailes/*") ? "active" : "" }}">
+                                    <i class="fa-fw nav-icon fab fa-accusoft">
+
+                                    </i>
+                                    <p style="margin-top: -25px;margin-left:20px;">
+                                        {{ trans('cruds.investmentsDetaile.title') }}
+                                    </p>
+                                </a>
+                            </li>
+                        @endcan
                   @endif
 
                 @php

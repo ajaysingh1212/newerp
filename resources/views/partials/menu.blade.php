@@ -214,18 +214,7 @@
                         </ul>
                     </li>
                 @endcan
-                @can('investments_detaile_access')
-                    <li class="nav-item">
-                        <a href="{{ route("admin.investments-detailes.index") }}" class="nav-link {{ request()->is("admin/investments-detailes") || request()->is("admin/investments-detailes/*") ? "active" : "" }}">
-                            <i class="fa-fw nav-icon fab fa-accusoft">
 
-                            </i>
-                            <p>
-                                {{ trans('cruds.investmentsDetaile.title') }}
-                            </p>
-                        </a>
-                    </li>
-                @endcan
                 @can('investor_access')
                     <li class="nav-item has-treeview {{ request()->is("admin/registrations*") ? "menu-open" : "" }} {{ request()->is("admin/investments*") ? "menu-open" : "" }} {{ request()->is("admin/withdrawal-requests*") ? "menu-open" : "" }}">
                         <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/registrations*") ? "active" : "" }} {{ request()->is("admin/investments*") ? "active" : "" }} {{ request()->is("admin/withdrawal-requests*") ? "active" : "" }}" href="#">
