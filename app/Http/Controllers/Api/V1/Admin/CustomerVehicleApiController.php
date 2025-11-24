@@ -56,8 +56,10 @@ class CustomerVehicleApiController extends Controller
                 $productModel = $vehicle->product_master?->product_model;
     
                 // Check recharge exist karta hai ya nahi
-                $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)->exists();
-    
+                $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)
+                ->whereIn('payment_status', ['success', 'completed', 'paid'])
+                ->exists();
+
                 if ($hasRecharge) {
                     $warrantyExpiry     = $vehicle->warranty;
                     $subscriptionExpiry = $vehicle->subscription;
