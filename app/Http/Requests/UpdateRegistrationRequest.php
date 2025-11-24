@@ -54,9 +54,7 @@ class UpdateRegistrationRequest extends FormRequest
                 'string',
                 'nullable',
             ],
-            'address_line_1' => [
-                'required',
-            ],
+       
             'pincode' => [
                 'string',
                 'min:6',
@@ -96,25 +94,7 @@ class UpdateRegistrationRequest extends FormRequest
                 'string',
                 'nullable',
             ],
-            'pan_card_image' => [
-                'array',
-                'required',
-            ],
-            'pan_card_image.*' => [
-                'required',
-            ],
-            'aadhaar_front_image' => [
-                'required',
-            ],
-            'aadhaar_back_image' => [
-                'required',
-            ],
-            'profile_image' => [
-                'array',
-            ],
-            'signature_image' => [
-                'array',
-            ],
+    
             'income_range' => [
                 'required',
             ],

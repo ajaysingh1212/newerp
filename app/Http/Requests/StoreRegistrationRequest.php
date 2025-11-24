@@ -54,27 +54,8 @@ class StoreRegistrationRequest extends FormRequest
                 'string',
                 'nullable',
             ],
-            'address_line_1' => [
-                'required',
-            ],
-            'pincode' => [
-                'string',
-                'min:6',
-                'max:6',
-                'required',
-            ],
-            'city' => [
-                'string',
-                'nullable',
-            ],
-            'state' => [
-                'string',
-                'nullable',
-            ],
-            'country' => [
-                'string',
-                'nullable',
-            ],
+           
+
             'bank_account_holder_name' => [
                 'string',
                 'required',
