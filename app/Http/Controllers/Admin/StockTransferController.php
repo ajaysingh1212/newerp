@@ -111,7 +111,9 @@ public function create()
                 ->pluck('title', 'id')
                 ->prepend(trans('global.pleaseSelect'), '');
         } elseif ($userRole === 'Dealer') {
-            $party_types = collect(); // Dealer should not see party types
+            $party_types = Role::whereIn('title', ['Customer', 'Admin'])
+                ->pluck('title', 'id')
+                ->prepend(trans('global.pleaseSelect'), '');
         }
 
         $select_parties = User::where('created_by_id', $user->id)
@@ -124,34 +126,32 @@ public function create()
 
     // Filter CurrentStock based on role and transfer_user_id
     if ($userRole === 'Admin') {
-        // Admin sees only unassigned (not transferred) stocks
-        $select_products = CurrentStock::whereNull('transfer_user_id')
-            ->with(['product.product_model', 'product.imei'])
-            ->get()
-            ->mapWithKeys(function ($stock) {
-                $imei = $stock->product->imei->imei_number ?? 'N/A';
-                $model = $stock->product->product_model;
-                $modelDetails = $model
-                 ? " Model: {$model->product_model}"
-                 : '';
+    $select_products = CurrentStock::where(function ($q) {
+            $q->whereNull('transfer_user_id')
+              ->orWhere('transfer_user_id', auth()->id());
+        })
+        ->with(['product.product_model', 'product.imei'])
+        ->get()
+        ->mapWithKeys(function ($stock) {
+            $imei = $stock->product->imei->imei_number ?? 'N/A';
+            $model = $stock->product->product_model;
+            $modelDetails = $model ? " Model: {$model->product_model}" : '';
 
             return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
-            });
+        });
     } else {
-        // Other users see only stocks assigned to them
         $select_products = CurrentStock::where('transfer_user_id', $user->id)
             ->with(['product.product_model', 'product.imei'])
             ->get()
             ->mapWithKeys(function ($stock) {
                 $imei = $stock->product->imei->imei_number ?? 'N/A';
                 $model = $stock->product->product_model;
-                $modelDetails = $model
-                 ? " Model: {$model->product_model}"
-                 : '';
+                $modelDetails = $model ? " Model: {$model->product_model}" : '';
 
-            return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
+                return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
             });
     }
+
 
     // Dropdowns for form
     $states = State::pluck('state_name', 'id')->prepend(trans('global.pleaseSelect'), '');
@@ -303,17 +303,24 @@ public function getUsersByRole(Request $request)
     $roleId = $request->input('role_id');
     $loggedInUser = auth()->user();
 
-    // ✅ Check if logged-in user is Admin using roles relationship
-    $isAdmin = $loggedInUser->roles->contains('title', 'Admin');
+    $userRole = $loggedInUser->roles->first()->title ?? null;
 
     $usersQuery = User::whereHas('roles', function ($q) use ($roleId) {
         $q->where('id', $roleId);
-    })
-    ->select('id', 'name', 'mobile_number');
+    })->select('id', 'name', 'mobile_number');
 
-    // ✅ Only non-admin users see users they created
-    if (!$isAdmin) {
-        $usersQuery->where('created_by_id', $loggedInUser->id);
+    // ❌ Non-admin users see only created users
+    // ✔ BUT Dealer must see Admin users also
+    if ($userRole !== 'Admin') {
+
+        // Dealer wants Admin → show all Admins
+        $selectedRole = Role::find($roleId);
+        if ($userRole === 'Dealer' && $selectedRole && $selectedRole->title === 'Admin') {
+            // Skip filtering → show all Admin users
+        } else {
+            // Normal logic: show only users created by logged-in user
+            $usersQuery->where('created_by_id', $loggedInUser->id);
+        }
     }
 
     $users = $usersQuery->get();
@@ -327,6 +334,7 @@ public function getUsersByRole(Request $request)
         })
     );
 }
+
 
 public function getProductDetails(Request $request)
 {
@@ -343,7 +351,7 @@ public function getProductDetails(Request $request)
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // ✅ Allow stock with null or current user's transfer_user_id
+        // Check stock
         $currentStock = \App\Models\CurrentStock::where('id', $currentStockId)
             ->where(function ($query) use ($user) {
                 $query->whereNull('transfer_user_id')
@@ -355,7 +363,6 @@ public function getProductDetails(Request $request)
             return response()->json(['error' => 'Stock record not found for this user'], 404);
         }
 
-        // ✅ Get product and model
         $productMaster = \App\Models\ProductMaster::find($currentStock->product_id);
         if (!$productMaster) {
             return response()->json(['error' => 'Product not found'], 404);
@@ -372,16 +379,19 @@ public function getProductDetails(Request $request)
         }
 
         $roleTitle = strtolower(trim($role->title));
+
+        // Dealer → Admin transfer = Dealer price
         $price = match ($roleTitle) {
-            'cnf' => $productModel->cnf_price,
-            'distributer' => $productModel->distributor_price,
-            'dealer' => $productModel->dealer_price,
-            'customer' => $productModel->customer_price,
-            default => null
+            'cnf'        => $productModel->cnf_price,
+            'distributer'=> $productModel->distributor_price,
+            'dealer'     => $productModel->dealer_price,
+            'customer'   => $productModel->customer_price,
+            'admin'      => $productModel->dealer_price, // IMPORTANT FIX
+            default      => null,
         };
 
         if (is_null($price)) {
-            return response()->json(['error' => 'Invalid price for role'], 400);
+            return response()->json(['error' => 'Invalid price for this role'], 400);
         }
 
         return response()->json([
@@ -400,6 +410,7 @@ public function getProductDetails(Request $request)
         return response()->json(['error' => 'Something went wrong'], 500);
     }
 }
+
 
 
 

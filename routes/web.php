@@ -33,7 +33,58 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('permissions/parse-csv-import', 'PermissionsController@parseCsvImport')->name('permissions.parseCsvImport');
     Route::post('permissions/process-csv-import', 'PermissionsController@processCsvImport')->name('permissions.processCsvImport');
     Route::resource('permissions', 'PermissionsController');
+    // 
+    // Registration
+    Route::delete('registrations/destroy', 'RegistrationController@massDestroy')->name('registrations.massDestroy');
+    Route::post('registrations/media', 'RegistrationController@storeMedia')->name('registrations.storeMedia');
+    Route::post('registrations/ckmedia', 'RegistrationController@storeCKEditorImages')->name('registrations.storeCKEditorImages');
+    Route::post('registrations/parse-csv-import', 'RegistrationController@parseCsvImport')->name('registrations.parseCsvImport');
+    Route::post('registrations/process-csv-import', 'RegistrationController@processCsvImport')->name('registrations.processCsvImport');
+    Route::resource('registrations', 'RegistrationController');
 
+    // Plan
+    Route::delete('plans/destroy', 'PlanController@massDestroy')->name('plans.massDestroy');
+    Route::post('plans/parse-csv-import', 'PlanController@parseCsvImport')->name('plans.parseCsvImport');
+    Route::post('plans/process-csv-import', 'PlanController@processCsvImport')->name('plans.processCsvImport');
+    Route::resource('plans', 'PlanController');
+
+    // Investments
+    Route::delete('investments/destroy', 'InvestmentsController@massDestroy')->name('investments.massDestroy');
+    Route::post('investments/parse-csv-import', 'InvestmentsController@parseCsvImport')->name('investments.parseCsvImport');
+    Route::post('investments/process-csv-import', 'InvestmentsController@processCsvImport')->name('investments.processCsvImport');
+    Route::resource('investments', 'InvestmentsController');
+
+    // Monthly Payout Records
+    Route::delete('monthly-payout-records/destroy', 'MonthlyPayoutRecordsController@massDestroy')->name('monthly-payout-records.massDestroy');
+    Route::post('monthly-payout-records/parse-csv-import', 'MonthlyPayoutRecordsController@parseCsvImport')->name('monthly-payout-records.parseCsvImport');
+    Route::post('monthly-payout-records/process-csv-import', 'MonthlyPayoutRecordsController@processCsvImport')->name('monthly-payout-records.processCsvImport');
+    Route::resource('monthly-payout-records', 'MonthlyPayoutRecordsController');
+
+    // Withdrawal Requests
+    Route::delete('withdrawal-requests/destroy', 'WithdrawalRequestsController@massDestroy')->name('withdrawal-requests.massDestroy');
+    Route::post('withdrawal-requests/media', 'WithdrawalRequestsController@storeMedia')->name('withdrawal-requests.storeMedia');
+    Route::post('withdrawal-requests/ckmedia', 'WithdrawalRequestsController@storeCKEditorImages')->name('withdrawal-requests.storeCKEditorImages');
+    Route::post('withdrawal-requests/parse-csv-import', 'WithdrawalRequestsController@parseCsvImport')->name('withdrawal-requests.parseCsvImport');
+    Route::post('withdrawal-requests/process-csv-import', 'WithdrawalRequestsController@processCsvImport')->name('withdrawal-requests.processCsvImport');
+    Route::resource('withdrawal-requests', 'WithdrawalRequestsController');
+
+    // Login Logs
+    Route::delete('login-logs/destroy', 'LoginLogsController@massDestroy')->name('login-logs.massDestroy');
+    Route::post('login-logs/parse-csv-import', 'LoginLogsController@parseCsvImport')->name('login-logs.parseCsvImport');
+    Route::post('login-logs/process-csv-import', 'LoginLogsController@processCsvImport')->name('login-logs.processCsvImport');
+    Route::resource('login-logs', 'LoginLogsController');
+
+    // Investments Detailes
+    Route::delete('investments-detailes/destroy', 'InvestmentsDetailesController@massDestroy')->name('investments-detailes.massDestroy');
+    Route::resource('investments-detailes', 'InvestmentsDetailesController');
+
+    // Investor Transaction
+    Route::delete('investor-transactions/destroy', 'InvestorTransactionController@massDestroy')->name('investor-transactions.massDestroy');
+    Route::post('investor-transactions/media', 'InvestorTransactionController@storeMedia')->name('investor-transactions.storeMedia');
+    Route::post('investor-transactions/ckmedia', 'InvestorTransactionController@storeCKEditorImages')->name('investor-transactions.storeCKEditorImages');
+    Route::post('investor-transactions/parse-csv-import', 'InvestorTransactionController@parseCsvImport')->name('investor-transactions.parseCsvImport');
+    Route::post('investor-transactions/process-csv-import', 'InvestorTransactionController@processCsvImport')->name('investor-transactions.processCsvImport');
+    Route::resource('investor-transactions', 'InvestorTransactionController');
     // Roles
     Route::delete('roles/destroy', 'RolesController@massDestroy')->name('roles.massDestroy');
     Route::post('roles/parse-csv-import', 'RolesController@parseCsvImport')->name('roles.parseCsvImport');
