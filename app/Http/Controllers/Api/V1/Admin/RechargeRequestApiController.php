@@ -238,7 +238,7 @@ class RechargeRequestApiController extends Controller
         $autoNotes = strtoupper($request->vehicle_number).", ".$planName." From Mobile";
 
 
-        /** create recharge record ALWAYS */
+        /** Create recharge entry ALWAYS */
         RechargeRequest::create([
             'user_id'            => $request->user_id,
             'vehicle_number'     => $request->vehicle_number,
@@ -254,52 +254,68 @@ class RechargeRequestApiController extends Controller
         ]);
 
 
-        /** IF PAYMENT NOT SUCCESS -> NO EXPIRY UPDATE */
+        /** IF PAYMENT FAILED = no expiry change */
         if(!in_array($request->payment_status, ['success','completed','paid']))
         {
             return response()->json([
                 'status'=>true,
-                'message'=>'Recharge saved BUT payment FAILED, expiry unchanged'
+                'message'=>'Recharge saved BUT payment FAILED, expiry NOT changed'
             ]);
         }
 
 
-        /** below block runs only for successful payments */
+        /** SUCCESS case below */
 
-
-        $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)
-            ->whereIn('payment_status', ['success','completed','paid'])
-            ->exists();
 
         $today = Carbon::now();
-        $productModel = $vehicle->product_master?->product_model;
+
+        /** load CURRENT expiry OR null */
+        $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty) : null;
+        $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : null;
+        $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc) : null;
 
 
-        if ($hasRecharge) {
-            $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty) : $today;
-            $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : $today;
-            $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc) : $today;
-        } else {
-
-            $requestDate = $vehicle->request_date
-                ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date)
-                : $today;
-
-            $baseWarranty     = $requestDate->copy()->addMonths($productModel->warranty ?? 0);
-            $baseSubscription = $requestDate->copy()->addMonths($productModel->subscription ?? 0);
-            $baseAmc          = $requestDate->copy()->addMonths($productModel->amc ?? 0);
+        /** warranty */
+        if($plan->warranty_duration)
+        {
+            $newWarranty = ($baseWarranty && $baseWarranty->gt($today))
+                ? $baseWarranty->copy()->addMonths($plan->warranty_duration)
+                : $today->copy()->addMonths($plan->warranty_duration);
+        }
+        else{
+            $newWarranty = $baseWarranty;
         }
 
 
-        $newWarranty     = $plan->warranty_duration     ? $baseWarranty->copy()->addMonths($plan->warranty_duration) : $baseWarranty;
-        $newSubscription = $plan->subscription_duration ? $baseSubscription->copy()->addMonths($plan->subscription_duration) : $baseSubscription;
-        $newAmc          = $plan->amc_duration          ? $baseAmc->copy()->addMonths($plan->amc_duration) : $baseAmc;
+        /** subscription */
+        if($plan->subscription_duration)
+        {
+            $newSubscription = ($baseSubscription && $baseSubscription->gt($today))
+                ? $baseSubscription->copy()->addMonths($plan->subscription_duration)
+                : $today->copy()->addMonths($plan->subscription_duration);
+        }
+        else{
+            $newSubscription = $baseSubscription;
+        }
 
 
+        /** amc */
+        if($plan->amc_duration)
+        {
+            $newAmc = ($baseAmc && $baseAmc->gt($today))
+                ? $baseAmc->copy()->addMonths($plan->amc_duration)
+                : $today->copy()->addMonths($plan->amc_duration);
+        }
+        else{
+            $newAmc = $baseAmc;
+        }
+
+
+        /** UPDATE only these */
         $vehicle->update([
-            'warranty'=>$newWarranty,
-            'subscription'=>$newSubscription,
-            'amc'=>$newAmc
+            'warranty'     => $newWarranty,
+            'subscription' => $newSubscription,
+            'amc'          => $newAmc
         ]);
 
 
@@ -307,9 +323,9 @@ class RechargeRequestApiController extends Controller
             'status'=>true,
             'message'=>'Recharge Successful',
             'expiry'=>[
-                'warranty'=>$newWarranty->toDateString(),
-                'subscription'=>$newSubscription->toDateString(),
-                'amc'=>$newAmc->toDateString(),
+                'warranty'     => $newWarranty?->toDateString(),
+                'subscription' => $newSubscription?->toDateString(),
+                'amc'          => $newAmc?->toDateString(),
             ]
         ]);
 
@@ -321,6 +337,7 @@ class RechargeRequestApiController extends Controller
             'error'=>$e->getMessage()
         ],500);
     }
+}
 }
 
 
