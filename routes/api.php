@@ -121,6 +121,7 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🔌 Submit Recharge Request
     Route::post('submit-recharge', 'RechargeRequestApiController@submitRecharge')->name('submit-recharge');
 
+    Route::post('user-recharge', 'RechargeRequestApiController@UserRecharge')->name('user.recharge');
     
     // 📜 Get Recharge History by User ID
     Route::get('recharge-history/{user_id}', 'RechargeRequestApiController@getRechargeHistoryByUser')->name('recharge-history.by-user');
