@@ -26,7 +26,7 @@
         <table class="table table-bordered table-striped table-hover datatable datatable-ActivationRequest">
             <thead>
                 <tr>
-                    <th>check id</th>
+                    <th>check</th>
                     <th>ID</th>
                     
                     <th>Party Name</th>
