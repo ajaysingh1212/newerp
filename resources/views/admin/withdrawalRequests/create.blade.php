@@ -1,151 +1,148 @@
 @extends('layouts.admin')
 @section('content')
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('global.create') }} {{ trans('cruds.withdrawalRequest.title_singular') }}
-    </div>
+<div class="max-w-5xl mx-auto py-8">
+    <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
 
-    <div class="card-body">
-        <form method="POST" action="{{ route("admin.withdrawal-requests.store") }}" enctype="multipart/form-data">
+        <!-- Header -->
+        <div class="pb-4 border-b mb-6">
+            <h2 class="text-2xl font-bold text-indigo-600">
+                {{ trans('global.create') }} {{ trans('cruds.withdrawalRequest.title_singular') }}
+            </h2>
+        </div>
+
+        <form method="POST" action="{{ route('admin.withdrawal-requests.store') }}" enctype="multipart/form-data">
             @csrf
-            <div class="form-group">
-                <label class="required" for="select_investor_id">{{ trans('cruds.withdrawalRequest.fields.select_investor') }}</label>
-                <select class="form-control select2 {{ $errors->has('select_investor') ? 'is-invalid' : '' }}" name="select_investor_id" id="select_investor_id" required>
-                    @foreach($select_investors as $id => $entry)
-                        <option value="{{ $id }}" {{ old('select_investor_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('select_investor'))
-                    <span class="text-danger">{{ $errors->first('select_investor') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.withdrawalRequest.fields.select_investor_helper') }}</span>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Select Investor -->
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.withdrawalRequest.fields.select_investor') }}
+                    </label>
+
+                    <select name="select_investor_id" id="select_investor_id"
+                        class="select2 w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm
+                               focus:border-indigo-500 focus:ring-indigo-500" required>
+
+                        @foreach($select_investors as $id => $entry)
+                            <option value="{{ $id }}" {{ old('select_investor_id') == $id ? 'selected' : '' }}>
+                                {{ $entry }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('select_investor')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Investment -->
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.withdrawalRequest.fields.investment') }}
+                    </label>
+
+                    <select name="investment_id" id="investment_id"
+                        class="select2 w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm
+                               focus:border-indigo-500 focus:ring-indigo-500" required>
+
+                        @foreach($investments as $id => $entry)
+                            <option value="{{ $id }}" {{ old('investment_id') == $id ? 'selected' : '' }}>
+                                {{ $entry }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('investment')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Amount -->
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.withdrawalRequest.fields.amount') }}
+                    </label>
+
+                    <input type="number" name="amount" id="amount" step="0.01"
+                           value="{{ old('amount') }}"
+                           class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm
+                                  focus:border-indigo-500 focus:ring-indigo-500" required>
+
+                    @error('amount')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Type -->
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.withdrawalRequest.fields.type') }}
+                    </label>
+
+                    <select name="type" id="type"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm
+                               focus:border-indigo-500 focus:ring-indigo-500" required>
+
+                        <option value disabled selected>{{ trans('global.pleaseSelect') }}</option>
+
+                        @foreach(App\Models\WithdrawalRequest::TYPE_SELECT as $key => $label)
+                            <option value="{{ $key }}" {{ old('type','interest') == $key ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('type')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Requested Date -->
+                <div class="bg-purple-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        {{ trans('cruds.withdrawalRequest.fields.requested_at') }}
+                    </label>
+
+                    <input type="text" name="requested_at" id="requested_at"
+                           value="{{ old('requested_at') }}"
+                           class="form-control date w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm
+                                  focus:border-indigo-500 focus:ring-indigo-500">
+
+                    @error('requested_at')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Notes -->
+                <div class="bg-yellow-50 p-4 rounded-lg shadow-inner md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        {{ trans('cruds.withdrawalRequest.fields.notes') }}
+                    </label>
+
+                    <textarea name="notes" id="notes"
+                              class="ckeditor w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm
+                                     focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes') }}</textarea>
+
+                    @error('notes')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
             </div>
-            <div class="form-group">
-                <label class="required" for="investment_id">{{ trans('cruds.withdrawalRequest.fields.investment') }}</label>
-                <select class="form-control select2 {{ $errors->has('investment') ? 'is-invalid' : '' }}" name="investment_id" id="investment_id" required>
-                    @foreach($investments as $id => $entry)
-                        <option value="{{ $id }}" {{ old('investment_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('investment'))
-                    <span class="text-danger">{{ $errors->first('investment') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.withdrawalRequest.fields.investment_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="amount">{{ trans('cruds.withdrawalRequest.fields.amount') }}</label>
-                <input class="form-control {{ $errors->has('amount') ? 'is-invalid' : '' }}" type="number" name="amount" id="amount" value="{{ old('amount', '') }}" step="0.01" required>
-                @if($errors->has('amount'))
-                    <span class="text-danger">{{ $errors->first('amount') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.withdrawalRequest.fields.amount_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required">{{ trans('cruds.withdrawalRequest.fields.type') }}</label>
-                <select class="form-control {{ $errors->has('type') ? 'is-invalid' : '' }}" name="type" id="type" required>
-                    <option value disabled {{ old('type', null) === null ? 'selected' : '' }}>{{ trans('global.pleaseSelect') }}</option>
-                    @foreach(App\Models\WithdrawalRequest::TYPE_SELECT as $key => $label)
-                        <option value="{{ $key }}" {{ old('type', 'interest') === (string) $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('type'))
-                    <span class="text-danger">{{ $errors->first('type') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.withdrawalRequest.fields.type_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="requested_at">{{ trans('cruds.withdrawalRequest.fields.requested_at') }}</label>
-                <input class="form-control date {{ $errors->has('requested_at') ? 'is-invalid' : '' }}" type="text" name="requested_at" id="requested_at" value="{{ old('requested_at') }}">
-                @if($errors->has('requested_at'))
-                    <span class="text-danger">{{ $errors->first('requested_at') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.withdrawalRequest.fields.requested_at_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="notes">{{ trans('cruds.withdrawalRequest.fields.notes') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('notes') ? 'is-invalid' : '' }}" name="notes" id="notes">{!! old('notes') !!}</textarea>
-                @if($errors->has('notes'))
-                    <span class="text-danger">{{ $errors->first('notes') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.withdrawalRequest.fields.notes_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-danger" type="submit">
+
+            <!-- Submit Button -->
+            <div class="mt-8 text-right">
+                <button type="submit"
+                class="bg-indigo-600 text-white px-6 py-2 rounded-lg shadow hover:bg-indigo-700 transition">
                     {{ trans('global.save') }}
                 </button>
             </div>
+
         </form>
     </div>
 </div>
-
-
-
-@endsection
-
-@section('scripts')
-<script>
-    $(document).ready(function () {
-  function SimpleUploadAdapter(editor) {
-    editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {
-      return {
-        upload: function() {
-          return loader.file
-            .then(function (file) {
-              return new Promise(function(resolve, reject) {
-                // Init request
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '{{ route('admin.withdrawal-requests.storeCKEditorImages') }}', true);
-                xhr.setRequestHeader('x-csrf-token', window._token);
-                xhr.setRequestHeader('Accept', 'application/json');
-                xhr.responseType = 'json';
-
-                // Init listeners
-                var genericErrorText = `Couldn't upload file: ${ file.name }.`;
-                xhr.addEventListener('error', function() { reject(genericErrorText) });
-                xhr.addEventListener('abort', function() { reject() });
-                xhr.addEventListener('load', function() {
-                  var response = xhr.response;
-
-                  if (!response || xhr.status !== 201) {
-                    return reject(response && response.message ? `${genericErrorText}\n${xhr.status} ${response.message}` : `${genericErrorText}\n ${xhr.status} ${xhr.statusText}`);
-                  }
-
-                  $('form').append('<input type="hidden" name="ck-media[]" value="' + response.id + '">');
-
-                  resolve({ default: response.url });
-                });
-
-                if (xhr.upload) {
-                  xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                      loader.uploadTotal = e.total;
-                      loader.uploaded = e.loaded;
-                    }
-                  });
-                }
-
-                // Send request
-                var data = new FormData();
-                data.append('upload', file);
-                data.append('crud_id', '{{ $withdrawalRequest->id ?? 0 }}');
-                xhr.send(data);
-              });
-            })
-        }
-      };
-    }
-  }
-
-  var allEditors = document.querySelectorAll('.ckeditor');
-  for (var i = 0; i < allEditors.length; ++i) {
-    ClassicEditor.create(
-      allEditors[i], {
-        extraPlugins: [SimpleUploadAdapter]
-      }
-    );
-  }
-});
-</script>
 
 @endsection
