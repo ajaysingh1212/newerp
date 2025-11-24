@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\Auditable;
 use App\Traits\MultiTenantModelTrait;
 use Carbon\Carbon;
+use App\Traits\AuditLog;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +16,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Registration extends Model implements HasMedia
 {
-    use SoftDeletes, MultiTenantModelTrait, InteractsWithMedia, Auditable, HasFactory;
+   use SoftDeletes, MultiTenantModelTrait, InteractsWithMedia, Auditable, HasFactory;
 
-    public $table = 'registrations';
+    protected $table = 'registrations';
+
+    //-----------------------------------
+    // CONSTANTS
+    //-----------------------------------
 
     public const IS_EMAIL_VERIFIED_RADIO = [
         'No'  => 'No',
@@ -27,13 +32,6 @@ class Registration extends Model implements HasMedia
     public const IS_PHONE_VERIFIED_RADIO = [
         'No'  => 'No',
         'Yes' => 'Yes',
-    ];
-
-    protected $dates = [
-        'dob',
-        'created_at',
-        'updated_at',
-        'deleted_at',
     ];
 
     public const GENDER_SELECT = [
@@ -79,6 +77,17 @@ class Registration extends Model implements HasMedia
         '3+ yr'  => '3+ yr',
     ];
 
+    //-----------------------------------
+    // DATES / APPENDS
+    //-----------------------------------
+
+    protected $dates = [
+        'dob',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
     protected $appends = [
         'pan_card_image',
         'aadhaar_front_image',
@@ -86,6 +95,10 @@ class Registration extends Model implements HasMedia
         'profile_image',
         'signature_image',
     ];
+
+    //-----------------------------------
+    // FILLABLE
+    //-----------------------------------
 
     protected $fillable = [
         'reg',
@@ -115,16 +128,42 @@ class Registration extends Model implements HasMedia
         'account_status',
         'is_email_verified',
         'is_phone_verified',
-        'created_at',
-        'updated_at',
-        'deleted_at',
         'created_by_id',
     ];
+
+    //-----------------------------------
+    // DATE SERIALIZATION
+    //-----------------------------------
 
     protected function serializeDate(DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');
     }
+
+    //-----------------------------------
+    // DOB ACCESSORS & MUTATORS (SAFE)
+    //-----------------------------------
+
+    public function getDobAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
+    }
+
+    public function setDobAttribute($value)
+    {
+        try {
+            $this->attributes['dob'] = $value
+                ? Carbon::createFromFormat(config('panel.date_format'), $value)->format('Y-m-d')
+                : null;
+        } catch (\Exception $e) {
+            \Log::error('DOB Parse Error', ['value' => $value, 'message' => $e->getMessage()]);
+            $this->attributes['dob'] = null;
+        }
+    }
+
+    //-----------------------------------
+    // MEDIA CONVERSIONS
+    //-----------------------------------
 
     public function registerMediaConversions(Media $media = null): void
     {
@@ -132,9 +171,82 @@ class Registration extends Model implements HasMedia
         $this->addMediaConversion('preview')->fit('crop', 120, 120);
     }
 
+    //-----------------------------------
+    // MEDIA ACCESSORS (CORRECT FORMAT)
+    //-----------------------------------
+
+    public function getPanCardImageAttribute()
+    {
+        $files = $this->getMedia('pan_card_image');
+        $files->each(function ($item) {
+            $item->url       = $item->getUrl();
+            $item->thumbnail = $item->getUrl('thumb');
+            $item->preview   = $item->getUrl('preview');
+        });
+        return $files;
+    }
+
+    public function getAadhaarFrontImageAttribute()
+    {
+        $file = $this->getMedia('aadhaar_front_image')->last();
+        if ($file) {
+            $file->url       = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview   = $file->getUrl('preview');
+        }
+        return $file;
+    }
+
+    public function getAadhaarBackImageAttribute()
+    {
+        $file = $this->getMedia('aadhaar_back_image')->last();
+        if ($file) {
+            $file->url       = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview   = $file->getUrl('preview');
+        }
+        return $file;
+    }
+
+    public function getProfileImageAttribute()
+    {
+        $file = $this->getMedia('profile_image')->last();
+        if ($file) {
+            $file->url       = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview   = $file->getUrl('preview');
+        }
+        return $file;
+    }
+
+    public function getSignatureImageAttribute()
+    {
+        $file = $this->getMedia('signature_image')->last();
+        if ($file) {
+            $file->url       = $file->getUrl();
+            $file->thumbnail = $file->getUrl('thumb');
+            $file->preview   = $file->getUrl('preview');
+        }
+        return $file;
+    }
+
+    //-----------------------------------
+    // RELATIONS
+    //-----------------------------------
+
+    public function investor()
+    {
+        return $this->belongsTo(User::class, 'investor_id');
+    }
+
+    public function created_by()
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
     public function selectInvestorInvestments()
     {
-        return $this->hasMany(Investment::class, 'select_investor_id', 'id');
+        return $this->hasMany(Investment::class, 'investor_id', 'id');
     }
 
     public function investorMonthlyPayoutRecords()
@@ -144,56 +256,11 @@ class Registration extends Model implements HasMedia
 
     public function selectInvestorWithdrawalRequests()
     {
-        return $this->hasMany(WithdrawalRequest::class, 'select_investor_id', 'id');
+        return $this->hasMany(WithdrawalRequest::class, 'investor_id', 'id');
     }
 
     public function investmentTransactions()
     {
         return $this->hasMany(Transaction::class, 'investment_id', 'id');
-    }
-
-    public function investor()
-    {
-        return $this->belongsTo(User::class, 'investor_id');
-    }
-
-    public function getDobAttribute($value)
-    {
-        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
-    }
-
-    public function setDobAttribute($value)
-    {
-        $this->attributes['dob'] = $value ? Carbon::createFromFormat(config('panel.date_format'), $value)->format('Y-m-d') : null;
-    }
-
-    public function getPanCardImageAttribute()
-    {
-        return $this->getMedia('pan_card_image');
-    }
-
-    public function getAadhaarFrontImageAttribute()
-    {
-        return $this->getMedia('aadhaar_front_image')->last();
-    }
-
-    public function getAadhaarBackImageAttribute()
-    {
-        return $this->getMedia('aadhaar_back_image')->last();
-    }
-
-    public function getProfileImageAttribute()
-    {
-        return $this->getMedia('profile_image');
-    }
-
-    public function getSignatureImageAttribute()
-    {
-        return $this->getMedia('signature_image');
-    }
-
-    public function created_by()
-    {
-        return $this->belongsTo(User::class, 'created_by_id');
     }
 }

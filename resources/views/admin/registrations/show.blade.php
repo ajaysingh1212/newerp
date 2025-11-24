@@ -336,7 +336,7 @@
             </a>
         </li>
     </ul>
-    <div class="tab-content">
+    {{-- <div class="tab-content">
         <div class="tab-pane" role="tabpanel" id="select_investor_investments">
             @includeIf('admin.registrations.relationships.selectInvestorInvestments', ['investments' => $registration->selectInvestorInvestments])
         </div>
@@ -349,7 +349,7 @@
         <div class="tab-pane" role="tabpanel" id="investment_investor_transactions">
             @includeIf('admin.registrations.relationships.investmentInvestorTransactions', ['investorTransactions' => $registration->investmentInvestorTransactions])
         </div>
-    </div>
+    </div> --}}
 </div>
 
 @endsection

@@ -201,11 +201,10 @@ class RechargeRequestApiController extends Controller
             'user_id'            => 'required|integer',
             'vehicle_number'     => 'required|string',
             'select_recharge_id' => 'required|integer',
-            'payment_method'     => 'required|string',
             'payment_status'     => 'required|string',
             'payment_amount'     => 'required|numeric',
-            'payment_id'         => 'required|string',
             'created_by_id'      => 'required|integer',
+            'razorpay_payment_id'=> 'nullable|string',
         ]);
 
 
@@ -230,27 +229,37 @@ class RechargeRequestApiController extends Controller
         }
 
 
+        /** ---- auto TXN id ------- */
+        $autoTxn = 'TXN'.rand(1000000000,9999999999);
+
+
+        /** ---- auto notes -------- */
+        $planName = $plan->plan_name ?? '';
+        $autoNotes = strtoupper($request->vehicle_number).", ".$planName." From Mobile";
+
+
         /** create recharge record ALWAYS */
         RechargeRequest::create([
             'user_id'            => $request->user_id,
             'vehicle_number'     => $request->vehicle_number,
             'select_recharge_id' => $request->select_recharge_id,
-            'payment_method'     => $request->payment_method,
+            'notes'              => $autoNotes,
+            'payment_method'     => 'online',
             'payment_status'     => $request->payment_status,
             'payment_amount'     => $request->payment_amount,
             'payment_date'       => now(),
-            'payment_id'         => $request->payment_id,
+            'payment_id'         => $autoTxn,
+            'razorpay_payment_id'=> $request->razorpay_payment_id,
             'created_by_id'      => $request->created_by_id,
         ]);
 
 
-        /** IF PAYMENT NOT SUCCESS -> return without expiry change */
-
+        /** IF PAYMENT NOT SUCCESS -> NO EXPIRY UPDATE */
         if(!in_array($request->payment_status, ['success','completed','paid']))
         {
             return response()->json([
                 'status'=>true,
-                'message'=>'Recharge saved BUT payment NOT successful, expiry NOT changed'
+                'message'=>'Recharge saved BUT payment FAILED, expiry unchanged'
             ]);
         }
 
@@ -271,6 +280,7 @@ class RechargeRequestApiController extends Controller
             $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : $today;
             $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc) : $today;
         } else {
+
             $requestDate = $vehicle->request_date
                 ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date)
                 : $today;
@@ -303,7 +313,6 @@ class RechargeRequestApiController extends Controller
             ]
         ]);
 
-
     } catch (\Exception $e){
 
         return response()->json([
@@ -313,6 +322,7 @@ class RechargeRequestApiController extends Controller
         ],500);
     }
 }
+
 
 
 

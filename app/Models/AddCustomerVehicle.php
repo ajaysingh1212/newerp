@@ -224,6 +224,7 @@ class AddCustomerVehicle extends Model implements HasMedia
         $this->addMediaConversion('thumb')->fit('crop', 50, 50);
         $this->addMediaConversion('preview')->fit('crop', 120, 120);
     }
+
     public function rechargeRequest()
 {
     return $this->hasMany(\App\Models\ActivationRequest::class, 'vehicle_id', 'id');
