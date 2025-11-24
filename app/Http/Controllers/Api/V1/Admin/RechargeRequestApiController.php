@@ -78,268 +78,151 @@ class RechargeRequestApiController extends Controller
         return response(null, Response::HTTP_NO_CONTENT);
     }
     
-    public function submitRecharge(Request $request)
+    public function UserRecharge(Request $request)
     {
         try {
-            // Validation
+
             $request->validate([
                 'user_id'            => 'required|integer',
                 'vehicle_number'     => 'required|string',
                 'select_recharge_id' => 'required|integer',
-                'notes'              => 'nullable|string',
-                'payment_method'     => 'required|string',
                 'payment_status'     => 'required|string',
                 'payment_amount'     => 'required|numeric',
-                'razorpay_payment_id'=> 'nullable|string',
-                'redeem_amount'      => 'nullable|numeric',
-                'payment_id'         => 'required|string',
                 'created_by_id'      => 'required|integer',
-                'warranty'           => 'nullable|string',
-                'subscription'       => 'nullable|string',
-                'amc'                => 'nullable|string',
+                'razorpay_payment_id'=> 'nullable|string',
             ]);
-    
-            // Recharge request create
-            $recharge = RechargeRequest::create([
-                'user_id'             => $request->user_id,
-                'vehicle_number'      => $request->vehicle_number,
-                'select_recharge_id'  => $request->select_recharge_id,
-                'notes'               => $request->notes,
-                'payment_method'      => $request->payment_method,
-                'payment_status'      => $request->payment_status,
-                'payment_amount'      => $request->payment_amount,
-                'payment_date'        => now(), // auto current date
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'redeem_amount'       => $request->redeem_amount ?? 0,
-                'payment_id'          => $request->payment_id,
-                'created_by_id'       => $request->created_by_id,
-            ]);
-    
-            // Vehicle fetch
-            $vehicle = AddCustomerVehicle::where('vehicle_number', $request->vehicle_number)->first();
-            if (!$vehicle) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Vehicle not found.',
-                ], Response::HTTP_NOT_FOUND);
-            }
-    
-            // Recharge plan fetch
-            $plan = RechargePlan::find($request->select_recharge_id);
-            if (!$plan) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Recharge plan not found.',
-                ], Response::HTTP_NOT_FOUND);
-            }
-    
-            // Expiry calculation
-            $today = Carbon::now();
-            $updatedFields = [];
-            $responseVehicle = ['vehicle_number' => $vehicle->vehicle_number];
-    
-            // Warranty
-            if (!is_null($plan->warranty_duration)) {
-                if ($request->warranty === "Expired") {
-                    $expiry = $today->copy()->addMonths($plan->warranty_duration);
-                } else {
-                    $expiry = Carbon::parse($request->warranty)->addMonths($plan->warranty_duration);
-                }
-                $updatedFields['warranty'] = $expiry;
-                $responseVehicle['warranty'] = $expiry->toDateString();
-            }
-    
-            // Subscription
-            if (!is_null($plan->subscription_duration)) {
-                if ($request->subscription === "Expired") {
-                    $expiry = $today->copy()->addMonths($plan->subscription_duration);
-                } else {
-                    $expiry = Carbon::parse($request->subscription)->addMonths($plan->subscription_duration);
-                }
-                $updatedFields['subscription'] = $expiry;
-                $responseVehicle['subscription'] = $expiry->toDateString();
-            }
-    
-            // AMC
-            if (!is_null($plan->amc_duration)) {
-                if ($request->amc === "Expired") {
-                    $expiry = $today->copy()->addMonths($plan->amc_duration);
-                } else {
-                    $expiry = Carbon::parse($request->amc)->addMonths($plan->amc_duration);
-                }
-                $updatedFields['amc'] = $expiry;
-                $responseVehicle['amc'] = $expiry->toDateString();
-            }
-    
-            // Update vehicle
-            if (!empty($updatedFields)) {
-                $vehicle->update($updatedFields);
-            }
-    
-            return response()->json([
-                'status' => true,
-                'message' => 'Recharge submitted successfully.',
-                'recharge' => $recharge,
-                'vehicle' => $responseVehicle
-            ], Response::HTTP_OK);
-    
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Something went wrong.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
 
 
-    public function UserRecharge(Request $request)
-{
-    try {
-
-        $request->validate([
-            'user_id'            => 'required|integer',
-            'vehicle_number'     => 'required|string',
-            'select_recharge_id' => 'required|integer',
-            'payment_status'     => 'required|string',
-            'payment_amount'     => 'required|numeric',
-            'created_by_id'      => 'required|integer',
-            'razorpay_payment_id'=> 'nullable|string',
-        ]);
-
-
-        $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
-                ->where('vehicle_number',$request->vehicle_number)
+            /** find vehicle */
+            $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
+                ->where('vehicle_number', $request->vehicle_number)
                 ->first();
 
-        if(!$vehicle){
+            if(!$vehicle){
+                return response()->json([
+                    'status' => false,
+                    'message' => "Vehicle not found"
+                ]);
+            }
+
+
+            /** find plan */
+            $plan = RechargePlan::find($request->select_recharge_id);
+
+            if(!$plan){
+                return response()->json([
+                    'status' => false,
+                    'message' => "Recharge plan not found"
+                ]);
+            }
+
+
+            /** generate AUTO TXN */
+            $autoTxn = 'TXN' . rand(1000000000,9999999999);
+
+
+            /** auto NOTES */
+            $autoNotes = strtoupper($vehicle->vehicle_number) .', '. ($plan->plan_name ?? 'Recharge') .' From Mobile';
+
+
+            /** ALWAYS save recharge */
+            RechargeRequest::create([
+                'user_id'            => $request->user_id,
+                'vehicle_number'     => $request->vehicle_number,
+                'select_recharge_id' => $request->select_recharge_id,
+                'notes'              => $autoNotes,
+                'payment_method'     => 'online',
+                'payment_status'     => strtolower($request->payment_status),
+                'payment_amount'     => $request->payment_amount,
+                'payment_date'       => now(),
+                'payment_id'         => $autoTxn,
+                'razorpay_payment_id'=> $request->razorpay_payment_id,
+                'created_by_id'      => $request->created_by_id,
+            ]);
+
+
+            /** IF payment NOT successful => stop here */
+            if(!in_array(strtolower($request->payment_status), ['success','completed','paid']))
+            {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Recharge saved but payment FAILED, expiry NOT changed'
+                ]);
+            }
+
+
+
+            /** SUCCESS CASE ONLY */
+
+            $today = Carbon::now();
+
+
+            /** existing base expiry */
+            $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty) : null;
+            $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : null;
+            $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc) : null;
+
+
+            /** calculate NEW ones */
+
+
+            // warranty
+            if($plan->warranty_duration){
+                $newWarranty = ($baseWarranty && $baseWarranty->gt($today))
+                    ? $baseWarranty->copy()->addMonths($plan->warranty_duration)
+                    : $today->copy()->addMonths($plan->warranty_duration);
+            } else {
+                $newWarranty = $baseWarranty;
+            }
+
+            // subscription
+            if($plan->subscription_duration){
+                $newSubscription = ($baseSubscription && $baseSubscription->gt($today))
+                    ? $baseSubscription->copy()->addMonths($plan->subscription_duration)
+                    : $today->copy()->addMonths($plan->subscription_duration);
+            } else {
+                $newSubscription = $baseSubscription;
+            }
+
+            // amc
+            if($plan->amc_duration){
+                $newAmc = ($baseAmc && $baseAmc->gt($today))
+                    ? $baseAmc->copy()->addMonths($plan->amc_duration)
+                    : $today->copy()->addMonths($plan->amc_duration);
+            } else {
+                $newAmc = $baseAmc;
+            }
+
+
+            /** UPDATE VEHICLE */
+            $vehicle->update([
+                'warranty'     => $newWarranty,
+                'subscription' => $newSubscription,
+                'amc'          => $newAmc
+            ]);
+
+
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Recharge Successful',
+                'expiry' => [
+                    'warranty'     => $newWarranty?->toDateString(),
+                    'subscription' => $newSubscription?->toDateString(),
+                    'amc'          => $newAmc?->toDateString(),
+                ]
+            ]);
+
+
+        } catch (\Exception $e){
+
             return response()->json([
                 'status'=>false,
-                'message'=>"Vehicle not found"
-            ]);
+                'message'=>'Error occurred',
+                'error'=>$e->getMessage()
+            ],500);
         }
-
-        $plan = RechargePlan::find($request->select_recharge_id);
-
-        if(!$plan){
-            return response()->json([
-                'status'=>false,
-                'message'=>"Recharge plan not found"
-            ]);
-        }
-
-
-        /** ---- auto TXN id ------- */
-        $autoTxn = 'TXN'.rand(1000000000,9999999999);
-
-
-        /** ---- auto notes -------- */
-        $planName = $plan->plan_name ?? '';
-        $autoNotes = strtoupper($request->vehicle_number).", ".$planName." From Mobile";
-
-
-        /** Create recharge entry ALWAYS */
-        RechargeRequest::create([
-            'user_id'            => $request->user_id,
-            'vehicle_number'     => $request->vehicle_number,
-            'select_recharge_id' => $request->select_recharge_id,
-            'notes'              => $autoNotes,
-            'payment_method'     => 'online',
-            'payment_status'     => $request->payment_status,
-            'payment_amount'     => $request->payment_amount,
-            'payment_date'       => now(),
-            'payment_id'         => $autoTxn,
-            'razorpay_payment_id'=> $request->razorpay_payment_id,
-            'created_by_id'      => $request->created_by_id,
-        ]);
-
-
-        /** IF PAYMENT FAILED = no expiry change */
-        if(!in_array($request->payment_status, ['success','completed','paid']))
-        {
-            return response()->json([
-                'status'=>true,
-                'message'=>'Recharge saved BUT payment FAILED, expiry NOT changed'
-            ]);
-        }
-
-
-        /** SUCCESS case below */
-
-
-        $today = Carbon::now();
-
-        /** load CURRENT expiry OR null */
-        $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty) : null;
-        $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : null;
-        $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc) : null;
-
-
-        /** warranty */
-        if($plan->warranty_duration)
-        {
-            $newWarranty = ($baseWarranty && $baseWarranty->gt($today))
-                ? $baseWarranty->copy()->addMonths($plan->warranty_duration)
-                : $today->copy()->addMonths($plan->warranty_duration);
-        }
-        else{
-            $newWarranty = $baseWarranty;
-        }
-
-
-        /** subscription */
-        if($plan->subscription_duration)
-        {
-            $newSubscription = ($baseSubscription && $baseSubscription->gt($today))
-                ? $baseSubscription->copy()->addMonths($plan->subscription_duration)
-                : $today->copy()->addMonths($plan->subscription_duration);
-        }
-        else{
-            $newSubscription = $baseSubscription;
-        }
-
-
-        /** amc */
-        if($plan->amc_duration)
-        {
-            $newAmc = ($baseAmc && $baseAmc->gt($today))
-                ? $baseAmc->copy()->addMonths($plan->amc_duration)
-                : $today->copy()->addMonths($plan->amc_duration);
-        }
-        else{
-            $newAmc = $baseAmc;
-        }
-
-
-        /** UPDATE only these */
-        $vehicle->update([
-            'warranty'     => $newWarranty,
-            'subscription' => $newSubscription,
-            'amc'          => $newAmc
-        ]);
-
-
-        return response()->json([
-            'status'=>true,
-            'message'=>'Recharge Successful',
-            'expiry'=>[
-                'warranty'     => $newWarranty?->toDateString(),
-                'subscription' => $newSubscription?->toDateString(),
-                'amc'          => $newAmc?->toDateString(),
-            ]
-        ]);
-
-    } catch (\Exception $e){
-
-        return response()->json([
-            'status'=>false,
-            'message'=>'Error occurred',
-            'error'=>$e->getMessage()
-        ],500);
     }
-}
-}
-
 
 
 
