@@ -1,113 +1,180 @@
 @extends('layouts.admin')
 @section('content')
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('global.create') }} {{ trans('cruds.plan.title_singular') }}
-    </div>
+<div class="max-w-5xl mx-auto py-8">
+    <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
 
-    <div class="card-body">
-        <form method="POST" action="{{ route("admin.plans.store") }}" enctype="multipart/form-data">
+        <!-- Header -->
+        <div class="pb-4 border-b mb-6">
+            <h2 class="text-2xl font-bold text-indigo-600">
+                {{ trans('global.create') }} {{ trans('cruds.plan.title_singular') }}
+            </h2>
+        </div>
+
+        <form method="POST" action="{{ route('admin.plans.store') }}" enctype="multipart/form-data">
             @csrf
-            <div class="form-group">
-                <label class="required" for="plan_name">{{ trans('cruds.plan.fields.plan_name') }}</label>
-                <input class="form-control {{ $errors->has('plan_name') ? 'is-invalid' : '' }}" type="text" name="plan_name" id="plan_name" value="{{ old('plan_name', '') }}" required>
-                @if($errors->has('plan_name'))
-                    <span class="text-danger">{{ $errors->first('plan_name') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.plan_name_helper') }}</span>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Plan Name -->
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.plan_name') }}
+                    </label>
+                    <input type="text" name="plan_name" id="plan_name"
+                        value="{{ old('plan_name') }}"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        required>
+                    @error('plan_name')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Secure Interest Percent -->
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.secure_interest_percent') }}
+                    </label>
+                    <input type="text" name="secure_interest_percent"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('secure_interest_percent') }}" required>
+                    @error('secure_interest_percent')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Market Interest Percent -->
+                <div class="bg-yellow-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.market_interest_percent') }}
+                    </label>
+                    <input type="text" name="market_interest_percent"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('market_interest_percent') }}" required>
+                    @error('market_interest_percent')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Total Interest Percent -->
+                <div class="bg-yellow-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.total_interest_percent') }}
+                    </label>
+                    <input type="text" name="total_interest_percent"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('total_interest_percent') }}" required>
+                    @error('total_interest_percent')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Payout Frequency -->
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.payout_frequency') }}
+                    </label>
+                    <select name="payout_frequency" id="payout_frequency"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        required>
+                        <option value disabled selected>{{ trans('global.pleaseSelect') }}</option>
+
+                        @foreach(App\Models\Plan::PAYOUT_FREQUENCY_SELECT as $key => $label)
+                            <option value="{{ $key }}"
+                                {{ old('payout_frequency') == $key ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('payout_frequency')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Min Invest Amount -->
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.min_invest_amount') }}
+                    </label>
+                    <input type="number" step="0.01" name="min_invest_amount"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('min_invest_amount') }}" required>
+                    @error('min_invest_amount')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Max Invest Amount -->
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.max_invest_amount') }}
+                    </label>
+                    <input type="number" step="0.01" name="max_invest_amount"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('max_invest_amount') }}" required>
+                    @error('max_invest_amount')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Lockin Days -->
+                <div class="bg-purple-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.lockin_days') }}
+                    </label>
+                    <input type="text" name="lockin_days"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('lockin_days') }}" required>
+                    @error('lockin_days')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Withdraw Processing Hours -->
+                <div class="bg-purple-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1 required">
+                        {{ trans('cruds.plan.fields.withdraw_processing_hours') }}
+                    </label>
+                    <input type="text" name="withdraw_processing_hours"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value="{{ old('withdraw_processing_hours') }}" required>
+                    @error('withdraw_processing_hours')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Status -->
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        {{ trans('cruds.plan.fields.status') }}
+                    </label>
+                    <select name="status"
+                        class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value disabled selected>{{ trans('global.pleaseSelect') }}</option>
+                        @foreach(App\Models\Plan::STATUS_SELECT as $key => $label)
+                            <option value="{{ $key }}"
+                                {{ old('status', 'Active') == $key ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('status')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
             </div>
-            <div class="form-group">
-                <label class="required" for="secure_interest_percent">{{ trans('cruds.plan.fields.secure_interest_percent') }}</label>
-                <input class="form-control {{ $errors->has('secure_interest_percent') ? 'is-invalid' : '' }}" type="text" name="secure_interest_percent" id="secure_interest_percent" value="{{ old('secure_interest_percent', '') }}" required>
-                @if($errors->has('secure_interest_percent'))
-                    <span class="text-danger">{{ $errors->first('secure_interest_percent') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.secure_interest_percent_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="market_interest_percent">{{ trans('cruds.plan.fields.market_interest_percent') }}</label>
-                <input class="form-control {{ $errors->has('market_interest_percent') ? 'is-invalid' : '' }}" type="text" name="market_interest_percent" id="market_interest_percent" value="{{ old('market_interest_percent', '') }}" required>
-                @if($errors->has('market_interest_percent'))
-                    <span class="text-danger">{{ $errors->first('market_interest_percent') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.market_interest_percent_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="total_interest_percent">{{ trans('cruds.plan.fields.total_interest_percent') }}</label>
-                <input class="form-control {{ $errors->has('total_interest_percent') ? 'is-invalid' : '' }}" type="text" name="total_interest_percent" id="total_interest_percent" value="{{ old('total_interest_percent', '') }}" required>
-                @if($errors->has('total_interest_percent'))
-                    <span class="text-danger">{{ $errors->first('total_interest_percent') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.total_interest_percent_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required">{{ trans('cruds.plan.fields.payout_frequency') }}</label>
-                <select class="form-control {{ $errors->has('payout_frequency') ? 'is-invalid' : '' }}" name="payout_frequency" id="payout_frequency" required>
-                    <option value disabled {{ old('payout_frequency', null) === null ? 'selected' : '' }}>{{ trans('global.pleaseSelect') }}</option>
-                    @foreach(App\Models\Plan::PAYOUT_FREQUENCY_SELECT as $key => $label)
-                        <option value="{{ $key }}" {{ old('payout_frequency', '') === (string) $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('payout_frequency'))
-                    <span class="text-danger">{{ $errors->first('payout_frequency') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.payout_frequency_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="min_invest_amount">{{ trans('cruds.plan.fields.min_invest_amount') }}</label>
-                <input class="form-control {{ $errors->has('min_invest_amount') ? 'is-invalid' : '' }}" type="number" name="min_invest_amount" id="min_invest_amount" value="{{ old('min_invest_amount', '') }}" step="0.01" required>
-                @if($errors->has('min_invest_amount'))
-                    <span class="text-danger">{{ $errors->first('min_invest_amount') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.min_invest_amount_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="max_invest_amount">{{ trans('cruds.plan.fields.max_invest_amount') }}</label>
-                <input class="form-control {{ $errors->has('max_invest_amount') ? 'is-invalid' : '' }}" type="number" name="max_invest_amount" id="max_invest_amount" value="{{ old('max_invest_amount', '') }}" step="0.01" required>
-                @if($errors->has('max_invest_amount'))
-                    <span class="text-danger">{{ $errors->first('max_invest_amount') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.max_invest_amount_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="lockin_days">{{ trans('cruds.plan.fields.lockin_days') }}</label>
-                <input class="form-control {{ $errors->has('lockin_days') ? 'is-invalid' : '' }}" type="text" name="lockin_days" id="lockin_days" value="{{ old('lockin_days', '') }}" required>
-                @if($errors->has('lockin_days'))
-                    <span class="text-danger">{{ $errors->first('lockin_days') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.lockin_days_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="withdraw_processing_hours">{{ trans('cruds.plan.fields.withdraw_processing_hours') }}</label>
-                <input class="form-control {{ $errors->has('withdraw_processing_hours') ? 'is-invalid' : '' }}" type="text" name="withdraw_processing_hours" id="withdraw_processing_hours" value="{{ old('withdraw_processing_hours', '') }}" required>
-                @if($errors->has('withdraw_processing_hours'))
-                    <span class="text-danger">{{ $errors->first('withdraw_processing_hours') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.withdraw_processing_hours_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label>{{ trans('cruds.plan.fields.status') }}</label>
-                <select class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}" name="status" id="status">
-                    <option value disabled {{ old('status', null) === null ? 'selected' : '' }}>{{ trans('global.pleaseSelect') }}</option>
-                    @foreach(App\Models\Plan::STATUS_SELECT as $key => $label)
-                        <option value="{{ $key }}" {{ old('status', 'Active') === (string) $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('status'))
-                    <span class="text-danger">{{ $errors->first('status') }}</span>
-                @endif
-                <span class="help-block">{{ trans('cruds.plan.fields.status_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-danger" type="submit">
+
+            <!-- Submit Button -->
+            <div class="mt-8 text-right">
+                <button type="submit"
+                    class="bg-indigo-600 text-white px-6 py-2 rounded-lg shadow hover:bg-indigo-700 transition">
                     {{ trans('global.save') }}
                 </button>
             </div>
+
         </form>
     </div>
 </div>
-
-
 
 @endsection
