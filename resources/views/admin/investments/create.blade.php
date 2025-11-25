@@ -1,18 +1,37 @@
 @extends('layouts.admin')
 @section('content')
+<style>
+    #top-popup {
+    position: fixed;
+    top: 40px !important;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    width: auto;
+    max-width: 90%;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.3s ease;
+}
 
+#top-popup.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(10px);
+}
+
+</style>
 <div class="max-w-6xl mx-auto py-8">
     <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
         <div class="pb-4 border-b mb-6">
             <h2 class="text-2xl font-bold text-indigo-600">{{ trans('global.create') }} {{ trans('cruds.investment.title_singular') }}</h2>
         </div>
 
-    <div id="top-popup" class="fixed left-1/2 transform -translate-x-1/2 top-6 z-50 hidden">
-        <div id="top-popup-body" class="rounded-lg px-5 py-3 text-sm font-medium shadow-lg"></div>
-    </div>
+
 
     <form id="investment-form" method="POST" action="{{ route('admin.investments.store') }}" enctype="multipart/form-data">
         @csrf
+        <div id="top-popup" class="fixed left-1/2 transform -translate-x-1/2 top-6 z-50 hidden">
+            <div id="top-popup-body" class="rounded-lg px-5 py-3 text-sm font-medium shadow-lg"></div>
+        </div>
         <div class="grid grid-cols-1 gap-6">
             <div class="flex flex-col md:flex-row gap-6">
                 <div class="w-full md:w-1/2 bg-white border rounded-2xl p-6 shadow-sm">
@@ -141,7 +160,7 @@
 
                 <div class="bg-purple-50 p-4 rounded-lg">
                     <label class="block text-sm font-semibold text-gray-700 mb-1 required">{{ trans('cruds.investment.fields.start_date') }}</label>
-                    <input type="text" name="start_date" id="start_date" value="{{ old('start_date', \Carbon\Carbon::now()->format('Y-m-d')) }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
+                    <input type="text" name="start_date" id="start_date" value="{{ date('d-m-Y') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
                 </div>
             </div>
 
@@ -162,7 +181,7 @@
         function showTopPopup(message, type = 'info') {
             const popup = document.getElementById('top-popup');
             const body = document.getElementById('top-popup-body');
-            popup.classList.remove('hidden');
+
             if (type === 'error') {
                 body.className = 'rounded-lg px-5 py-3 text-sm font-medium shadow-lg bg-red-600 text-white';
             } else if (type === 'success') {
@@ -170,9 +189,18 @@
             } else {
                 body.className = 'rounded-lg px-5 py-3 text-sm font-medium shadow-lg bg-indigo-600 text-white';
             }
+
             body.textContent = message;
-            setTimeout(() => { popup.classList.add('hidden'); }, 5000);
+
+            popup.classList.add("show");
+            popup.classList.remove("hidden");
+
+            setTimeout(() => {
+                popup.classList.remove("show");
+                setTimeout(() => popup.classList.add("hidden"), 400);
+            }, 3500);
         }
+
 
         function flagElement(text, ok) {
             const el = document.createElement('span');

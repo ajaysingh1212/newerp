@@ -235,18 +235,23 @@
             @endforeach
         </select>
     </div>
+    @php
+    $statusOptions = (new \App\Models\ActivationRequest)->getStatusOptions();
+    @endphp
 
     <div class="form-group mb-3 col-lg-4">
         <label for="status">Select Status</label>
         <select name="status" id="status" class="form-control" required>
             <option value="">-- Select Status --</option>
             @foreach($statusOptions as $key => $label)
-                <option value="{{ $key }}" {{ old('status', $activationRequest->status ?? '') == $key ? 'selected' : '' }}>
+                <option value="{{ $key }}" 
+                    {{ old('status', $activationRequest->status ?? '') == $key ? 'selected' : '' }}>
                     {{ $label }}
                 </option>
             @endforeach
         </select>
     </div>
+
 
     <div class="form-group col-lg-4">
         <label for="app_url">App URL</label>

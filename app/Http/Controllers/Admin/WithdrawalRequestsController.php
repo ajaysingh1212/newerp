@@ -111,4 +111,28 @@ class WithdrawalRequestsController extends Controller
 
         return response()->json(['id' => $media->id, 'url' => $media->getUrl()], Response::HTTP_CREATED);
     }
+    public function storeAjax(Request $request)
+{
+    $request->validate([
+        'investment_id' => 'required',
+        'amount'        => 'required|numeric|min:1',
+        'type'          => 'required',
+    ]);
+
+    $investment = Investment::findOrFail($request->investment_id);
+
+    WithdrawalRequest::create([
+        'select_investor_id' => $investment->select_investor_id,
+        'investment_id'      => $investment->id,
+        'amount'             => $request->amount,
+        'type'               => $request->type,
+        'status'             => 'pending',
+        'requested_at'       => now(),
+        'notes'              => $request->notes,
+        'created_by_id'      => auth()->id()
+    ]);
+
+    return response()->json(['message' => 'Withdrawal request submitted successfully.']);
+}
+
 }

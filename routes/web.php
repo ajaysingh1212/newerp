@@ -13,7 +13,8 @@ use App\Http\Controllers\Admin\VehicleSharingController;
 use App\Http\Controllers\Admin\DeleteDataController;
 use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccountDeletionAdminController;
-
+use App\Http\Controllers\Admin\InvestmentsDetailesController;
+use App\Http\Controllers\Admin\WithdrawalRequestsController;
 
 Route::redirect('/', '/login');
 Route::get('/home', function () {
@@ -49,6 +50,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('plans', 'PlanController');
 
     // Investments
+    
     Route::delete('investments/destroy', 'InvestmentsController@massDestroy')->name('investments.massDestroy');
     Route::post('investments/parse-csv-import', 'InvestmentsController@parseCsvImport')->name('investments.parseCsvImport');
     Route::post('investments/process-csv-import', 'InvestmentsController@processCsvImport')->name('investments.processCsvImport');
@@ -61,6 +63,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('monthly-payout-records', 'MonthlyPayoutRecordsController');
 
     // Withdrawal Requests
+    Route::post('/withdrawal/create', [WithdrawalRequestsController::class, 'storeAjax']);
+
     Route::delete('withdrawal-requests/destroy', 'WithdrawalRequestsController@massDestroy')->name('withdrawal-requests.massDestroy');
     Route::post('withdrawal-requests/media', 'WithdrawalRequestsController@storeMedia')->name('withdrawal-requests.storeMedia');
     Route::post('withdrawal-requests/ckmedia', 'WithdrawalRequestsController@storeCKEditorImages')->name('withdrawal-requests.storeCKEditorImages');
@@ -75,6 +79,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('login-logs', 'LoginLogsController');
 
     // Investments Detailes
+    Route::get('/investment/daily-interest/{id}', [InvestmentsDetailesController::class, 'dailyInterest']);
+    Route::get('investment-details/pdf/{id}', [InvestmentsDetailesController::class, 'downloadPdf'])
+        ->name('investment.pdf');
+
+    Route::get('investment-details/{id}', [InvestmentsDetailesController::class, 'fetchDetails']);
+
     Route::delete('investments-detailes/destroy', 'InvestmentsDetailesController@massDestroy')->name('investments-detailes.massDestroy');
     Route::resource('investments-detailes', 'InvestmentsDetailesController');
 

@@ -6,18 +6,81 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MassDestroyInvestmentsDetaileRequest;
 use App\Http\Requests\StoreInvestmentsDetaileRequest;
 use App\Http\Requests\UpdateInvestmentsDetaileRequest;
+use App\Models\DailyInterest;
+use App\Models\Investment;
 use Gate;
+use PDF;
+
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class InvestmentsDetailesController extends Controller
 {
-    public function index()
-    {
-        abort_if(Gate::denies('investments_detaile_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+public function dailyInterest($id)
+{
+    $data = DailyInterest::where('investment_id', $id)
+        ->orderBy('interest_date', 'ASC')
+        ->get(['interest_date', 'daily_interest_amount']);
 
-        return view('admin.investmentsDetailes.index');
-    }
+    return response()->json($data);
+}
+
+
+public function downloadPdf($id)
+{
+    $investment = Investment::with([
+        'select_investor.media',
+        'select_plan',
+        'investmentMonthlyPayoutRecords',
+        'investmentWithdrawalRequests.media'
+    ])->findOrFail($id);
+
+    $dailyInterest = DailyInterest::where('investment_id', $id)
+        ->orderBy('interest_date', 'ASC')
+        ->get();
+
+    $pdf = PDF::loadView('admin.investments.pdf', compact('investment', 'dailyInterest'))
+        ->setPaper('a4', 'portrait');
+
+    return $pdf->download("Investment-Report-{$investment->id}.pdf");
+}
+
+    public function index()
+{
+    $investments = Investment::with('select_investor')->orderBy('id','DESC')->get();
+
+    return view('admin.investmentsDetailes.index', compact('investments'));
+}
+public function fetchDetails($id)
+{
+    $investment = Investment::with([
+        'select_investor.media',
+        'select_plan',
+        'investmentMonthlyPayoutRecords',
+        'investmentWithdrawalRequests.media',
+    ])->findOrFail($id);
+
+    /* DAILY INTEREST CALCULATION */
+    $principal = $investment->principal_amount;
+    $secure = $investment->secure_interest_percent;
+    $market = $investment->market_interest_percent;
+    $totalPercent = $secure + $market;
+
+    $dailyInterest = ($principal * $totalPercent / 100) / 30;   // 30 days month logic
+
+    $start = \Carbon\Carbon::createFromFormat('d-m-Y', $investment->start_date);
+    $today = \Carbon\Carbon::now();
+    $daysDiff = $start->diffInDays($today);
+
+    $totalEarnedInterest = $dailyInterest * $daysDiff;
+
+    return response()->json([
+        'investment' => $investment,
+        'dailyInterest' => $dailyInterest,
+        'daysPassed' => $daysDiff,
+        'totalEarnedInterest' => $totalEarnedInterest,
+    ]);
+}
 
     public function create()
     {

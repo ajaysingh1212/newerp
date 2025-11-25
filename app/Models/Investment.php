@@ -30,6 +30,7 @@ class Investment extends Model
         'completed'          => 'completed',
         'withdrawn'          => 'withdrawn',
         'withdraw_requested' => 'withdraw_requested',
+        'pending'            => 'pending',
     ];
 
     protected $fillable = [
@@ -84,10 +85,30 @@ class Investment extends Model
         return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
     }
 
-    public function setStartDateAttribute($value)
-    {
-        $this->attributes['start_date'] = $value ? Carbon::createFromFormat(config('panel.date_format'), $value)->format('Y-m-d') : null;
+public function setStartDateAttribute($value)
+{
+    if (!$value) {
+        $this->attributes['start_date'] = null;
+        return;
     }
+
+    $value = trim($value);
+
+    // Try d-m-Y first
+    try {
+        return $this->attributes['start_date'] = Carbon::parse(str_replace('/', '-', $value))
+            ->format('Y-m-d');
+    } catch (\Exception $e) {
+        // Fallback to Carbon auto parser
+        try {
+            return $this->attributes['start_date'] = Carbon::parse($value)->format('Y-m-d');
+        } catch (\Exception $e2) {
+            // Final fallback – avoid crash
+            $this->attributes['start_date'] = null;
+        }
+    }
+}
+
 
     public function getLockinEndDateAttribute($value)
     {
