@@ -86,7 +86,6 @@
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-
             </div>
 
             <!-- Submit Button -->
@@ -96,7 +95,6 @@
                     {{ trans('global.save') }}
                 </button>
             </div>
-
         </form>
     </div>
 </div>
