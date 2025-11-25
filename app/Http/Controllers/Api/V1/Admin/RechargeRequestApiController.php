@@ -93,9 +93,7 @@ class RechargeRequestApiController extends Controller
         ]);
 
 
-        $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
-            ->where('vehicle_number',$request->vehicle_number)
-            ->first();
+        $vehicle = AddCustomerVehicle::where('vehicle_number',$request->vehicle_number)->first();
 
         if(!$vehicle){
             return response()->json([
@@ -103,6 +101,7 @@ class RechargeRequestApiController extends Controller
                 'message'=>"Vehicle not found"
             ]);
         }
+
 
         $plan = RechargePlan::find($request->select_recharge_id);
 
@@ -121,7 +120,7 @@ class RechargeRequestApiController extends Controller
         $autoNotes = strtoupper($request->vehicle_number).", ".($plan->plan_name ?? '')." From Mobile";
 
 
-        /** SAVE recharge ALWAYS */
+        /** INSERT recharge ALWAYS */
         RechargeRequest::create([
             'user_id'            => $request->user_id,
             'vehicle_number'     => $request->vehicle_number,
@@ -142,24 +141,25 @@ class RechargeRequestApiController extends Controller
         {
             return response()->json([
                 'status'=>true,
-                'message'=>'Recharge saved, but FAILED payment — no expiry update.'
+                'message'=>'Recharge saved, but FAILED payment — no expiry update.',
             ]);
         }
 
 
-        /* SUCCESS case here */
-
+        /** SUCCESS CASE ONLY */
         $today = Carbon::now();
 
 
-        /** HOLD final expiry values */
+        /** keep old expiry by default */
         $newWarranty     = $vehicle->warranty;
         $newSubscription = $vehicle->subscription;
         $newAmc          = $vehicle->amc;
 
 
-        /** WARRANTY */
-        if($plan->warranty_duration){
+
+
+        /** WARRANTY ONLY if duration > 0 */
+        if($plan->warranty_duration > 0){
 
             $base = ($vehicle->warranty && Carbon::parse($vehicle->warranty)->gt($today))
                 ? Carbon::parse($vehicle->warranty)
@@ -169,8 +169,9 @@ class RechargeRequestApiController extends Controller
         }
 
 
-        /** SUBSCRIPTION */
-        if($plan->subscription_duration){
+
+        /** SUBSCRIPTION ONLY if duration > 0 */
+        if($plan->subscription_duration > 0){
 
             $base = ($vehicle->subscription && Carbon::parse($vehicle->subscription)->gt($today))
                 ? Carbon::parse($vehicle->subscription)
@@ -180,8 +181,9 @@ class RechargeRequestApiController extends Controller
         }
 
 
-        /** AMC */
-        if($plan->amc_duration){
+
+        /** AMC ONLY if duration > 0 */
+        if($plan->amc_duration > 0){
 
             $base = ($vehicle->amc && Carbon::parse($vehicle->amc)->gt($today))
                 ? Carbon::parse($vehicle->amc)
@@ -191,8 +193,7 @@ class RechargeRequestApiController extends Controller
         }
 
 
-
-        /** just in case — force Carbon for response */
+        /** force Carbon for response safety */
         $newWarranty     = $newWarranty ? Carbon::parse($newWarranty) : null;
         $newSubscription = $newSubscription ? Carbon::parse($newSubscription) : null;
         $newAmc          = $newAmc ? Carbon::parse($newAmc) : null;
@@ -226,6 +227,7 @@ class RechargeRequestApiController extends Controller
             'error'=>$e->getMessage()
         ],500);
     }
+
 }
 
 
