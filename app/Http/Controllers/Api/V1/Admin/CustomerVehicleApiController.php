@@ -48,22 +48,36 @@ class CustomerVehicleApiController extends Controller
         ->where('owners_name', $user_id)
         ->get();
 
-        $data = $vehicles->map(function ($vehicle) use ($user_id) {
 
-            /** find activation row */
+        // load status options only once
+        $statusOptions = \App\Models\ActivationRequest::getStatusOptions();
+
+
+        $data = $vehicles->map(function ($vehicle) use ($user_id, $statusOptions) {
+
+            /** activation row find */
             $activation = \DB::table('activation_requests')
                 ->where('vehicle_reg_no', $vehicle->vehicle_number)
                 ->first();
 
-            /** status logic */
+
+            /** status get */
             if($activation && $activation->status){
-                $status = $activation->status;   // <-- EXACT AS DB 
-            }else{
+
+                $rawStatus = strtolower(trim($activation->status));
+
+                $status =
+                    $statusOptions[$rawStatus]
+                    ??
+                    ucfirst($rawStatus);
+
+            } else {
                 $status = 'Pending';
             }
 
 
-            /** (unchanged date logic below) */
+
+            /** (unchanged date logic) */
 
             $requestDate = $vehicle->request_date 
                 ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date) 
@@ -102,6 +116,7 @@ class CustomerVehicleApiController extends Controller
             $kycStatus = $kycExists ? 'complete' : 'pending';
 
 
+
             return [
                 'vehicle_number'  => $vehicle->vehicle_number,
                 'product_model'   => $productModel?->product_model,
@@ -115,18 +130,19 @@ class CustomerVehicleApiController extends Controller
             ];
         });
 
+
         return response()->json([
             'status' => true,
             'message' => 'Vehicles fetched successfully.',
             'data' => $data
-        ], Response::HTTP_OK);
+        ]);
 
     } catch (\Exception $e) {
         return response()->json([
             'status' => false,
             'message' => 'Something went wrong.',
             'error' => $e->getMessage()
-        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        ], 500);
     }
 }
 
