@@ -45,40 +45,40 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 w-10"></th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase">
                             {{ trans('cruds.plan.fields.id') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase">
                             {{ trans('cruds.plan.fields.plan_name') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase">
                             {{ trans('cruds.plan.fields.secure_interest_percent') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase">
                             {{ trans('cruds.plan.fields.market_interest_percent') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.total_interest_percent') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.payout_frequency') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.min_invest_amount') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.max_invest_amount') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.lockin_days') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.withdraw_processing_hours') }}
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-black uppercase ">
                             {{ trans('cruds.plan.fields.status') }}
                         </th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        <th class="px-4 py-3 text-center text-sm font-medium text-black uppercase">
                             {{ trans('global.actions') }}
                         </th>
                     </tr>
@@ -88,19 +88,19 @@
                     @foreach($plans as $plan)
                         <tr data-entry-id="{{ $plan->id }}" class="hover:bg-gray-50">
                             <td class="px-4 py-3"></td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->id }}</td>
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $plan->plan_name }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->secure_interest_percent }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->market_interest_percent }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->total_interest_percent }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->id }}</td>
+                            <td class="px-4 py-3 text-s  text-gray-900">{{ $plan->plan_name }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->secure_interest_percent }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->market_interest_percent }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->total_interest_percent }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">
                                 {{ App\Models\Plan::PAYOUT_FREQUENCY_SELECT[$plan->payout_frequency] ?? '' }}
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->min_invest_amount }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->max_invest_amount }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->lockin_days }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ $plan->withdraw_processing_hours }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-700">
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->min_invest_amount }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->max_invest_amount }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->lockin_days }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">{{ $plan->withdraw_processing_hours }}</td>
+                            <td class="px-4 py-3 text-s text-gray-700">
                                 {{ App\Models\Plan::STATUS_SELECT[$plan->status] ?? '' }}
                             </td>
 
