@@ -95,6 +95,7 @@ class RechargeRequestApiController extends Controller
             'razorpay_payment_id'=> 'nullable|string',
         ]);
 
+
         $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
             ->where('vehicle_number',$request->vehicle_number)
             ->first();
@@ -116,7 +117,7 @@ class RechargeRequestApiController extends Controller
         }
 
 
-        /** Always record recharge */
+        /** Always INSERT recharge record */
         RechargeRequest::create([
             'user_id'            => $request->user_id,
             'vehicle_number'     => $request->vehicle_number,
@@ -132,6 +133,7 @@ class RechargeRequestApiController extends Controller
         ]);
 
 
+        /** if failed STOP here  */
         if(!in_array(strtolower($request->payment_status),['success','completed','paid']))
         {
             return response()->json([
@@ -141,60 +143,73 @@ class RechargeRequestApiController extends Controller
         }
 
 
-        /**  ---- SUCCESS CASE ---- **/
+
+        /** SUCCESS CASE */
 
         $today = Carbon::now();
 
         $model = $vehicle->product_master?->product_model;
 
 
-        /** GET CURRENT CORRECT EXPIRY EXACT LIKE VEHICLE LIST API */
+        /** FIRST → Find correct existing expiry exactly like frontend */
 
-        // warranty base
-        if($vehicle->warranty){
+        $requestDate = $vehicle->request_date
+            ? Carbon::createFromFormat('d-m-Y',$vehicle->request_date)
+            : null;
+
+
+        /** warranty */
+        if($vehicle->warranty)
+        {
             $baseWarranty = Carbon::parse($vehicle->warranty);
-        } else {
-            $requestDate = Carbon::createFromFormat('d-m-Y',$vehicle->request_date);
-            $baseWarranty = $model?->warranty ? $requestDate->copy()->addMonths($model->warranty) : null;
+        }
+        else
+        {
+            $baseWarranty = ($requestDate && $model?->warranty)
+                ? $requestDate->copy()->addMonths($model->warranty)
+                : null;
         }
 
-        // subscription base
-        if($vehicle->subscription){
+        /** subscription */
+        if($vehicle->subscription)
+        {
             $baseSubscription = Carbon::parse($vehicle->subscription);
-        } else {
-            $requestDate = Carbon::createFromFormat('d-m-Y',$vehicle->request_date);
-            $baseSubscription = $model?->subscription ? $requestDate->copy()->addMonths($model->subscription) : null;
+        }
+        else
+        {
+            $baseSubscription = ($requestDate && $model?->subscription)
+                ? $requestDate->copy()->addMonths($model->subscription)
+                : null;
         }
 
-        // amc base
-        if($vehicle->amc){
+        /** amc */
+        if($vehicle->amc)
+        {
             $baseAmc = Carbon::parse($vehicle->amc);
-        } else {
-            $requestDate = Carbon::createFromFormat('d-m-Y',$vehicle->request_date);
-            $baseAmc = $model?->amc ? $requestDate->copy()->addMonths($model->amc) : null;
+        }
+        else
+        {
+            $baseAmc = ($requestDate && $model?->amc)
+                ? $requestDate->copy()->addMonths($model->amc)
+                : null;
         }
 
 
-        /** Now ONLY extend the ONE which exists in PLAN */
+
+        /** SECOND → Extend only plan matched */
 
         if($plan->warranty_duration > 0){
-            $baseWarranty = ($baseWarranty && $baseWarranty->gt($today))
-                ? $baseWarranty
-                : $today;
+            $baseWarranty = ($baseWarranty && $baseWarranty->gt($today)) ? $baseWarranty : $today;
             $baseWarranty = $baseWarranty->copy()->addMonths($plan->warranty_duration);
         }
 
         if($plan->subscription_duration > 0){
-            $baseSubscription = ($baseSubscription && $baseSubscription->gt($today))
-                ? $baseSubscription
-                : $today;
+            $baseSubscription = ($baseSubscription && $baseSubscription->gt($today)) ? $baseSubscription : $today;
             $baseSubscription = $baseSubscription->copy()->addMonths($plan->subscription_duration);
         }
 
         if($plan->amc_duration > 0){
-            $baseAmc = ($baseAmc && $baseAmc->gt($today))
-                ? $baseAmc
-                : $today;
+            $baseAmc = ($baseAmc && $baseAmc->gt($today)) ? $baseAmc : $today;
             $baseAmc = $baseAmc->copy()->addMonths($plan->amc_duration);
         }
 
@@ -227,6 +242,7 @@ class RechargeRequestApiController extends Controller
         ],500);
     }
 }
+
 
 
 
