@@ -1,18 +1,76 @@
 @extends('layouts.admin')
 @section('content')
+<style>
+<<<<<<< HEAD
+   .main-div {
+    position: relative;
+}
 
+/* LEFT full border */
+.main-div::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;           /* border thickness */
+    height: 100%;
+    background: #0080ff;  /* border color */
+}
+
+/* TOP half border */
+.main-div::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 8px;
+    width: 40%;          /* top border length */
+    background: #0080ff;
+}
+
+/* BOTTOM half border */
+.main-div .bottom-line {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 8px;
+    width: 40%;          /* bottom border length */
+    background: #0080ff;
+}
+=======
+    #top-popup {
+    position: fixed;
+    top: 40px !important;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    width: auto;
+    max-width: 90%;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.3s ease;
+}
+
+#top-popup.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(10px);
+}
+
+>>>>>>> cf226d133b58e81c5a92a53bff0ccbf670b3c6a2
+</style>
 <div class="max-w-6xl mx-auto py-8">
     <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
         <div class="pb-4 border-b mb-6">
             <h2 class="text-2xl font-bold text-indigo-600">{{ trans('global.create') }} {{ trans('cruds.investment.title_singular') }}</h2>
         </div>
 
-    <div id="top-popup" class="fixed left-1/2 transform -translate-x-1/2 top-6 z-50 hidden">
-        <div id="top-popup-body" class="rounded-lg px-5 py-3 text-sm font-medium shadow-lg"></div>
-    </div>
+
 
     <form id="investment-form" method="POST" action="{{ route('admin.investments.store') }}" enctype="multipart/form-data">
         @csrf
+        <div id="top-popup" class="fixed left-1/2 transform -translate-x-1/2 top-6 z-50 hidden">
+            <div id="top-popup-body" class="rounded-lg px-5 py-3 text-sm font-medium shadow-lg"></div>
+        </div>
         <div class="grid grid-cols-1 gap-6">
 
             <div class="flex flex-col md:flex-row gap-6">
@@ -91,29 +149,48 @@
                     <div class="plan-area bg-white border rounded-2xl p-4 shadow-sm">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($plans as $plan)
-                                <div class="plan-card relative border rounded-lg p-4" data-plan='@json($plan)'>
-                                    <div class="flex items-start justify-between">
-                                        <div>
-                                            <h4 class="text-md font-semibold text-teal-700">{{ $plan->plan_name }}</h4>
-                                            <p class="text-sm text-gray-500">ID: {{ $plan->id }}</p>
-                                        </div>
-                                        <div>
-                                            <input type="checkbox" name="select_plan_id" value="{{ $plan->id }}" class="plan-checkbox h-4 w-4">
-                                        </div>
-                                    </div>
+                            
+                               <div class=" main-div plan-card relative w-full bg-white shadow-md border p-0 overflow-hidden">
 
-                                    <div class="mt-3 text-sm text-gray-700 space-y-1">
-                                        <p><span class="font-semibold">Secure Interest %:</span> {{ $plan->secure_interest_percent }}</p>
-                                        <p><span class="font-semibold">Market Interest %:</span> {{ $plan->market_interest_percent }}</p>
-                                        <p><span class="font-semibold">Total Interest %:</span> {{ $plan->total_interest_percent }}</p>
-                                        <p><span class="font-semibold">Payout Frequency:</span> {{ $plan->payout_frequency }}</p>
-                                        <p><span class="font-semibold">Min Invest:</span> <span class="plan-min">{{ $plan->min_invest_amount }}</span></p>
-                                        <p><span class="font-semibold">Max Invest:</span> {{ $plan->max_invest_amount }}</p>
-                                        <p><span class="font-semibold">Lockin Days:</span> {{ $plan->lockin_days }}</p>
-                                        <p><span class="font-semibold">Withdraw Processing Hours:</span> {{ $plan->withdraw_processing_hours }}</p>
-                                        <p><span class="font-semibold">Status:</span> {{ $plan->status }}</p>
-                                    </div>
-                                </div>
+    <!-- Top Number Box (01 Style) -->
+    <div class="absolute top-0 left-0  text-black px-4 py-1 rounded-br-xl">
+        <span class="font-bold text-lg">ID: {{ $plan->id }}</span>
+    </div>
+
+    <!-- Blue Header -->
+    <div class="bg-blue-500 text-white text-center py-1 mt-9">
+        <h4 class="text-xl  text-white font-semibold ">
+            {{ $plan->plan_name }}
+        </h4>
+    </div>
+
+    <!-- Content Body -->
+    <div class="p-4 space-y-2 text-sm text-gray-700">
+
+        <p><span class="font-semibold">Secure Interest %:</span> {{ $plan->secure_interest_percent }}</p>
+        <p><span class="font-semibold">Market Interest %:</span> {{ $plan->market_interest_percent }}</p>
+        <p><span class="font-semibold">Total Interest %:</span> {{ $plan->total_interest_percent }}</p>
+        <p><span class="font-semibold">Payout Frequency:</span> {{ $plan->payout_frequency }}</p>
+        <p><span class="font-semibold">Min Invest:</span> <span class="plan-min">{{ $plan->min_invest_amount }}</span></p>
+        <p><span class="font-semibold">Max Invest:</span> {{ $plan->max_invest_amount }}</p>
+        <p><span class="font-semibold">Lockin Days:</span> {{ $plan->lockin_days }}</p>
+        <p><span class="font-semibold">Withdraw Processing Hours:</span> {{ $plan->withdraw_processing_hours }}</p>
+        <p><span class="font-semibold">Status:</span> {{ $plan->status }}</p>
+
+        <!-- Checkbox -->
+        <div class="flex justify-end pt-4">
+            <input type="checkbox" name="select_plan_id" value="{{ $plan->id }}"
+                class="plan-checkbox h-5 w-5 accent-blue-600">
+        </div>
+
+        <button>View T&C</button> <br>
+        <button>View Policy</button> <br>
+        <button>View Details</button>
+        <div class="bottom-line"></div>
+
+    </div>
+</div>
+
                             @endforeach
                         </div>
                     </div>
@@ -143,7 +220,7 @@
 
                 <div class="bg-purple-50 p-4 rounded-lg">
                     <label class="block text-sm font-semibold text-gray-700 mb-1 required">{{ trans('cruds.investment.fields.start_date') }}</label>
-                    <input type="text" name="start_date" id="start_date" value="{{ old('start_date', \Carbon\Carbon::now()->format('Y-m-d')) }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
+                    <input type="text" name="start_date" id="start_date" value="{{ date('d-m-Y') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
                 </div>
             </div>
 
@@ -164,7 +241,7 @@
         function showTopPopup(message, type = 'info') {
             const popup = document.getElementById('top-popup');
             const body = document.getElementById('top-popup-body');
-            popup.classList.remove('hidden');
+
             if (type === 'error') {
                 body.className = 'rounded-lg px-5 py-3 text-sm font-medium shadow-lg bg-red-600 text-white';
             } else if (type === 'success') {
@@ -172,10 +249,29 @@
             } else {
                 body.className = 'rounded-lg px-5 py-3 text-sm font-medium shadow-lg bg-indigo-600 text-white';
             }
+
             body.textContent = message;
-            setTimeout(() => { popup.classList.add('hidden'); }, 5000);
+
+            popup.classList.add("show");
+            popup.classList.remove("hidden");
+
+            setTimeout(() => {
+                popup.classList.remove("show");
+                setTimeout(() => popup.classList.add("hidden"), 400);
+            }, 3500);
         }
 
+<<<<<<< HEAD
+=======
+
+        function flagElement(text, ok) {
+            const el = document.createElement('span');
+            el.textContent = text;
+            el.className = 'px-3 py-1 rounded text-white text-xs ' + (ok ? 'bg-green-600' : 'bg-red-600');
+            return el;
+        }
+
+>>>>>>> cf226d133b58e81c5a92a53bff0ccbf670b3c6a2
         function showInvestorCard(regObj) {
             if (!regObj) { document.getElementById('investor-card').classList.add('hidden'); return; }
             document.getElementById('investor-card').classList.remove('hidden');
