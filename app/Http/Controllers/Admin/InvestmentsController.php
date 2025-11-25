@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateInvestmentRequest;
 use App\Models\Investment;
 use App\Models\Plan;
 use App\Models\Registration;
+use Carbon\Carbon;
 use Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -122,10 +123,12 @@ class InvestmentsController extends Controller
     {
         abort_if(Gate::denies('investment_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        // validate presence of investor and plan
         $data = $request->all();
 
-        // ensure we have select_investor_id
+        // ----------- STATUS ALWAYS PENDING -----------
+        $data['status'] = 'pending';
+
+        // ----------- INVESTOR VALIDATION -----------
         $investorId = $request->input('select_investor_id');
         if (!$investorId) {
             return back()->withErrors(['select_investor_id' => 'Investor is required'])->withInput();
@@ -136,30 +139,50 @@ class InvestmentsController extends Controller
             return back()->withErrors(['select_investor_id' => 'Selected investor not found'])->withInput();
         }
 
-        // server-side verification checks (same as client)
-        $kycOk = strtolower($registration->kyc_status ?? '') === 'verified';
+        // ----------- INVESTOR VERIFICATION CHECKS -----------
+        $kycOk     = strtolower($registration->kyc_status ?? '') === 'verified';
         $accountOk = strtolower($registration->account_status ?? '') === 'active';
-        $emailOk = strtolower($registration->is_email_verified ?? '') === 'yes';
-        $phoneOk = strtolower($registration->is_phone_verified ?? '') === 'yes';
+        $emailOk   = strtolower($registration->is_email_verified ?? '') === 'yes';
+        $phoneOk   = strtolower($registration->is_phone_verified ?? '') === 'yes';
 
         if (!($kycOk && $accountOk && $emailOk && $phoneOk)) {
-            // professional message and deny
             return back()->withErrors([
-                'verification' => 'Investor account does not meet required verifications for investments. Required: KYC = Verified, Account = active, Email Verified = Yes, Phone Verified = Yes.'
+                'verification' => 
+                    'Investor account does not meet required verifications. Required: 
+                    KYC = Verified, Account = Active, Email Verified = Yes, Phone Verified = Yes.'
             ])->withInput();
         }
 
-        // ensure plan selected
-        $planId = $request->input('select_plan_id');
-        if (!$planId) {
+        // ----------- PLAN VALIDATION -----------
+        if (!$request->input('select_plan_id')) {
             return back()->withErrors(['select_plan_id' => 'Plan is required'])->withInput();
         }
 
-        // All good: create investment (using request class for validation)
-        $investment = Investment::create($request->all());
+        // ----------- DATE CONVERSIONS (d-m-Y → Y-m-d) -----------
+        if (!empty($data['start_date'])) {
+            try {
+                $data['start_date'] = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('Y-m-d');
+            } catch (\Exception $e) {}
+        }
 
-        return redirect()->route('admin.investments.index')->with('success','Investment created successfully.');
+        if (!empty($data['lockin_end_date'])) {
+            try {
+                $data['lockin_end_date'] = Carbon::createFromFormat('d-m-Y', $data['lockin_end_date'])->format('Y-m-d');
+            } catch (\Exception $e) {}
+        }
+
+        if (!empty($data['next_payout_date'])) {
+            try {
+                $data['next_payout_date'] = Carbon::createFromFormat('d-m-Y', $data['next_payout_date'])->format('Y-m-d');
+            } catch (\Exception $e) {}
+        }
+
+        // ----------- FINAL CREATE -----------
+        $investment = Investment::create($data);
+
+        return redirect()->route('admin.investments.index')->with('success', 'Investment created successfully.');
     }
+
 
     public function edit(Investment $investment)
     {
@@ -169,19 +192,56 @@ class InvestmentsController extends Controller
 
         $select_plans = Plan::pluck('plan_name', 'id')->prepend(trans('global.pleaseSelect'), '');
 
+        $registrations = Registration::with('media')->get(); // For Investor Card + Profile Image
+
+        $plans = Plan::all(); // For plan cards grid UI
+
         $investment->load('select_investor', 'select_plan', 'created_by');
 
-        return view('admin.investments.edit', compact('investment', 'select_investors', 'select_plans'));
+        return view('admin.investments.edit', compact(
+            'investment',
+            'select_investors',
+            'select_plans',
+            'registrations',
+            'plans'
+        ));
     }
+
 
     public function update(UpdateInvestmentRequest $request, Investment $investment)
     {
         abort_if(Gate::denies('investment_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $investment->update($request->all());
+        $data = $request->all();
 
-        return redirect()->route('admin.investments.index')->with('success','Investment updated.');
+        // STATUS ALWAYS PENDING EVEN ON UPDATE
+        $data['status'] = 'Pending';
+
+        // DATE CONVERSION d-m-Y → Y-m-d
+        if (!empty($data['start_date'])) {
+            try {
+                $data['start_date'] = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('Y-m-d');
+            } catch (\Exception $e) {}
+        }
+
+        if (!empty($data['lockin_end_date'])) {
+            try {
+                $data['lockin_end_date'] = Carbon::createFromFormat('d-m-Y', $data['lockin_end_date'])->format('Y-m-d');
+            } catch (\Exception $e) {}
+        }
+
+        if (!empty($data['next_payout_date'])) {
+            try {
+                $data['next_payout_date'] = Carbon::createFromFormat('d-m-Y', $data['next_payout_date'])->format('Y-m-d');
+            } catch (\Exception $e) {}
+        }
+
+        // APPLY UPDATE
+        $investment->update($data);
+
+        return redirect()->route('admin.investments.index')->with('success', 'Investment updated successfully.');
     }
+
 
     public function show(Investment $investment)
     {

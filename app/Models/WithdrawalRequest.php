@@ -21,6 +21,7 @@ class WithdrawalRequest extends Model implements HasMedia
 
     protected $dates = [
         'requested_at',
+        'approved_at',
         'created_at',
         'updated_at',
         'deleted_at',
@@ -49,9 +50,6 @@ class WithdrawalRequest extends Model implements HasMedia
         'approved_at',
         'notes',
         'remarks',
-        'created_at',
-        'updated_at',
-        'deleted_at',
         'created_by_id',
     ];
 
@@ -76,15 +74,8 @@ class WithdrawalRequest extends Model implements HasMedia
         return $this->belongsTo(Investment::class, 'investment_id');
     }
 
-    public function getRequestedAtAttribute($value)
-    {
-        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
-    }
-
-    public function setRequestedAtAttribute($value)
-    {
-        $this->attributes['requested_at'] = $value ? Carbon::createFromFormat(config('panel.date_format'), $value)->format('Y-m-d') : null;
-    }
+    // ❌ REMOVED getter — it breaks JSON/AJAX
+    // ❌ REMOVED setter — it caused Carbon format crash
 
     public function created_by()
     {

@@ -1,43 +1,6 @@
 @extends('layouts.admin')
 @section('content')
-<style>
-   .main-div {
-    position: relative;
-}
 
-/* LEFT full border */
-.main-div::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 8px;           /* border thickness */
-    height: 100%;
-    background: #0080ff;  /* border color */
-}
-
-/* TOP half border */
-.main-div::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 8px;
-    width: 40%;          /* top border length */
-    background: #0080ff;
-}
-
-/* BOTTOM half border */
-.main-div .bottom-line {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 8px;
-    width: 40%;          /* bottom border length */
-    background: #0080ff;
-}
-</style>
 <div class="max-w-6xl mx-auto py-8">
     <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
         <div class="pb-4 border-b mb-6">
@@ -128,48 +91,29 @@
                     <div class="plan-area bg-white border rounded-2xl p-4 shadow-sm">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($plans as $plan)
-                            
-                               <div class=" main-div plan-card relative w-full bg-white shadow-md border p-0 overflow-hidden">
+                                <div class="plan-card relative border rounded-lg p-4" data-plan='@json($plan)'>
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <h4 class="text-md font-semibold text-teal-700">{{ $plan->plan_name }}</h4>
+                                            <p class="text-sm text-gray-500">ID: {{ $plan->id }}</p>
+                                        </div>
+                                        <div>
+                                            <input type="checkbox" name="select_plan_id" value="{{ $plan->id }}" class="plan-checkbox h-4 w-4">
+                                        </div>
+                                    </div>
 
-    <!-- Top Number Box (01 Style) -->
-    <div class="absolute top-0 left-0  text-black px-4 py-1 rounded-br-xl">
-        <span class="font-bold text-lg">ID: {{ $plan->id }}</span>
-    </div>
-
-    <!-- Blue Header -->
-    <div class="bg-blue-500 text-white text-center py-1 mt-9">
-        <h4 class="text-xl  text-white font-semibold ">
-            {{ $plan->plan_name }}
-        </h4>
-    </div>
-
-    <!-- Content Body -->
-    <div class="p-4 space-y-2 text-sm text-gray-700">
-
-        <p><span class="font-semibold">Secure Interest %:</span> {{ $plan->secure_interest_percent }}</p>
-        <p><span class="font-semibold">Market Interest %:</span> {{ $plan->market_interest_percent }}</p>
-        <p><span class="font-semibold">Total Interest %:</span> {{ $plan->total_interest_percent }}</p>
-        <p><span class="font-semibold">Payout Frequency:</span> {{ $plan->payout_frequency }}</p>
-        <p><span class="font-semibold">Min Invest:</span> <span class="plan-min">{{ $plan->min_invest_amount }}</span></p>
-        <p><span class="font-semibold">Max Invest:</span> {{ $plan->max_invest_amount }}</p>
-        <p><span class="font-semibold">Lockin Days:</span> {{ $plan->lockin_days }}</p>
-        <p><span class="font-semibold">Withdraw Processing Hours:</span> {{ $plan->withdraw_processing_hours }}</p>
-        <p><span class="font-semibold">Status:</span> {{ $plan->status }}</p>
-
-        <!-- Checkbox -->
-        <div class="flex justify-end pt-4">
-            <input type="checkbox" name="select_plan_id" value="{{ $plan->id }}"
-                class="plan-checkbox h-5 w-5 accent-blue-600">
-        </div>
-
-        <button>View T&C</button> <br>
-        <button>View Policy</button> <br>
-        <button>View Details</button>
-        <div class="bottom-line"></div>
-
-    </div>
-</div>
-
+                                    <div class="mt-3 text-sm text-gray-700 space-y-1">
+                                        <p><span class="font-semibold">Secure Interest %:</span> {{ $plan->secure_interest_percent }}</p>
+                                        <p><span class="font-semibold">Market Interest %:</span> {{ $plan->market_interest_percent }}</p>
+                                        <p><span class="font-semibold">Total Interest %:</span> {{ $plan->total_interest_percent }}</p>
+                                        <p><span class="font-semibold">Payout Frequency:</span> {{ $plan->payout_frequency }}</p>
+                                        <p><span class="font-semibold">Min Invest:</span> <span class="plan-min">{{ $plan->min_invest_amount }}</span></p>
+                                        <p><span class="font-semibold">Max Invest:</span> {{ $plan->max_invest_amount }}</p>
+                                        <p><span class="font-semibold">Lockin Days:</span> {{ $plan->lockin_days }}</p>
+                                        <p><span class="font-semibold">Withdraw Processing Hours:</span> {{ $plan->withdraw_processing_hours }}</p>
+                                        <p><span class="font-semibold">Status:</span> {{ $plan->status }}</p>
+                                    </div>
+                                </div>
                             @endforeach
                         </div>
                     </div>

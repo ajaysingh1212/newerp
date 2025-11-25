@@ -40,80 +40,113 @@ class CustomerVehicleApiController extends Controller
     }
 
     public function getVehiclesByUser($user_id)
-    {
-        try {
-            $vehicles = AddCustomerVehicle::with([
-                'product_master.product_model',
-            ])
-            ->where('owners_name', $user_id)
-            ->get();
-    
-            $data = $vehicles->map(function ($vehicle) use ($user_id) {
-                $requestDate = $vehicle->request_date 
-                    ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date) 
+{
+    try {
+        $vehicles = AddCustomerVehicle::with([
+            'product_master.product_model',
+        ])
+        ->where('owners_name', $user_id)
+        ->get();
+
+
+        // load status options only once
+        $statusOptions = \App\Models\ActivationRequest::getStatusOptions();
+
+
+        $data = $vehicles->map(function ($vehicle) use ($user_id, $statusOptions) {
+
+            /** activation row find */
+            $activation = \DB::table('activation_requests')
+                ->where('vehicle_reg_no', $vehicle->vehicle_number)
+                ->first();
+
+
+            /** status get */
+            if($activation && $activation->status){
+
+                $rawStatus = strtolower(trim($activation->status));
+
+                $status =
+                    $statusOptions[$rawStatus]
+                    ??
+                    ucfirst($rawStatus);
+
+            } else {
+                $status = 'Pending';
+            }
+
+
+
+            /** (unchanged date logic) */
+
+            $requestDate = $vehicle->request_date 
+                ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date) 
+                : null;
+
+            $productModel = $vehicle->product_master?->product_model;
+
+            $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)
+            ->whereIn('payment_status', ['success', 'completed', 'paid'])
+            ->exists();
+
+            if ($hasRecharge) {
+                $warrantyExpiry     = $vehicle->warranty;
+                $subscriptionExpiry = $vehicle->subscription;
+                $amcExpiry          = $vehicle->amc;
+            } else {
+                $warrantyExpiry = $requestDate && $productModel?->warranty
+                    ? $requestDate->copy()->addMonths($productModel->warranty)->format('Y-m-d')
                     : null;
-    
-                $productModel = $vehicle->product_master?->product_model;
-    
-                // Check recharge exist karta hai ya nahi
-                $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)
-                ->whereIn('payment_status', ['success', 'completed', 'paid'])
+
+                $subscriptionExpiry = $requestDate && $productModel?->subscription
+                    ? $requestDate->copy()->addMonths($productModel->subscription)->format('Y-m-d')
+                    : null;
+
+                $amcExpiry = $requestDate && $productModel?->amc
+                    ? $requestDate->copy()->addMonths($productModel->amc)->format('Y-m-d')
+                    : null;
+            }
+
+
+            $kycExists = KycRecharge::where('user_id', $user_id)
+                ->where('vehicle_number', $vehicle->vehicle_number)
+                ->where('payment_status', 'completed')
                 ->exists();
 
-                if ($hasRecharge) {
-                    $warrantyExpiry     = $vehicle->warranty;
-                    $subscriptionExpiry = $vehicle->subscription;
-                    $amcExpiry          = $vehicle->amc;
-                } else {
-                    $warrantyExpiry = $requestDate && $productModel?->warranty
-                        ? $requestDate->copy()->addMonths($productModel->warranty)->format('Y-m-d')
-                        : null;
-    
-                    $subscriptionExpiry = $requestDate && $productModel?->subscription
-                        ? $requestDate->copy()->addMonths($productModel->subscription)->format('Y-m-d')
-                        : null;
-    
-                    $amcExpiry = $requestDate && $productModel?->amc
-                        ? $requestDate->copy()->addMonths($productModel->amc)->format('Y-m-d')
-                        : null;
-                }
-    
-                // 🔹 Check KYC status with payment completed
-                    $kycExists = KycRecharge::where('user_id', $user_id)
-                        ->where('vehicle_number', $vehicle->vehicle_number)
-                        ->where('payment_status', 'completed') // ✅ Only completed payments count
-                        ->exists();
+            $kycStatus = $kycExists ? 'complete' : 'pending';
 
-                    $kycStatus = $kycExists ? 'complete' : 'pending';
 
-    
-                return [
-                    'vehicle_number'  => $vehicle->vehicle_number,
-                    'product_model'   => $productModel?->product_model,
-                    'status'          => $vehicle->status,
-                    'activation_date' => $requestDate ? $requestDate->format('Y-m-d') : null,
-                    'warranty'        => $warrantyExpiry,
-                    'subscription'    => $subscriptionExpiry,
-                    'amc'             => $amcExpiry,
-                    'kyc_status'      => $kycStatus, 
-                    'app_url'         => $vehicle->app_url, 
-                ];
-            });
-    
-            return response()->json([
-                'status' => true,
-                'message' => 'Vehicles fetched successfully.',
-                'data' => $data
-            ], Response::HTTP_OK);
-    
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Something went wrong.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+
+            return [
+                'vehicle_number'  => $vehicle->vehicle_number,
+                'product_model'   => $productModel?->product_model,
+                'status'          => $status,
+                'activation_date' => $requestDate ? $requestDate->format('Y-m-d') : null,
+                'warranty'        => $warrantyExpiry,
+                'subscription'    => $subscriptionExpiry,
+                'amc'             => $amcExpiry,
+                'kyc_status'      => $kycStatus,
+                'app_url'         => $vehicle->app_url,
+            ];
+        });
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Vehicles fetched successfully.',
+            'data' => $data
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
+
 
     
     public function getVehicleById($id)

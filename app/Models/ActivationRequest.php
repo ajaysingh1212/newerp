@@ -32,6 +32,7 @@ class ActivationRequest extends Model implements HasMedia
     'Pending' => 'Pending',
     'Approved' => 'Approved',
     'Rejected' => 'Rejected',
+    'Deactivated / SIM Changed' => 'Deactivated / SIM Changed',
 ];
 
     protected $appends = [
@@ -82,6 +83,7 @@ class ActivationRequest extends Model implements HasMedia
     public const STATUS_PROCESSING = 'processing';
     public const STATUS_ACTIVATED  = 'activated';
     public const STATUS_REJECTED   = 'rejected';
+    public const STATUS_DEACTIVATED   = 'deactivated / sim changed';
 
     public static function getStatusOptions()
     {
@@ -90,6 +92,7 @@ class ActivationRequest extends Model implements HasMedia
             self::STATUS_PROCESSING => 'Processing',
             self::STATUS_ACTIVATED  => 'Activated',
             self::STATUS_REJECTED   => 'Rejected',
+            self::STATUS_DEACTIVATED   => 'Deactivated / SIM Changed',
         ];
     }
 
