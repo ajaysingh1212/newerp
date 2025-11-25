@@ -50,29 +50,21 @@ class CustomerVehicleApiController extends Controller
 
         $data = $vehicles->map(function ($vehicle) use ($user_id) {
 
-            /** find activation record */
+            /** find activation row */
             $activation = \DB::table('activation_requests')
                 ->where('vehicle_reg_no', $vehicle->vehicle_number)
                 ->first();
 
-            /** allowed status */
-            $statusOptions = [
-                'Pending' => 'Pending',
-                'Approved' => 'Approved',
-                'Rejected' => 'Rejected',
-                'Deactivated / SIM Changed' => 'Deactivated / SIM Changed',
-            ];
-
             /** status logic */
-            if($activation && isset($statusOptions[$activation->status])){
-                $status = $statusOptions[$activation->status];
+            if($activation && $activation->status){
+                $status = $activation->status;   // <-- EXACT AS DB 
             }else{
                 $status = 'Pending';
             }
 
 
+            /** (unchanged date logic below) */
 
-            /** existing logic same — no change */
             $requestDate = $vehicle->request_date 
                 ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date) 
                 : null;
@@ -102,7 +94,6 @@ class CustomerVehicleApiController extends Controller
             }
 
 
-            // 🔹 Check KYC
             $kycExists = KycRecharge::where('user_id', $user_id)
                 ->where('vehicle_number', $vehicle->vehicle_number)
                 ->where('payment_status', 'completed')
@@ -138,6 +129,7 @@ class CustomerVehicleApiController extends Controller
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
     
