@@ -63,7 +63,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('monthly-payout-records', 'MonthlyPayoutRecordsController');
 
     // Withdrawal Requests
-    Route::post('/withdrawal/create', [WithdrawalRequestsController::class, 'storeAjax']);
+    Route::post('withdrawal-requests/store-ajax',
+        [WithdrawalRequestsController::class, 'storeAjax']
+    )->name('withdrawal.ajax.store');
 
     Route::delete('withdrawal-requests/destroy', 'WithdrawalRequestsController@massDestroy')->name('withdrawal-requests.massDestroy');
     Route::post('withdrawal-requests/media', 'WithdrawalRequestsController@storeMedia')->name('withdrawal-requests.storeMedia');
@@ -71,6 +73,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('withdrawal-requests/parse-csv-import', 'WithdrawalRequestsController@parseCsvImport')->name('withdrawal-requests.parseCsvImport');
     Route::post('withdrawal-requests/process-csv-import', 'WithdrawalRequestsController@processCsvImport')->name('withdrawal-requests.processCsvImport');
     Route::resource('withdrawal-requests', 'WithdrawalRequestsController');
+    
 
     // Login Logs
     Route::delete('login-logs/destroy', 'LoginLogsController@massDestroy')->name('login-logs.massDestroy');
@@ -79,12 +82,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('login-logs', 'LoginLogsController');
 
     // Investments Detailes
-    Route::get('/investment/daily-interest/{id}', [InvestmentsDetailesController::class, 'dailyInterest']);
+   
     Route::get('investment-details/pdf/{id}', [InvestmentsDetailesController::class, 'downloadPdf'])
         ->name('investment.pdf');
 
     Route::get('investment-details/{id}', [InvestmentsDetailesController::class, 'fetchDetails']);
-
+    Route::get('investment-details/daily-interest/{id}', [InvestmentsDetailesController::class, 'dailyInterest']);
     Route::delete('investments-detailes/destroy', 'InvestmentsDetailesController@massDestroy')->name('investments-detailes.massDestroy');
     Route::resource('investments-detailes', 'InvestmentsDetailesController');
 

@@ -16,15 +16,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class InvestmentsDetailesController extends Controller
 {
-public function dailyInterest($id)
-{
-    $data = DailyInterest::where('investment_id', $id)
-        ->orderBy('interest_date', 'ASC')
-        ->get(['interest_date', 'daily_interest_amount']);
-
-    return response()->json($data);
-}
-
 
 public function downloadPdf($id)
 {
@@ -136,4 +127,14 @@ public function fetchDetails($id)
 
         return response(null, Response::HTTP_NO_CONTENT);
     }
+    public function dailyInterest($id)
+{
+    $data = DailyInterest::where('investment_id', $id)
+        ->orderBy('interest_date', 'ASC')
+        ->get(['interest_date', 'daily_interest_amount']);
+
+    return response()->json($data);
+}
+
+
 }
