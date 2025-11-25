@@ -50,16 +50,38 @@ class CustomerVehicleApiController extends Controller
 
         $data = $vehicles->map(function ($vehicle) use ($user_id) {
 
+            /** find activation record */
+            $activation = \DB::table('activation_requests')
+                ->where('vehicle_reg_no', $vehicle->vehicle_number)
+                ->first();
+
+            /** allowed status */
+            $statusOptions = [
+                'Pending' => 'Pending',
+                'Approved' => 'Approved',
+                'Rejected' => 'Rejected',
+                'Deactivated / SIM Changed' => 'Deactivated / SIM Changed',
+            ];
+
+            /** status logic */
+            if($activation && isset($statusOptions[$activation->status])){
+                $status = $statusOptions[$activation->status];
+            }else{
+                $status = 'Pending';
+            }
+
+
+
+            /** existing logic same — no change */
             $requestDate = $vehicle->request_date 
                 ? Carbon::createFromFormat('d-m-Y', $vehicle->request_date) 
                 : null;
 
             $productModel = $vehicle->product_master?->product_model;
 
-            // Check recharge exist karta hai ya nahi
             $hasRecharge = RechargeRequest::where('vehicle_number', $vehicle->vehicle_number)
-                ->whereIn('payment_status', ['success','completed','paid'])
-                ->exists();
+            ->whereIn('payment_status', ['success', 'completed', 'paid'])
+            ->exists();
 
             if ($hasRecharge) {
                 $warrantyExpiry     = $vehicle->warranty;
@@ -80,14 +102,7 @@ class CustomerVehicleApiController extends Controller
             }
 
 
-            /** ------------- NEW CHANGE HERE ------------- **/
-            $activationStatus = \DB::table('activation_requests')
-                ->where('vehicle_reg_no', $vehicle->vehicle_number)
-                ->value('status') ?? null;
-            /** ------------------------------------------- **/
-
-
-            // KYC status check
+            // 🔹 Check KYC
             $kycExists = KycRecharge::where('user_id', $user_id)
                 ->where('vehicle_number', $vehicle->vehicle_number)
                 ->where('payment_status', 'completed')
@@ -99,10 +114,7 @@ class CustomerVehicleApiController extends Controller
             return [
                 'vehicle_number'  => $vehicle->vehicle_number,
                 'product_model'   => $productModel?->product_model,
-
-                // 🔥 NOW THIS
-                'status'          => $activationStatus,
-
+                'status'          => $status,
                 'activation_date' => $requestDate ? $requestDate->format('Y-m-d') : null,
                 'warranty'        => $warrantyExpiry,
                 'subscription'    => $subscriptionExpiry,
