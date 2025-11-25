@@ -147,10 +147,12 @@ class RechargeRequestApiController extends Controller
         }
 
 
-        /** SUCCESS CASE ONLY */
+        /* SUCCESS case here */
 
         $today = Carbon::now();
 
+
+        /** HOLD final expiry values */
         $newWarranty     = $vehicle->warranty;
         $newSubscription = $vehicle->subscription;
         $newAmc          = $vehicle->amc;
@@ -190,6 +192,14 @@ class RechargeRequestApiController extends Controller
 
 
 
+        /** just in case — force Carbon for response */
+        $newWarranty     = $newWarranty ? Carbon::parse($newWarranty) : null;
+        $newSubscription = $newSubscription ? Carbon::parse($newSubscription) : null;
+        $newAmc          = $newAmc ? Carbon::parse($newAmc) : null;
+
+
+
+        /** UPDATE VEHICLE */
         $vehicle->update([
             'warranty'     => $newWarranty,
             'subscription' => $newSubscription,
@@ -216,7 +226,6 @@ class RechargeRequestApiController extends Controller
             'error'=>$e->getMessage()
         ],500);
     }
-
 }
 
 
