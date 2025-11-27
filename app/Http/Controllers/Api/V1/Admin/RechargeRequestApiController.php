@@ -136,10 +136,11 @@ class RechargeRequestApiController extends Controller
         /** failed payment => STOP */
         if(!in_array(strtolower($request->payment_status),['success','completed','paid'])){
             return response()->json([
-                'status'=>true,
-                'message'=>'Recharge saved but payment failed — no expiry update.'
+                'status'=>true,  // ⭐ IMPORTANT
+                'message'=>'Recharge saved but payment failed.'
             ]);
         }
+
 
 
 

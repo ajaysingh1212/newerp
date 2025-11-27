@@ -1,6 +1,44 @@
 @extends('layouts.admin')
 @section('content')
 <style>
+<<<<<<< HEAD
+   .main-div {
+    position: relative;
+}
+
+/* LEFT full border */
+.main-div::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;           /* border thickness */
+    height: 100%;
+    background: #0080ff;  /* border color */
+}
+
+/* TOP half border */
+.main-div::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 8px;
+    width: 40%;          /* top border length */
+    background: #0080ff;
+}
+
+/* BOTTOM half border */
+.main-div .bottom-line {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 8px;
+    width: 40%;          /* bottom border length */
+    background: #0080ff;
+}
+=======
     #top-popup {
     position: fixed;
     top: 40px !important;
@@ -18,6 +56,7 @@
     transform: translateX(-50%) translateY(10px);
 }
 
+>>>>>>> cf226d133b58e81c5a92a53bff0ccbf670b3c6a2
 </style>
 <div class="max-w-6xl mx-auto py-8">
     <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
@@ -33,15 +72,17 @@
             <div id="top-popup-body" class="rounded-lg px-5 py-3 text-sm font-medium shadow-lg"></div>
         </div>
         <div class="grid grid-cols-1 gap-6">
+
             <div class="flex flex-col md:flex-row gap-6">
-                <div class="w-full md:w-1/2 bg-white border rounded-2xl p-6 shadow-sm">
+                <div class="w-full md:w-1/2 bg-gradient-to-br from-gray-50 to-white border rounded-2xl p-5 shadow-sm">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3 required">{{ trans('cruds.investment.fields.select_investor') }}</label>
                     @php
                         $user = auth()->user();
                         $userRole = $user->roles->first()->title ?? null;
                     @endphp
-                    <label class="block text-sm font-semibold text-gray-700 mb-3 required">{{ trans('cruds.investment.fields.select_investor') }}</label>
+
                     @if($userRole === 'Admin')
-                        <select name="select_investor_id" id="select_investor_id" class="w-full rounded-lg border-2 border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                        <select name="select_investor_id" id="select_investor_id" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">{{ trans('global.pleaseSelect') }}</option>
                             @foreach($select_investors as $id => $entry)
                                 <option value="{{ $id }}" {{ old('select_investor_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
@@ -56,48 +97,48 @@
                         @endif
                     @endif
 
-                    <div id="investor-card" class="mt-6 rounded-xl overflow-hidden border shadow-sm relative bg-white">
-                        <div class="p-6">
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <h3 id="investor-reg" class="text-2xl font-semibold text-gray-800 text-center"></h3>
-                                </div>
-                                <div id="investor-status-flags" class="flex flex-col items-end space-y-2"></div>
+                    <div id="investor-card" class="mt-4 hidden rounded-2xl overflow-hidden shadow-lg border">
+                        <div class="bg-gradient-to-r from-white to-gray-50 p-5 flex gap-4 items-center">
+                            <div class="flex-shrink-0">
+                                <img id="investor-profile-img" src="/mnt/data/5db75b29-5ec8-440f-b172-2f44fd5d1bfb.png" class="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-md" alt="profile">
                             </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 text-sm text-gray-700">
-                                <div class="space-y-1">
-                                    <p><span class="font-semibold">ID:</span> <span id="investor-id-val"></span></p>
-                                    <p><span class="font-semibold">Reg:</span> <span id="investor-reg-val"></span></p>
-                                    <p><span class="font-semibold">Referral Code:</span> <span id="investor-referral-val"></span></p>
-                                    <p><span class="font-semibold">Aadhaar:</span> <span id="investor-aadhaar-val"></span></p>
-                                    <p><span class="font-semibold">PAN:</span> <span id="investor-pan-val"></span></p>
-                                    <p><span class="font-semibold">DOB:</span> <span id="investor-dob-val"></span></p>
-                                    <p><span class="font-semibold">Gender:</span> <span id="investor-gender-val"></span></p>
-                                    <p><span class="font-semibold">Father Name:</span> <span id="investor-father-val"></span></p>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 id="investor-reg" class="text-xl font-semibold text-gray-800">Investor</h3>
+                                        <p id="investor-role" class="text-sm text-gray-500 mt-1"></p>
+                                    </div>
+                                    <div id="investor-status-flags" class="space-x-2 text-sm"></div>
                                 </div>
-                                <div class="space-y-1">
-                                    <p><span class="font-semibold">Address 1:</span> <span id="investor-addr1-val"></span></p>
-                                    <p><span class="font-semibold">Address 2:</span> <span id="investor-addr2-val"></span></p>
-                                    <p><span class="font-semibold">Pincode:</span> <span id="investor-pincode-val"></span></p>
-                                    <p><span class="font-semibold">City:</span> <span id="investor-city-val"></span></p>
-                                    <p><span class="font-semibold">State:</span> <span id="investor-state-val"></span></p>
-                                    <p><span class="font-semibold">Country:</span> <span id="investor-country-val"></span></p>
-                                    <p><span class="font-semibold">Bank A/C Holder:</span> <span id="investor-bank-holder-val"></span></p>
-                                    <p><span class="font-semibold">Bank A/C Number:</span> <span id="investor-bank-ac-val"></span></p>
-                                    <p><span class="font-semibold">IFSC:</span> <span id="investor-ifsc-val"></span></p>
-                                    <p><span class="font-semibold">Bank Name / Branch:</span> <span id="investor-bank-name-val"></span></p>
-                                    <p><span class="font-semibold">Income Range:</span> <span id="investor-income-val"></span></p>
-                                    <p><span class="font-semibold">Occupation:</span> <span id="investor-occ-val"></span></p>
-                                    <p><span class="font-semibold">Risk Profile:</span> <span id="investor-risk-val"></span></p>
-                                    <p><span class="font-semibold">Investment Experience:</span> <span id="investor-exp-val"></span></p>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="absolute left-6 bottom-6">
-                            <div class="w-28 h-28 rounded-full overflow-hidden ring-4 ring-white shadow" id="investor-photo-wrap">
-                                <img id="investor-profile-img" src="/mnt/data/ad02fcc7-d5fe-4a68-a53e-ca612d124e4c.png" alt="profile" class="w-full h-full object-cover">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700 mt-4">
+                                    <div class="space-y-1">
+                                        <p><span class="font-semibold">ID:</span> <span id="investor-id-val"></span></p>
+                                        <p><span class="font-semibold">Reg:</span> <span id="investor-reg-val"></span></p>
+                                        <p><span class="font-semibold">Referral Code:</span> <span id="investor-referral-val"></span></p>
+                                        <p><span class="font-semibold">Aadhaar:</span> <span id="investor-aadhaar-val"></span></p>
+                                        <p><span class="font-semibold">PAN:</span> <span id="investor-pan-val"></span></p>
+                                        <p><span class="font-semibold">DOB:</span> <span id="investor-dob-val"></span></p>
+                                        <p><span class="font-semibold">Gender:</span> <span id="investor-gender-val"></span></p>
+                                        <p><span class="font-semibold">Father Name:</span> <span id="investor-father-val"></span></p>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <p><span class="font-semibold">Address 1:</span> <span id="investor-addr1-val"></span></p>
+                                        <p><span class="font-semibold">Address 2:</span> <span id="investor-addr2-val"></span></p>
+                                        <p><span class="font-semibold">Pincode:</span> <span id="investor-pincode-val"></span></p>
+                                        <p><span class="font-semibold">City:</span> <span id="investor-city-val"></span></p>
+                                        <p><span class="font-semibold">State:</span> <span id="investor-state-val"></span></p>
+                                        <p><span class="font-semibold">Country:</span> <span id="investor-country-val"></span></p>
+                                        <p><span class="font-semibold">Bank A/C Holder:</span> <span id="investor-bank-holder-val"></span></p>
+                                        <p><span class="font-semibold">Bank A/C Number:</span> <span id="investor-bank-ac-val"></span></p>
+                                        <p><span class="font-semibold">IFSC:</span> <span id="investor-ifsc-val"></span></p>
+                                        <p><span class="font-semibold">Bank Name / Branch:</span> <span id="investor-bank-name-val"></span></p>
+                                        <p><span class="font-semibold">Income Range:</span> <span id="investor-income-val"></span></p>
+                                        <p><span class="font-semibold">Occupation:</span> <span id="investor-occ-val"></span></p>
+                                        <p><span class="font-semibold">Risk Profile:</span> <span id="investor-risk-val"></span></p>
+                                        <p><span class="font-semibold">Investment Experience:</span> <span id="investor-exp-val"></span></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,29 +149,48 @@
                     <div class="plan-area bg-white border rounded-2xl p-4 shadow-sm">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($plans as $plan)
-                                <div class="plan-card relative border rounded-lg p-4 shadow-sm" data-plan='@json($plan)'>
-                                    <div class="flex items-start justify-between">
-                                        <div>
-                                            <h4 class="text-lg font-bold text-teal-700">{{ $plan->plan_name }}</h4>
-                                            <p class="text-xs text-gray-500 mt-1">ID: {{ $plan->id }}</p>
-                                        </div>
-                                        <div>
-                                            <input type="checkbox" name="select_plan_id" value="{{ $plan->id }}" class="plan-checkbox h-5 w-5">
-                                        </div>
-                                    </div>
+                            
+                               <div class=" main-div plan-card relative w-full bg-white shadow-md border p-0 overflow-hidden">
 
-                                    <div class="mt-4 text-sm text-gray-700 space-y-1">
-                                        <p><span class="font-semibold">Secure Interest %:</span> {{ $plan->secure_interest_percent }}</p>
-                                        <p><span class="font-semibold">Market Interest %:</span> {{ $plan->market_interest_percent }}</p>
-                                        <p><span class="font-semibold">Total Interest %:</span> {{ $plan->total_interest_percent }}</p>
-                                        <p><span class="font-semibold">Payout Frequency:</span> {{ $plan->payout_frequency }}</p>
-                                        <p><span class="font-semibold">Min Invest:</span> <span class="plan-min">{{ $plan->min_invest_amount }}</span></p>
-                                        <p><span class="font-semibold">Max Invest:</span> {{ $plan->max_invest_amount }}</p>
-                                        <p><span class="font-semibold">Lockin Days:</span> {{ $plan->lockin_days }}</p>
-                                        <p><span class="font-semibold">Withdraw Processing Hours:</span> {{ $plan->withdraw_processing_hours }}</p>
-                                        <p><span class="font-semibold">Status:</span> {{ $plan->status }}</p>
-                                    </div>
-                                </div>
+    <!-- Top Number Box (01 Style) -->
+    <div class="absolute top-0 left-0  text-black px-4 py-1 rounded-br-xl">
+        <span class="font-bold text-lg">ID: {{ $plan->id }}</span>
+    </div>
+
+    <!-- Blue Header -->
+    <div class="bg-blue-500 text-white text-center py-1 mt-9">
+        <h4 class="text-xl  text-white font-semibold ">
+            {{ $plan->plan_name }}
+        </h4>
+    </div>
+
+    <!-- Content Body -->
+    <div class="p-4 space-y-2 text-sm text-gray-700">
+
+        <p><span class="font-semibold">Secure Interest %:</span> {{ $plan->secure_interest_percent }}</p>
+        <p><span class="font-semibold">Market Interest %:</span> {{ $plan->market_interest_percent }}</p>
+        <p><span class="font-semibold">Total Interest %:</span> {{ $plan->total_interest_percent }}</p>
+        <p><span class="font-semibold">Payout Frequency:</span> {{ $plan->payout_frequency }}</p>
+        <p><span class="font-semibold">Min Invest:</span> <span class="plan-min">{{ $plan->min_invest_amount }}</span></p>
+        <p><span class="font-semibold">Max Invest:</span> {{ $plan->max_invest_amount }}</p>
+        <p><span class="font-semibold">Lockin Days:</span> {{ $plan->lockin_days }}</p>
+        <p><span class="font-semibold">Withdraw Processing Hours:</span> {{ $plan->withdraw_processing_hours }}</p>
+        <p><span class="font-semibold">Status:</span> {{ $plan->status }}</p>
+
+        <!-- Checkbox -->
+        <div class="flex justify-end pt-4">
+            <input type="checkbox" name="select_plan_id" value="{{ $plan->id }}"
+                class="plan-checkbox h-5 w-5 accent-blue-600">
+        </div>
+
+        <button>View T&C</button> <br>
+        <button>View Policy</button> <br>
+        <button>View Details</button>
+        <div class="bottom-line"></div>
+
+    </div>
+</div>
+
                             @endforeach
                         </div>
                     </div>
@@ -201,6 +261,8 @@
             }, 3500);
         }
 
+<<<<<<< HEAD
+=======
 
         function flagElement(text, ok) {
             const el = document.createElement('span');
@@ -209,6 +271,7 @@
             return el;
         }
 
+>>>>>>> cf226d133b58e81c5a92a53bff0ccbf670b3c6a2
         function showInvestorCard(regObj) {
             if (!regObj) { document.getElementById('investor-card').classList.add('hidden'); return; }
             document.getElementById('investor-card').classList.remove('hidden');
@@ -242,13 +305,19 @@
             const account = regObj.account_status ?? '';
             const email = regObj.is_email_verified ?? '';
             const phone = regObj.is_phone_verified ?? '';
-            flagsDiv.appendChild(flagElement('KYC: ' + kyc, String(kyc).toLowerCase() === 'verified'));
-            flagsDiv.appendChild(flagElement('Account: ' + account, String(account).toLowerCase() === 'active'));
-            flagsDiv.appendChild(flagElement('Email: ' + email, String(email).toLowerCase() === 'yes'));
-            flagsDiv.appendChild(flagElement('Phone: ' + phone, String(phone).toLowerCase() === 'yes'));
+            function flag(text, ok) {
+                const span = document.createElement('span');
+                span.className = 'px-3 py-1 rounded text-white text-xs ' + (ok ? 'bg-green-600' : 'bg-red-600');
+                span.textContent = text;
+                return span;
+            }
+            flagsDiv.appendChild(flag('KYC: ' + kyc, String(kyc).toLowerCase() === 'verified'));
+            flagsDiv.appendChild(flag('Account: ' + account, String(account).toLowerCase() === 'active'));
+            flagsDiv.appendChild(flag('Email: ' + email, String(email).toLowerCase() === 'yes'));
+            flagsDiv.appendChild(flag('Phone: ' + phone, String(phone).toLowerCase() === 'yes'));
 
             const img = document.getElementById('investor-profile-img');
-            const profileUrl = regObj.profile_image && regObj.profile_image.url ? regObj.profile_image.url : '/mnt/data/ad02fcc7-d5fe-4a68-a53e-ca612d124e4c.png';
+            const profileUrl = regObj.profile_image && regObj.profile_image.url ? regObj.profile_image.url : '/mnt/data/5db75b29-5ec8-440f-b172-2f44fd5d1bfb.png';
             img.src = profileUrl;
 
             const form = document.getElementById('investment-form');
@@ -278,7 +347,7 @@
 
         const planCheckboxes = document.querySelectorAll('.plan-checkbox');
         planCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function () {
+            cb.addEventListener('change', function (e) {
                 if (this.checked) {
                     planCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
                     const card = this.closest('.plan-card');
@@ -351,15 +420,9 @@
     }
     .plan-card h4 { color: #0f6b74; }
     .plan-card p { color: #3b3b3b; }
-    #investor-card { min-height: 240px; }
-    #investor-card .ring-white { box-shadow: 0 6px 18px rgba(10, 50, 70, 0.08); }
-    #investor-card:hover { box-shadow: 0 12px 30px rgba(10, 50, 70, 0.08); }
-    #investor-status-flags span { display: inline-block; margin-bottom: 6px; }
+    #investor-card { transition: box-shadow .25s ease; }
+    #investor-card:hover { box-shadow: 0 12px 30px rgba(10, 50, 70, 0.12); }
     #top-popup { left: 50%; transform: translateX(-50%); }
-    @media (max-width: 767px) {
-        #investor-card { padding-bottom: 80px; }
-        #investor-photo-wrap { left: 50%; transform: translateX(-50%); bottom: 16px; position: absolute; }
-    }
 </style>
 
 @endsection
