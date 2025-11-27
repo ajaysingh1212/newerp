@@ -55,6 +55,10 @@ class Investment extends Model
         return $date->format('Y-m-d H:i:s');
     }
 
+    /*---------------------------------------------
+    | RELATIONSHIPS
+    ----------------------------------------------*/
+
     public function investmentMonthlyPayoutRecords()
     {
         return $this->hasMany(MonthlyPayoutRecord::class, 'investment_id', 'id');
@@ -80,58 +84,75 @@ class Investment extends Model
         return $this->belongsTo(Plan::class, 'select_plan_id');
     }
 
-    public function getStartDateAttribute($value)
-    {
-        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
-    }
-
-public function setStartDateAttribute($value)
-{
-    if (!$value) {
-        $this->attributes['start_date'] = null;
-        return;
-    }
-
-    $value = trim($value);
-
-    // Try d-m-Y first
-    try {
-        return $this->attributes['start_date'] = Carbon::parse(str_replace('/', '-', $value))
-            ->format('Y-m-d');
-    } catch (\Exception $e) {
-        // Fallback to Carbon auto parser
-        try {
-            return $this->attributes['start_date'] = Carbon::parse($value)->format('Y-m-d');
-        } catch (\Exception $e2) {
-            // Final fallback – avoid crash
-            $this->attributes['start_date'] = null;
-        }
-    }
-}
-
-
-    public function getLockinEndDateAttribute($value)
-    {
-        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
-    }
-
-    public function setLockinEndDateAttribute($value)
-    {
-        $this->attributes['lockin_end_date'] = $value ? Carbon::createFromFormat(config('panel.date_format'), $value)->format('Y-m-d') : null;
-    }
-
-    public function getNextPayoutDateAttribute($value)
-    {
-        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
-    }
-
-    public function setNextPayoutDateAttribute($value)
-    {
-        $this->attributes['next_payout_date'] = $value ? Carbon::createFromFormat(config('panel.date_format'), $value)->format('Y-m-d') : null;
-    }
-
     public function created_by()
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+
+    /*---------------------------------------------
+    | DATE MUTATORS (UPDATED)
+    ----------------------------------------------*/
+
+    private function flexibleDateSetter($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        try {
+            // Replace / with - to make parsing easier
+            return Carbon::parse(str_replace('/', '-', $value))->format('Y-m-d');
+        } catch (\Exception $e) {
+            try {
+                return Carbon::parse($value)->format('Y-m-d');
+            } catch (\Exception $e2) {
+                return null; // Final fallback
+            }
+        }
+    }
+
+    private function flexibleDateGetter($value)
+    {
+        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
+    }
+
+    /* ---- start_date ---- */
+    public function setStartDateAttribute($value)
+    {
+        $this->attributes['start_date'] = $this->flexibleDateSetter($value);
+    }
+
+    public function getStartDateAttribute($value)
+    {
+        return $this->flexibleDateGetter($value);
+    }
+
+    /* ---- lockin_end_date ---- */
+    public function setLockinEndDateAttribute($value)
+    {
+        $this->attributes['lockin_end_date'] = $this->flexibleDateSetter($value);
+    }
+
+    public function getLockinEndDateAttribute($value)
+    {
+        return $this->flexibleDateGetter($value);
+    }
+
+    /* ---- next_payout_date ---- */
+    public function setNextPayoutDateAttribute($value)
+    {
+        $this->attributes['next_payout_date'] = $this->flexibleDateSetter($value);
+    }
+
+    public function getNextPayoutDateAttribute($value)
+    {
+        return $this->flexibleDateGetter($value);
+    }
+    public function investment()
+{
+    return $this->belongsTo(Investment::class, 'investment_id', 'id');
+}
+
 }

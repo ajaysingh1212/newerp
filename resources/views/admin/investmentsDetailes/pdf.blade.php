@@ -1,127 +1,425 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8"/>
-    <title>Investment Report</title>
+<meta charset="utf-8">
+<title>{{ $investment->select_plan->plan_name }} - Investment Report</title>
 
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; }
-        .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #444; }
-        .title { font-size: 18px; font-weight: bold; margin-top: 10px; }
-        .section { margin-top: 20px; }
-        .section-title { background: #f0f0f0; padding: 6px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #555; padding: 6px; }
-        th { background: #e4e4e4; }
-        .badge { padding: 3px 8px; border-radius: 5px; color: white; font-size: 11px; }
-        .pending { background: orange; }
-        .active { background: green; }
-        .completed { background: dodgerblue; }
-        .withdrawn { background: red; }
-        .withdraw_requested { background: brown; }
-    </style>
+<!-- QR Code Generator (NO PACKAGE REQUIRED) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<!-- HTML2PDF JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
+<style>
+
+/* ------------------------------
+      GLOBAL / A4 SETTINGS
+------------------------------ */
+body {
+    background:#eaeaea;
+    padding:0;
+    margin:0;
+    font-family: 'Times New Roman', Times, serif;   
+}
+
+#report-wrapper {
+    width:180mm;
+    min-height:297mm;
+    margin:auto;
+    background:white;
+    padding:25px;
+    box-shadow:0 0 10px rgba(0,0,0,0.25);
+    position:relative;
+}
+
+/* ------------------------------
+      WATERMARK
+------------------------------ */
+.watermark {
+    position:absolute;
+    top:35%;
+    left:10%;
+    font-size:140px;
+    font-weight:900;
+    opacity:0.06;
+    transform:rotate(-30deg);
+    color:#d4af37;
+    z-index:-1;
+}
+
+/* ------------------------------
+          HEADER
+------------------------------ */
+.header {
+    text-align:center;
+    border-bottom:4px solid #d4af37;
+    padding-bottom:12px;
+    margin-bottom:25px;
+}
+.header-title {
+    font-size:28px;
+    font-weight:800;
+    color:#d4af37;
+    letter-spacing:1.2px;
+}
+
+/* GOLD GRADIENT */
+.gold-gradient {
+    background:linear-gradient(to right, #d4af37, #f8e9a1);
+    -webkit-background-clip:text;
+    color:transparent;
+}
+
+/* ------------------------------
+        CARD (UPGRADED)
+------------------------------ */
+.card {
+    padding:18px;
+    border-radius:12px;
+    margin-bottom:18px;
+    border:1px solid #efd897;
+    background:#fffdf5 url('https://i.imgur.com/MqO0Sy1.png') no-repeat right bottom;
+    background-size:130px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ------------------------------
+        SECTION TITLE
+------------------------------ */
+.section-title {
+    font-size:18px;
+    font-weight:800;
+    color:#d4af37;
+    margin-bottom:12px;
+    border-left:5px solid #d4af37;
+    padding-left:10px;
+}
+
+/* ------------------------------
+        GRID SYSTEM
+------------------------------ */
+.grid-2 {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+
+/* PROFILE IMAGE */
+.profile-photo {
+    width:80px;
+    height:80px;
+    border-radius:100%;
+    border:3px solid #d4af37;
+    object-fit:cover;
+}
+
+/* ------------------------------
+        TABLE STYLE
+------------------------------ */
+.table {
+    width:100%;
+    border-collapse:collapse;
+}
+.table th {
+    background:#d4af37;
+    color:white;
+    padding:8px;
+    font-size:12px;
+}
+.table td {
+    border:1px solid #e0e0e0;
+    padding:7px;
+    font-size:12px;
+}
+
+/* STATUS COLORS */
+.status-approved { color:#059669; font-weight:bold; }
+.status-pending  { color:#d97706; font-weight:bold; }
+.status-rejected { color:#dc2626; font-weight:bold; }
+
+/* ------------------------------
+     QR + SIGNATURE AREA
+------------------------------ */
+.qr-sign {
+    display:flex;
+    justify-content:space-between;
+    margin-top:30px;
+}
+
+.sign-block {
+    text-align:right;
+}
+
+.sign-line {
+    border-top:1px solid #333;
+    width:150px;
+    margin-top:5px;
+}
+
+/* ------------------------------
+      PROFESSIONAL DISCLAIMER
+------------------------------ */
+.notice-box {
+    background:#fff3d4;
+    border-left:5px solid #d4af37;
+    padding:15px;
+    margin-top:30px;
+    border-radius:8px;
+    font-size:13px;
+    line-height:1.7;
+    color:#444;
+}
+
+/* RISK WARNING BOX */
+.risk-box {
+    background:#ffecec;
+    border-left:5px solid #e63946;
+    padding:15px;
+    margin-top:15px;
+    border-radius:8px;
+    font-size:13px;
+    color:#a50000;
+}
+
+/* FOOTER */
+.footer {
+    text-align:center;
+    margin-top:25px;
+    font-size:12px;
+    color:#777;
+}
+
+/* Download Buttons */
+.download-btn, .print-btn {
+    position:fixed;
+    right:20px;
+    padding:12px 18px;
+    color:white;
+    border:none;
+    border-radius:9px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+    z-index:9999;
+    box-shadow:0 0 6px rgba(0,0,0,0.2);
+}
+.download-btn { top:20px; background:#d4af37; }
+.print-btn    { top:70px; background:#444; }
+
+</style>
 </head>
+
 <body>
 
+<!-- CONTROLS -->
+<button id="downloadPdfBtn" class="download-btn">⬇ Download PDF</button>
+<button id="printBtn" class="print-btn">🖨 Print</button>
+
+<div id="report-wrapper">
+
+    <div class="watermark">INVESTMENT</div>
+
+    <!-- HEADER -->
     <div class="header">
-        <h2>📄 Investment Report</h2>
-        <div class="title">Investment ID: {{ $investment->id }}</div>
+        <img src="{{ asset('img/eemot_logo.png') }}" style="height:65px;">
+        <div class="header-title gold-gradient">
+            {{ $investment->select_plan->plan_name }} - Investment Report
+        </div>
+        <div style="font-size:13px; color:#555;">Generated by {{ config('app.name') }}</div>
     </div>
 
-    <!-- Investment Summary -->
-    <div class="section">
-        <div class="section-title">Investment Summary</div>
-        <table>
+    <!-- GRID OF MAIN CARDS -->
+    <div class="grid-2">
+
+        <!-- Investor Card -->
+        <div class="card">
+            <div class="section-title">Investor Details</div>
+            <div style="display:flex; gap:12px;">
+                <img src="{{ $investment->select_investor->profile_image->url ?? asset('default.png') }}" class="profile-photo">
+
+                <div>
+                    <div><b>Reg No:</b> {{ $investment->select_investor->reg }}</div>
+                    <div><b>Name:</b> {{ $investment->select_investor->user->name }}</div>
+                    <div><b>Aadhaar:</b> {{ $investment->select_investor->aadhaar_number }}</div>
+                    <div><b>PAN:</b> {{ $investment->select_investor->pan_number }}</div>
+                    <div><b>KYC Status:</b> {{ $investment->select_investor->kyc_status }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investment Card -->
+        <div class="card">
+            <div class="section-title">Investment Details</div>
+            <div>
+                <div><b>ID:</b> {{ $investment->id }}</div>
+                <div><b>Principal:</b> ₹{{ number_format($investment->principal_amount,2) }}</div>
+                <div><b>Start Date:</b> {{ $investment->start_date }}</div>
+                <div><b>Lock-in End:</b> {{ $investment->lockin_end_date }}</div>
+                <div><b>Status:</b> {{ ucfirst($investment->status) }}</div>
+            </div>
+        </div>
+
+        <!-- Plan Card -->
+        <div class="card">
+            <div class="section-title">Plan Details</div>
+            <div>
+                <div><b>Plan:</b> {{ $investment->select_plan->plan_name }}</div>
+                <div><b>Total Interest %:</b> {{ $investment->select_plan->total_interest_percent }}%</div>
+                <div><b>Secure %:</b> {{ $investment->select_plan->secure_interest_percent }}%</div>
+                <div><b>Market %:</b> {{ $investment->select_plan->market_interest_percent }}%</div>
+                <div><b>Payout:</b> {{ $investment->select_plan->payout_frequency }}</div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card">
+            <div class="section-title">Financial Summary</div>
+
+            <div><b>Total Earned Interest:</b> ₹{{ number_format($totalEarnedInterest,2) }}</div>
+            <div><b>Approved Interest:</b> ₹{{ number_format($approved_interest,2) }}</div>
+            <div><b>Approved Principal:</b> ₹{{ number_format($approved_principal,2) }}</div>
+            <div><b>Pending:</b> ₹{{ number_format($pending_withdraw,2) }}</div>
+            <div><b>Rejected:</b> ₹{{ number_format($rejected_withdraw,2) }}</div>
+
+            <hr style="margin:10px 0;">
+
+            <div><b>Remaining Interest:</b> ₹{{ number_format($final_interest,2) }}</div>
+            <div><b>Remaining Principal:</b> ₹{{ number_format($final_principal,2) }}</div>
+        </div>
+
+    </div>
+
+    <!-- WITHDRAWALS -->
+    <div class="section-title">Withdrawal History</div>
+    <table class="table">
+        <thead>
             <tr>
-                <th>Principal Amount</th>
-                <td>₹{{ $investment->principal_amount }}</td>
+                <th>Type</th><th>Amount</th><th>Status</th><th>Requested</th><th>Approved</th><th>Attachment</th>
             </tr>
+        </thead>
+        <tbody>
+            @foreach($investment->investmentWithdrawalRequests as $w)
             <tr>
-                <th>Status</th>
+                <td>{{ $w->type }}</td>
+                <td>₹{{ number_format($w->amount,2) }}</td>
+
                 <td>
-                    <span class="badge {{ $investment->status }}">{{ ucfirst($investment->status) }}</span>
+                    <span class="status-{{ $w->status }}">{{ ucfirst($w->status) }}</span>
                 </td>
+
+                <td>{{ $w->requested_at }}</td>
+                <td>{{ $w->approved_at }}</td>
+
+                <td>
+                    @php $media=$w->getMedia('withdrawal_attachments')->first(); @endphp
+                    @if($media)
+                        @if(str_contains($media->mime_type,'image'))
+                            <img src="{{ $media->getUrl() }}" style="width:55px;border-radius:8px;border:1px solid #aaa;">
+                        @else
+                            <a href="{{ $media->getUrl() }}" target="_blank" style="color:#d4af37;font-weight:bold;">
+                                {{ $media->file_name }}
+                            </a>
+                        @endif
+                    @else —
+                    @endif
+                </td>
+
             </tr>
-            <tr>
-                <th>Start Date</th>
-                <td>{{ $investment->start_date }}</td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Investor -->
-    <div class="section">
-        <div class="section-title">Investor Details</div>
-        <table>
-            <tr><th>Reg</th><td>{{ $investment->select_investor->reg }}</td></tr>
-            <tr><th>PAN</th><td>{{ $investment->select_investor->pan_number }}</td></tr>
-            <tr><th>Aadhaar</th><td>{{ $investment->select_investor->aadhaar_number }}</td></tr>
-            <tr><th>Father Name</th><td>{{ $investment->select_investor->father_name }}</td></tr>
-        </table>
-    </div>
-
-    <!-- Plan -->
-    <div class="section">
-        <div class="section-title">Plan Details</div>
-        <table>
-            <tr><th>Plan Name</th><td>{{ $investment->select_plan->plan_name }}</td></tr>
-            <tr><th>Secure %</th><td>{{ $investment->select_plan->secure_interest_percent }}</td></tr>
-            <tr><th>Market %</th><td>{{ $investment->select_plan->market_interest_percent }}</td></tr>
-            <tr><th>Total %</th><td>{{ $investment->select_plan->total_interest_percent }}</td></tr>
-            <tr><th>Payout</th><td>{{ $investment->select_plan->payout_frequency }}</td></tr>
-        </table>
-    </div>
-
-    <!-- Daily Interest -->
-    <div class="section">
-        <div class="section-title">Daily Interest Records</div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Daily Interest</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($dailyInterest as $d)
-                <tr>
-                    <td>{{ $d->interest_date }}</td>
-                    <td>₹{{ number_format($d->daily_interest_amount,2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Monthly Payouts -->
-    <div class="section">
-        <div class="section-title">Monthly Payout Records</div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Month</th>
-                    <th>Secure</th>
-                    <th>Market</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-
-            <tbody>
-            @foreach($investment->investmentMonthlyPayoutRecords as $p)
-                <tr>
-                    <td>{{ $p->month_for }}</td>
-                    <td>{{ $p->secure_interest_amount }}</td>
-                    <td>{{ $p->market_interest_amount }}</td>
-                    <td>{{ $p->total_payout_amount }}</td>
-                    <td>{{ ucfirst($p->status) }}</td>
-                </tr>
             @endforeach
-            </tbody>
-        </table>
+        </tbody>
+    </table>
+
+    <!-- DAILY INTEREST -->
+    <div class="section-title">Daily Interest Records</div>
+    <table class="table">
+        <thead>
+            <tr><th>Date</th><th>Interest</th></tr>
+        </thead>
+        <tbody>
+            @foreach($dailyInterest as $d)
+            <tr>
+                <td>{{ $d->interest_date }}</td>
+                <td>₹{{ number_format($d->daily_interest_amount,2) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <!-- QR + Signature -->
+    <div class="qr-sign">
+        <div>
+            <canvas id="qrCanvas" style="height:120px;"></canvas>
+            <div style="font-size:11px;">Scan to Verify Investment</div>
+        </div>
+
+        <div class="sign-block">
+            <img src="{{ asset('img/sign.png') }}" style="height:80px;">
+            <div class="sign-line">Authorized Signature</div>
+        </div>
     </div>
+
+    <!-- PROFESSIONAL DISCLAIMER -->
+    <div class="notice-box">
+        <b>Official Financial Disclaimer:</b><br><br>
+        This report is system-generated and reflects investment data as recorded in our system.
+        Returns indicated here are subject to market conditions, plan policies, and regulatory
+        guidelines. Past returns do not guarantee future performance. Any discrepancies must be
+        reported to support within 48 hours of report generation.
+    </div>
+
+    <!-- RISK WARNING -->
+    <div class="risk-box">
+        <b>⚠ Risk Warning:</b><br>
+        Investments are subject to market risks. Please read all scheme-related documents
+        carefully before investing. Invest only after understanding the plan, its risks,
+        return expectations, and terms. Make decisions responsibly.
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        © {{ date('Y') }} {{ config('app.name') }} — All Rights Reserved
+    </div>
+
+</div>
+
+<!-- JS FOR PDF + PRINT + QR -->
+<script>
+
+/* -----------------------------
+     GENERATE QR CODE
+----------------------------- */
+var qr = new QRious({
+    element: document.getElementById('qrCanvas'),
+    size: 130,
+    value: JSON.stringify({
+        investment_id: "{{ $investment->id }}",
+        principal: "{{ $investment->principal_amount }}",
+        investor_name: "{{ $investment->select_investor->user->name }}",
+        reg_no: "{{ $investment->select_investor->reg }}",
+        plan: "{{ $investment->select_plan->plan_name }}",
+        date: "{{ now()->format('d-m-Y H:i') }}"
+    })
+});
+
+/* -----------------------------
+     DOWNLOAD PDF
+----------------------------- */
+document.getElementById("downloadPdfBtn").onclick = function() {
+    const element = document.getElementById('report-wrapper');
+
+    html2pdf().set({
+        filename:"Investment-Report-{{ $investment->id }}.pdf",
+        html2canvas:{ scale:3 },
+        jsPDF:{ unit:"mm", format:"a4", orientation:"portrait" }
+    }).from(element).save();
+};
+
+/* PRINT */
+document.getElementById("printBtn").onclick=function(){
+    window.print();
+};
+
+</script>
 
 </body>
 </html>

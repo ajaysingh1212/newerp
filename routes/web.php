@@ -66,6 +66,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('withdrawal-requests/store-ajax',
         [WithdrawalRequestsController::class, 'storeAjax']
     )->name('withdrawal.ajax.store');
+    // Show withdrawal details (AJAX)
+    Route::get('withdrawal-requests/{id}/details', [App\Http\Controllers\Admin\InvestmentsDetailesController::class, 'withdrawalDetails'])
+        ->name('withdrawal-requests.details');
+
+    // Approve / update withdrawal (AJAX POST)
+    Route::post('withdrawal-requests/approve', [App\Http\Controllers\Admin\InvestmentsDetailesController::class, 'approveWithdrawal'])
+        ->name('withdrawal-requests.approve');
 
     Route::delete('withdrawal-requests/destroy', 'WithdrawalRequestsController@massDestroy')->name('withdrawal-requests.massDestroy');
     Route::post('withdrawal-requests/media', 'WithdrawalRequestsController@storeMedia')->name('withdrawal-requests.storeMedia');

@@ -11,6 +11,7 @@ use App\Http\Requests\UpdateWithdrawalRequestRequest;
 use App\Models\Investment;
 use App\Models\Registration;
 use App\Models\WithdrawalRequest;
+use Carbon\Carbon;
 use Gate;
 use Illuminate\Http\Request;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -162,37 +163,70 @@ class WithdrawalRequestsController extends Controller
     /* -------------------------------------------------------------
          AJAX STORE FOR FRONTEND (USED IN INVESTMENTS DETAILS PAGE)
     ------------------------------------------------------------- */
-    public function storeAjax(Request $request)
-    {
-        $request->validate([
-            'investment_id' => 'required|integer',
-            'amount'        => 'required|numeric|min:1',
-            'type'          => 'required|string',
-            'notes'         => 'nullable|string',
-        ]);
+public function storeAjax(Request $request)
+{
+    $request->validate([
+        'investment_id' => 'required|integer',
+        'amount'        => 'required|numeric|min:1',
+        'type'          => 'required|string',
+        'notes'         => 'nullable|string',
+    ]);
 
-        $investment = Investment::findOrFail($request->investment_id);
+    $investment = Investment::with('select_plan')->findOrFail($request->investment_id);
 
-        // Processing hours logic
-        $processing_hours = $request->type === 'interest' ? 48 : 336;
+    $today = Carbon::today();
+    $startDate = Carbon::parse($investment->start_date);
 
-        WithdrawalRequest::create([
-            'select_investor_id' => $investment->select_investor_id,
-            'investment_id'      => $investment->id,
-            'amount'             => $request->amount,
-            'type'               => $request->type,
-            'status'             => 'pending',
-            'processing_hours'   => $processing_hours,
-            'requested_at'       => now(),
-            'approved_at'        => null,
-            'notes'              => $request->notes,
-            'remarks'            => null,
-            'created_by_id'      => auth()->id(),
-        ]);
+    $plan = $investment->select_plan;
+    $lockinDays = $plan->lockin_days ? intval($plan->lockin_days) : 0;
+
+    if (!empty($investment->lockin_end_date)) {
+        $endDate = Carbon::parse($investment->lockin_end_date);
+
+        if ($today->lt($endDate)) {
+            $diff = $today->diffInDays($endDate);
+            if ($diff < 1) $diff = 1;
+
+            return response()->json([
+                'status'  => false,
+                'message' => "You can withdraw after {$diff} days.",
+            ], 422);
+        }
+    }
+
+    $daysPassed = $startDate->diffInDays($today);
+
+    if ($daysPassed < $lockinDays) {
+        $remaining = $lockinDays - $daysPassed;
+        if ($remaining < 1) $remaining = 1;
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Withdrawal request submitted successfully.'
-        ]);
+            'status'  => false,
+            'message' => "You can withdraw after {$remaining} more days (plan lock).",
+        ], 422);
     }
+
+    $processing_hours = $request->type === 'interest' ? 48 : 336;
+
+    WithdrawalRequest::create([
+        'select_investor_id' => $investment->select_investor_id,
+        'investment_id'      => $investment->id,
+        'amount'             => $request->amount,
+        'type'               => $request->type,
+        'status'             => 'pending',
+        'processing_hours'   => $processing_hours,
+        'requested_at'       => now(),
+        'approved_at'        => null,
+        'notes'              => $request->notes,
+        'remarks'            => null,
+        'created_by_id'      => auth()->id(),
+    ]);
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'Withdrawal request submitted successfully.'
+    ]);
+}
+
+
 }

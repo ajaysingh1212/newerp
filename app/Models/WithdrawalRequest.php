@@ -51,6 +51,7 @@ class WithdrawalRequest extends Model implements HasMedia
         'notes',
         'remarks',
         'created_by_id',
+       
     ];
 
     protected function serializeDate(DateTimeInterface $date)

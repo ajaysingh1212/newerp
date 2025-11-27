@@ -263,4 +263,11 @@ class Registration extends Model implements HasMedia
     {
         return $this->hasMany(Transaction::class, 'investment_id', 'id');
     }
+// In Registration model
+public function user() {
+    return $this->belongsTo(\App\Models\User::class, 'investor_id', 'id');
+}
+
+
+
 }

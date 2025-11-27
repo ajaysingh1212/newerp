@@ -174,13 +174,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                         <div class="p-4 rounded-lg">
                             <label for="lockin_end_date" class="block text-sm font-semibold text-gray-700 mb-1">{{ trans('cruds.investment.fields.lockin_end_date') }}</label>
-                            <input type="text" name="lockin_end_date" id="lockin_end_date" value="{{ old('lockin_end_date', $investment->lockin_end_date ? \Carbon\Carbon::parse($investment->lockin_end_date)->format('d-m-Y') : '') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
+                            <input type="date" name="lockin_end_date" id="lockin_end_date" value="{{ old('lockin_end_date', $investment->lockin_end_date ? \Carbon\Carbon::parse($investment->lockin_end_date)->format('d-m-Y') : '') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
                             @error('lockin_end_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="p-4 rounded-lg">
                             <label for="next_payout_date" class="block text-sm font-semibold text-gray-700 mb-1">{{ trans('cruds.investment.fields.next_payout_date') }}</label>
-                            <input type="text" name="next_payout_date" id="next_payout_date" value="{{ old('next_payout_date', $investment->next_payout_date ? \Carbon\Carbon::parse($investment->next_payout_date)->format('d-m-Y') : '') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
+                            <input type="date" name="next_payout_date" id="next_payout_date" value="{{ old('next_payout_date', $investment->next_payout_date ? \Carbon\Carbon::parse($investment->next_payout_date)->format('d-m-Y') : '') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
                             @error('next_payout_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
 

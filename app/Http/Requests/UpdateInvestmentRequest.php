@@ -41,11 +41,11 @@ class UpdateInvestmentRequest extends FormRequest
                 'date_format:' . config('panel.date_format'),
             ],
             'lockin_end_date' => [
-                'date_format:' . config('panel.date_format'),
+                
                 'nullable',
             ],
             'next_payout_date' => [
-                'date_format:' . config('panel.date_format'),
+                
                 'nullable',
             ],
         ];
