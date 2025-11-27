@@ -22,13 +22,27 @@ class WithdrawalRequestsController extends Controller
     use MediaUploadingTrait, CsvImportTrait;
 
     /* -------------------------------------------------------------
-        SHOW LIST
+        SHOW LIST — ROLE BASED
     ------------------------------------------------------------- */
     public function index()
     {
         abort_if(Gate::denies('withdrawal_request_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $withdrawalRequests = WithdrawalRequest::with(['select_investor', 'investment', 'created_by'])->latest()->get();
+        $user = auth()->user();
+        $isAdmin = $user->roles->contains('title', 'Admin');
+
+        if ($isAdmin) {
+            // Admin → all data
+            $withdrawalRequests = WithdrawalRequest::with(['select_investor', 'investment', 'created_by'])
+                ->latest()
+                ->get();
+        } else {
+            // Normal user → only own data
+            $withdrawalRequests = WithdrawalRequest::with(['select_investor', 'investment', 'created_by'])
+                ->where('created_by_id', $user->id)
+                ->latest()
+                ->get();
+        }
 
         return view('admin.withdrawalRequests.index', compact('withdrawalRequests'));
     }
@@ -47,14 +61,23 @@ class WithdrawalRequestsController extends Controller
     }
 
     /* -------------------------------------------------------------
-        STORE FROM ADMIN PANEL
+        STORE (ADMIN PANEL) — ROLE BASED
     ------------------------------------------------------------- */
     public function store(StoreWithdrawalRequestRequest $request)
     {
         $investment = Investment::findOrFail($request->investment_id);
 
-        // Processing hours
         $processing_hours = $request->type === 'interest' ? 48 : 336;
+
+        $user = auth()->user();
+        $isAdmin = $user->roles->contains('title', 'Admin');
+
+        // created_by_id logic
+        if ($isAdmin) {
+            $createdBy = $investment->select_investor_id; // Admin → investor id
+        } else {
+            $createdBy = $user->id;                       // Normal user → own id
+        }
 
         $withdrawalRequest = WithdrawalRequest::create([
             'select_investor_id' => $investment->select_investor_id,
@@ -67,10 +90,10 @@ class WithdrawalRequestsController extends Controller
             'approved_at'        => null,
             'notes'              => $request->notes,
             'remarks'            => null,
-            'created_by_id'      => auth()->id(),
+            'created_by_id'      => $createdBy,
         ]);
 
-        // Handle CKEditor media
+        // CKEditor image handling
         if ($media = $request->input('ck-media', false)) {
             Media::whereIn('id', $media)->update(['model_id' => $withdrawalRequest->id]);
         }
@@ -80,7 +103,7 @@ class WithdrawalRequestsController extends Controller
     }
 
     /* -------------------------------------------------------------
-        EDIT FORM
+        EDIT
     ------------------------------------------------------------- */
     public function edit(WithdrawalRequest $withdrawalRequest)
     {
@@ -105,9 +128,8 @@ class WithdrawalRequestsController extends Controller
             ->with('success', 'Withdrawal Request Updated Successfully.');
     }
 
-
     /* -------------------------------------------------------------
-        SHOW PAGE
+        SHOW
     ------------------------------------------------------------- */
     public function show(WithdrawalRequest $withdrawalRequest)
     {
@@ -119,7 +141,7 @@ class WithdrawalRequestsController extends Controller
     }
 
     /* -------------------------------------------------------------
-        DELETE SINGLE
+        DELETE
     ------------------------------------------------------------- */
     public function destroy(WithdrawalRequest $withdrawalRequest)
     {
@@ -145,7 +167,7 @@ class WithdrawalRequestsController extends Controller
     }
 
     /* -------------------------------------------------------------
-        CKEDITOR MEDIA UPLOAD
+        CKEDITOR IMAGE UPLOAD
     ------------------------------------------------------------- */
     public function storeCKEditorImages(Request $request)
     {
@@ -161,72 +183,79 @@ class WithdrawalRequestsController extends Controller
     }
 
     /* -------------------------------------------------------------
-         AJAX STORE FOR FRONTEND (USED IN INVESTMENTS DETAILS PAGE)
+        AJAX STORE (FRONTEND) — ROLE BASED
     ------------------------------------------------------------- */
-public function storeAjax(Request $request)
-{
-    $request->validate([
-        'investment_id' => 'required|integer',
-        'amount'        => 'required|numeric|min:1',
-        'type'          => 'required|string',
-        'notes'         => 'nullable|string',
-    ]);
+    public function storeAjax(Request $request)
+    {
+        $request->validate([
+            'investment_id' => 'required|integer',
+            'amount'        => 'required|numeric|min:1',
+            'type'          => 'required|string',
+            'notes'         => 'nullable|string',
+        ]);
 
-    $investment = Investment::with('select_plan')->findOrFail($request->investment_id);
+        $investment = Investment::with('select_plan')->findOrFail($request->investment_id);
 
-    $today = Carbon::today();
-    $startDate = Carbon::parse($investment->start_date);
+        $today = Carbon::today();
+        $startDate = Carbon::parse($investment->start_date);
 
-    $plan = $investment->select_plan;
-    $lockinDays = $plan->lockin_days ? intval($plan->lockin_days) : 0;
+        $plan = $investment->select_plan;
+        $lockinDays = $plan->lockin_days ? intval($plan->lockin_days) : 0;
 
-    if (!empty($investment->lockin_end_date)) {
-        $endDate = Carbon::parse($investment->lockin_end_date);
+        // Lock-in date validation
+        if (!empty($investment->lockin_end_date)) {
+            $endDate = Carbon::parse($investment->lockin_end_date);
 
-        if ($today->lt($endDate)) {
-            $diff = $today->diffInDays($endDate);
-            if ($diff < 1) $diff = 1;
+            if ($today->lt($endDate)) {
+                $diff = max(1, $today->diffInDays($endDate));
+
+                return response()->json([
+                    'status'  => false,
+                    'message' => "You can withdraw after {$diff} days.",
+                ], 422);
+            }
+        }
+
+        $daysPassed = $startDate->diffInDays($today);
+
+        if ($daysPassed < $lockinDays) {
+            $remaining = max(1, $lockinDays - $daysPassed);
 
             return response()->json([
                 'status'  => false,
-                'message' => "You can withdraw after {$diff} days.",
+                'message' => "You can withdraw after {$remaining} more days (plan lock).",
             ], 422);
         }
-    }
 
-    $daysPassed = $startDate->diffInDays($today);
+        $processing_hours = $request->type === 'interest' ? 48 : 336;
 
-    if ($daysPassed < $lockinDays) {
-        $remaining = $lockinDays - $daysPassed;
-        if ($remaining < 1) $remaining = 1;
+        $user = auth()->user();
+        $isAdmin = $user->roles->contains('title', 'Admin');
+
+        if ($isAdmin) {
+            $createdBy = $investment->select_investor_id;
+        } else {
+            $createdBy = $user->id;
+        }
+
+        WithdrawalRequest::create([
+            'select_investor_id' => $investment->select_investor_id,
+            'investment_id'      => $investment->id,
+            'amount'             => $request->amount,
+            'type'               => $request->type,
+            'status'             => 'pending',
+            'processing_hours'   => $processing_hours,
+            'requested_at'       => now(),
+            'approved_at'        => null,
+            'notes'              => $request->notes,
+            'remarks'            => null,
+            'created_by_id'      => $createdBy,
+        ]);
 
         return response()->json([
-            'status'  => false,
-            'message' => "You can withdraw after {$remaining} more days (plan lock).",
-        ], 422);
+            'status'  => true,
+            'message' => 'Withdrawal request submitted successfully.'
+        ]);
     }
-
-    $processing_hours = $request->type === 'interest' ? 48 : 336;
-
-    WithdrawalRequest::create([
-        'select_investor_id' => $investment->select_investor_id,
-        'investment_id'      => $investment->id,
-        'amount'             => $request->amount,
-        'type'               => $request->type,
-        'status'             => 'pending',
-        'processing_hours'   => $processing_hours,
-        'requested_at'       => now(),
-        'approved_at'        => null,
-        'notes'              => $request->notes,
-        'remarks'            => null,
-        'created_by_id'      => auth()->id(),
-    ]);
-
-    return response()->json([
-        'status'  => true,
-        'message' => 'Withdrawal request submitted successfully.'
-    ]);
-}
-
 
 }

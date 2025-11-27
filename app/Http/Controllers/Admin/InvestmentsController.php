@@ -20,14 +20,49 @@ class InvestmentsController extends Controller
 {
     use CsvImportTrait;
 
-    public function index()
-    {
-        abort_if(Gate::denies('investment_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+public function index()
+{
+    abort_if(Gate::denies('investment_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $investments = Investment::with(['select_investor', 'select_plan', 'created_by'])->get();
+    $user = Auth::user();
+    $role = $user->roles->first()->title ?? null;
+
+    // 🟢 If Admin → Show all investments
+    if ($role === 'Admin') {
+        $investments = Investment::with(['select_investor', 'select_plan', 'created_by'])
+            ->orderBy('id', 'DESC')
+            ->get();
 
         return view('admin.investments.index', compact('investments'));
     }
+
+    // 🔵 For NON-ADMIN USERS → show only THEIR investments
+    $registration = \App\Models\Registration::where('investor_id', $user->id)->first();
+
+    // ❗ User has not completed registration
+    if (!$registration) {
+        return view('admin.investments.index', [
+            'investments' => [],
+            'message' => 'आपने अभी तक कोई registration नहीं किया है।'
+        ]);
+    }
+
+    // 🔵 Fetch only logged-in user's investments
+    $investments = Investment::with(['select_investor', 'select_plan', 'created_by'])
+        ->where('select_investor_id', $registration->id)
+        ->orderBy('id', 'DESC')
+        ->get();
+
+    if ($investments->count() === 0) {
+        return view('admin.investments.index', [
+            'investments' => [],
+            'message' => 'आपने अभी तक कोई investment नहीं किया है।'
+        ]);
+    }
+
+    return view('admin.investments.index', compact('investments'));
+}
+
 
     public function create()
     {
@@ -120,68 +155,84 @@ class InvestmentsController extends Controller
     }
 
     public function store(StoreInvestmentRequest $request)
-    {
-        abort_if(Gate::denies('investment_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+{
+    abort_if(Gate::denies('investment_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $data = $request->all();
+    $data = $request->all();
 
-        // ----------- STATUS ALWAYS PENDING -----------
-        $data['status'] = 'pending';
+    // ----------- STATUS ALWAYS PENDING -----------
+    $data['status'] = 'pending';
 
-        // ----------- INVESTOR VALIDATION -----------
-        $investorId = $request->input('select_investor_id');
-        if (!$investorId) {
-            return back()->withErrors(['select_investor_id' => 'Investor is required'])->withInput();
-        }
-
-        $registration = Registration::find($investorId);
-        if (!$registration) {
-            return back()->withErrors(['select_investor_id' => 'Selected investor not found'])->withInput();
-        }
-
-        // ----------- INVESTOR VERIFICATION CHECKS -----------
-        $kycOk     = strtolower($registration->kyc_status ?? '') === 'verified';
-        $accountOk = strtolower($registration->account_status ?? '') === 'active';
-        $emailOk   = strtolower($registration->is_email_verified ?? '') === 'yes';
-        $phoneOk   = strtolower($registration->is_phone_verified ?? '') === 'yes';
-
-        if (!($kycOk && $accountOk && $emailOk && $phoneOk)) {
-            return back()->withErrors([
-                'verification' => 
-                    'Investor account does not meet required verifications. Required: 
-                    KYC = Verified, Account = Active, Email Verified = Yes, Phone Verified = Yes.'
-            ])->withInput();
-        }
-
-        // ----------- PLAN VALIDATION -----------
-        if (!$request->input('select_plan_id')) {
-            return back()->withErrors(['select_plan_id' => 'Plan is required'])->withInput();
-        }
-
-        // ----------- DATE CONVERSIONS (d-m-Y → Y-m-d) -----------
-        if (!empty($data['start_date'])) {
-            try {
-                $data['start_date'] = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('Y-m-d');
-            } catch (\Exception $e) {}
-        }
-
-        if (!empty($data['lockin_end_date'])) {
-            try {
-                $data['lockin_end_date'] = Carbon::createFromFormat('d-m-Y', $data['lockin_end_date'])->format('Y-m-d');
-            } catch (\Exception $e) {}
-        }
-
-        if (!empty($data['next_payout_date'])) {
-            try {
-                $data['next_payout_date'] = Carbon::createFromFormat('d-m-Y', $data['next_payout_date'])->format('Y-m-d');
-            } catch (\Exception $e) {}
-        }
-
-        // ----------- FINAL CREATE -----------
-        $investment = Investment::create($data);
-
-        return redirect()->route('admin.investments.index')->with('success', 'Investment created successfully.');
+    // ----------- INVESTOR VALIDATION -----------
+    $investorId = $request->input('select_investor_id');
+    if (!$investorId) {
+        return back()->withErrors(['select_investor_id' => 'Investor is required'])->withInput();
     }
+
+    $registration = Registration::find($investorId);
+    if (!$registration) {
+        return back()->withErrors(['select_investor_id' => 'Selected investor not found'])->withInput();
+    }
+
+    // ----------- INVESTOR VERIFICATION CHECKS -----------
+    $kycOk     = strtolower($registration->kyc_status ?? '') === 'verified';
+    $accountOk = strtolower($registration->account_status ?? '') === 'active';
+    $emailOk   = strtolower($registration->is_email_verified ?? '') === 'yes';
+    $phoneOk   = strtolower($registration->is_phone_verified ?? '') === 'yes';
+
+    if (!($kycOk && $accountOk && $emailOk && $phoneOk)) {
+        return back()->withErrors([
+            'verification' =>
+                'Investor account does not meet required verifications. Required: 
+                KYC = Verified, Account = Active, Email Verified = Yes, Phone Verified = Yes.'
+        ])->withInput();
+    }
+
+    // ----------- PLAN VALIDATION -----------
+    if (!$request->input('select_plan_id')) {
+        return back()->withErrors(['select_plan_id' => 'Plan is required'])->withInput();
+    }
+
+    // ----------- DATE CONVERSIONS -----------
+    if (!empty($data['start_date'])) {
+        try {
+            $data['start_date'] = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('Y-m-d');
+        } catch (\Exception $e) {}
+    }
+
+    if (!empty($data['lockin_end_date'])) {
+        try {
+            $data['lockin_end_date'] = Carbon::createFromFormat('d-m-Y', $data['lockin_end_date'])->format('Y-m-d');
+        } catch (\Exception $e) {}
+    }
+
+    if (!empty($data['next_payout_date'])) {
+        try {
+            $data['next_payout_date'] = Carbon::createFromFormat('d-m-Y', $data['next_payout_date'])->format('Y-m-d');
+        } catch (\Exception $e) {}
+    }
+
+    // ===================================================================
+    // CREATE created_by_id LOGIC
+    // ===================================================================
+
+    $user = Auth::user();
+    $isAdmin = $user->roles->contains('title', 'Admin');
+
+    if ($isAdmin) {
+        // Admin → created_by_id = selected investor
+        $data['created_by_id'] = $investorId;
+    } else {
+        // Normal user → created_by_id = logged-in user
+        $data['created_by_id'] = $user->id;
+    }
+
+    // ----------- FINAL CREATE -----------
+    $investment = Investment::create($data);
+
+    return redirect()->route('admin.investments.index')->with('success', 'Investment created successfully.');
+}
+
 
 
     public function edit(Investment $investment)

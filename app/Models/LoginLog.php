@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LoginLog extends Model
 {
-    use SoftDeletes, MultiTenantModelTrait, Auditable, HasFactory;
+    use SoftDeletes,  Auditable, HasFactory;
 
     public $table = 'login_logs';
 

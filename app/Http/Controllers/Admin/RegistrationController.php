@@ -12,6 +12,7 @@ use App\Models\Registration;
 use App\Models\User;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,14 +20,27 @@ class RegistrationController extends Controller
 {
     use MediaUploadingTrait, CsvImportTrait;
 
-    public function index()
-    {
-        abort_if(Gate::denies('registration_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+public function index()
+{
+    abort_if(Gate::denies('registration_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
+    $user = Auth::user();  // logged in user
+
+    // Admin role check
+    $isAdmin = $user->roles->contains('title', 'Admin');
+
+    if ($isAdmin) {
+        // Admin → सभी data देखेगा
         $registrations = Registration::with(['investor','created_by','media'])->get();
-
-        return view('admin.registrations.index', compact('registrations'));
+    } else {
+        // Normal user → सिर्फ अपना data देखेगा
+        $registrations = Registration::with(['investor','created_by','media'])
+            ->where('created_by_id', $user->id)
+            ->get();
     }
+
+    return view('admin.registrations.index', compact('registrations'));
+}
 
     public function create()
     {
@@ -40,10 +54,32 @@ class RegistrationController extends Controller
     // ============================================================
     // STORE
     // ============================================================
+
+
 public function store(StoreRegistrationRequest $request)
 {
+    // determine created_by_id:
+    $user = Auth::user();
+
+    // Check admin role — adjust this check if your role name is different (e.g. 'admin' lowercase)
+    $isAdmin = $user->roles->contains('title', 'Admin');
+
+    if ($isAdmin) {
+        // For admin, use the selected investor id from request
+        // assuming your form field is named 'investor_id'
+        $createdById = $request->input('investor_id') ?? $user->id; 
+        // fallback to admin id if investor_id not present
+    } else {
+        // For normal users, use the logged-in user's id
+        $createdById = $user->id;
+    }
+
+    // Merge created_by_id into data to be saved
+    $data = $request->all();
+    $data['created_by_id'] = $createdById;
+
     // 1. Create Registration
-    $registration = Registration::create($request->all());
+    $registration = Registration::create($data);
 
     /* ---------------------------------------------
      *  PAN - MULTIPLE FILES
@@ -104,6 +140,8 @@ public function store(StoreRegistrationRequest $request)
     return redirect()->route('admin.registrations.index')
         ->with('success', 'Registration Created with Media!');
 }
+
+
 
     // ============================================================
     // EDIT

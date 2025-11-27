@@ -66,14 +66,44 @@ public function downloadPdf($id)
 
 
 
-    public function index()
-    {
+public function index()
+{
+    $user = Auth::user();
+    $role = $user->roles->first()->title ?? null;
+
+    // 🔥 Admin → sab dekh sakta hai
+    if ($role === 'Admin') {
         $investments = Investment::with('select_investor')
             ->orderBy('id', 'DESC')
             ->get();
+    } 
+    else {
+        // 🔥 Non-Admin → sirf apni registrations → apne investments
+        $registration = \App\Models\Registration::where('investor_id', $user->id)->first();
 
-        return view('admin.investmentsDetailes.index', compact('investments'));
+        if (!$registration) {
+            return view('admin.investmentsDetailes.index', [
+                'investments' => [],
+                'message' => 'आपने अब तक कोई Registration या Investment नहीं किया है।'
+            ]);
+        }
+
+        $investments = Investment::with('select_investor')
+            ->where('select_investor_id', $registration->id)
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        if ($investments->count() == 0) {
+            return view('admin.investmentsDetailes.index', [
+                'investments' => [],
+                'message' => 'आपने अब तक कोई Investment नहीं किया है।'
+            ]);
+        }
     }
+
+    return view('admin.investmentsDetailes.index', compact('investments'));
+}
+
 
     public function fetchDetails($id)
     {

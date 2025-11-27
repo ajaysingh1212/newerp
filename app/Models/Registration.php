@@ -3,9 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Auditable;
-use App\Traits\MultiTenantModelTrait;
 use Carbon\Carbon;
-use App\Traits\AuditLog;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +14,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Registration extends Model implements HasMedia
 {
-   use SoftDeletes, MultiTenantModelTrait, InteractsWithMedia, Auditable, HasFactory;
+    use SoftDeletes, InteractsWithMedia, Auditable, HasFactory;
 
     protected $table = 'registrations';
 
@@ -244,30 +242,36 @@ class Registration extends Model implements HasMedia
         return $this->belongsTo(User::class, 'created_by_id');
     }
 
+    /**
+     * Investments where this registration was selected as the investor (investment.select_investor_id)
+     */
     public function selectInvestorInvestments()
     {
-        return $this->hasMany(Investment::class, 'investor_id', 'id');
+        return $this->hasMany(\App\Models\Investment::class, 'select_investor_id', 'id');
     }
 
     public function investorMonthlyPayoutRecords()
     {
-        return $this->hasMany(MonthlyPayoutRecord::class, 'investor_id', 'id');
+        return $this->hasMany(\App\Models\MonthlyPayoutRecord::class, 'investor_id', 'id');
     }
 
     public function selectInvestorWithdrawalRequests()
     {
-        return $this->hasMany(WithdrawalRequest::class, 'investor_id', 'id');
+        return $this->hasMany(\App\Models\WithdrawalRequest::class, 'investor_id', 'id');
     }
 
+    /**
+     * Transactions related to investments for this registration (if your Transaction model uses investment_id)
+     * Adjust the foreign key if your transactions table stores investor id instead.
+     */
     public function investmentTransactions()
     {
-        return $this->hasMany(Transaction::class, 'investment_id', 'id');
+        return $this->hasMany(\App\Models\Transaction::class, 'investment_id', 'id');
     }
-// In Registration model
-public function user() {
-    return $this->belongsTo(\App\Models\User::class, 'investor_id', 'id');
-}
 
-
-
+    // Helper to get the linked User model
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'investor_id', 'id');
+    }
 }

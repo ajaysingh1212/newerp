@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Traits\Auditable;
-use App\Traits\MultiTenantModelTrait;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,9 +11,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Investment extends Model
 {
-    use SoftDeletes, MultiTenantModelTrait, Auditable, HasFactory;
+    use SoftDeletes, Auditable, HasFactory;
 
-    public $table = 'investments';
+    protected $table = 'investments';
 
     protected $dates = [
         'start_date',
@@ -44,10 +43,8 @@ class Investment extends Model
         'lockin_end_date',
         'next_payout_date',
         'status',
-        'created_at',
-        'updated_at',
-        'deleted_at',
         'created_by_id',
+        'deleted_at',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
@@ -59,34 +56,40 @@ class Investment extends Model
     | RELATIONSHIPS
     ----------------------------------------------*/
 
+    // Monthly interest payouts (records)
     public function investmentMonthlyPayoutRecords()
     {
         return $this->hasMany(MonthlyPayoutRecord::class, 'investment_id', 'id');
     }
 
+    // Withdrawal requests for this investment
     public function investmentWithdrawalRequests()
     {
         return $this->hasMany(WithdrawalRequest::class, 'investment_id', 'id');
     }
 
+    // Investor Transactions (depends on your table structure)
     public function investorTransactions()
     {
-        return $this->hasMany(Transaction::class, 'investor_id', 'id');
+        return $this->hasMany(Transaction::class, 'investment_id', 'id');
     }
 
+    // Selected Investor (registration)
     public function select_investor()
     {
-        return $this->belongsTo(Registration::class, 'select_investor_id');
+        return $this->belongsTo(Registration::class, 'select_investor_id', 'id');
     }
 
+    // Selected Plan
     public function select_plan()
     {
-        return $this->belongsTo(Plan::class, 'select_plan_id');
+        return $this->belongsTo(Plan::class, 'select_plan_id', 'id');
     }
 
+    // Created By
     public function created_by()
     {
-        return $this->belongsTo(User::class, 'created_by_id');
+        return $this->belongsTo(User::class, 'created_by_id', 'id');
     }
 
     /*---------------------------------------------
@@ -102,20 +105,20 @@ class Investment extends Model
         $value = trim($value);
 
         try {
-            // Replace / with - to make parsing easier
             return Carbon::parse(str_replace('/', '-', $value))->format('Y-m-d');
         } catch (\Exception $e) {
             try {
                 return Carbon::parse($value)->format('Y-m-d');
             } catch (\Exception $e2) {
-                return null; // Final fallback
+                return null;
             }
         }
     }
 
     private function flexibleDateGetter($value)
     {
-        return $value ? Carbon::parse($value)->format(config('panel.date_format')) : null;
+        return $value ? Carbon::parse($value)
+            ->format(config('panel.date_format')) : null;
     }
 
     /* ---- start_date ---- */
@@ -150,9 +153,4 @@ class Investment extends Model
     {
         return $this->flexibleDateGetter($value);
     }
-    public function investment()
-{
-    return $this->belongsTo(Investment::class, 'investment_id', 'id');
-}
-
 }

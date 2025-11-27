@@ -17,15 +17,35 @@ class LoginLogsController extends Controller
 {
     use CsvImportTrait;
 
+    /* -------------------------------------------------------------
+        INDEX (ROLE BASED LISTING)
+    ------------------------------------------------------------- */
     public function index()
     {
         abort_if(Gate::denies('login_log_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $loginLogs = LoginLog::with(['use', 'created_by'])->get();
+        $user = auth()->user();
+        $isAdmin = $user->roles->contains('title', 'Admin');
+
+        if ($isAdmin) {
+            // Admin sees all logs
+            $loginLogs = LoginLog::with(['use', 'created_by'])
+                ->latest()
+                ->get();
+        } else {
+            // Normal user sees only his own logs
+            $loginLogs = LoginLog::with(['use', 'created_by'])
+                ->where('created_by_id', $user->id)
+                ->latest()
+                ->get();
+        }
 
         return view('admin.loginLogs.index', compact('loginLogs'));
     }
 
+    /* -------------------------------------------------------------
+        CREATE PAGE
+    ------------------------------------------------------------- */
     public function create()
     {
         abort_if(Gate::denies('login_log_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -35,13 +55,22 @@ class LoginLogsController extends Controller
         return view('admin.loginLogs.create', compact('uses'));
     }
 
+    /* -------------------------------------------------------------
+        STORE (AUTO SET created_by_id)
+    ------------------------------------------------------------- */
     public function store(StoreLoginLogRequest $request)
     {
-        $loginLog = LoginLog::create($request->all());
+        $data = $request->all();
+        $data['created_by_id'] = auth()->id(); // Auto set logged-in user ID
+
+        LoginLog::create($data);
 
         return redirect()->route('admin.login-logs.index');
     }
 
+    /* -------------------------------------------------------------
+        EDIT
+    ------------------------------------------------------------- */
     public function edit(LoginLog $loginLog)
     {
         abort_if(Gate::denies('login_log_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -53,6 +82,9 @@ class LoginLogsController extends Controller
         return view('admin.loginLogs.edit', compact('loginLog', 'uses'));
     }
 
+    /* -------------------------------------------------------------
+        UPDATE
+    ------------------------------------------------------------- */
     public function update(UpdateLoginLogRequest $request, LoginLog $loginLog)
     {
         $loginLog->update($request->all());
@@ -60,6 +92,9 @@ class LoginLogsController extends Controller
         return redirect()->route('admin.login-logs.index');
     }
 
+    /* -------------------------------------------------------------
+        SHOW
+    ------------------------------------------------------------- */
     public function show(LoginLog $loginLog)
     {
         abort_if(Gate::denies('login_log_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -69,6 +104,9 @@ class LoginLogsController extends Controller
         return view('admin.loginLogs.show', compact('loginLog'));
     }
 
+    /* -------------------------------------------------------------
+        DELETE
+    ------------------------------------------------------------- */
     public function destroy(LoginLog $loginLog)
     {
         abort_if(Gate::denies('login_log_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -78,6 +116,9 @@ class LoginLogsController extends Controller
         return back();
     }
 
+    /* -------------------------------------------------------------
+        MASS DELETE
+    ------------------------------------------------------------- */
     public function massDestroy(MassDestroyLoginLogRequest $request)
     {
         $loginLogs = LoginLog::find(request('ids'));

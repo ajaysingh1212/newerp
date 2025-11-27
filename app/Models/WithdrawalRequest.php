@@ -15,7 +15,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class WithdrawalRequest extends Model implements HasMedia
 {
-    use SoftDeletes, MultiTenantModelTrait, InteractsWithMedia, Auditable, HasFactory;
+    use SoftDeletes,InteractsWithMedia, Auditable, HasFactory;
 
     public $table = 'withdrawal_requests';
 
