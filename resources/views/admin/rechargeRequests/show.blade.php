@@ -94,9 +94,9 @@
 
             <table class="text-xs w-full">
                 <tr><td class="py-1 font-medium">Vehicle Number</td><td>{{ $recharge->vehicle_number }}</td></tr>
-                <tr><td class="py-1 font-medium">Title</td><td>{{ $recharge->title }}</td></tr>
-                <tr><td class="py-1 font-medium">Description</td><td>{{ $recharge->description }}</td></tr>
-                <tr><td class="py-1 font-medium">Transaction ID</td><td>{{ $recharge->razorpay_order_id ?? 'N/A' }}</td></tr>
+                <tr><td class="py-1 font-medium">Title</td><td>{{ $recharge->select_recharge->type }}</td></tr>
+                <tr><td class="py-1 font-medium">Validity</td><td>{{ $recharge->select_recharge->plan_name   }}</td></tr>
+                <tr><td class="py-1 font-medium">Transaction ID</td><td>{{ $recharge->razorpay_payment_id ?? 'N/A' }}</td></tr>
                 <tr><td class="py-1 font-medium">Method</td><td>{{ $recharge->payment_method }}</td></tr>
                 <tr><td class="py-1 font-medium">Amount</td><td>₹{{ number_format($recharge->payment_amount,2) }}</td></tr>
                 <tr><td class="py-1 font-medium">Payment Date</td>
