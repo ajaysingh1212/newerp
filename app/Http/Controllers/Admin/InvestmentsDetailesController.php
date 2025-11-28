@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DailyInterest;
 use App\Models\Investment;
+use App\Models\Registration;
 use App\Models\WithdrawalRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -67,45 +68,64 @@ public function downloadPdf($id)
 
 
 public function index()
-{
-    $user = Auth::user();
-    $role = $user->roles->first()->title ?? null;
+    {
+        $user = Auth::user();
+        $role = $user->roles->first()->title ?? null;
 
-    // 🔥 Admin → sab dekh sakta hai
-    if ($role === 'Admin') {
-        $investments = Investment::with('select_investor')
-            ->orderBy('id', 'DESC')
-            ->get();
-    } 
-    else {
-        // 🔥 Non-Admin → sirf apni registrations → apne investments
-        $registration = \App\Models\Registration::where('investor_id', $user->id)->first();
+        // -------------------------------------
+        // ADMIN → Show ALL investments
+        // -------------------------------------
+        if ($role === 'Admin') {
+
+            $investments = Investment::with('select_investor')
+                ->orderBy('id', 'DESC')
+                ->get();
+
+            return view('admin.investmentsDetailes.index', [
+                'investments' => $investments,
+                'isAdmin'     => true,
+                'message'     => null,
+            ]);
+        }
+
+        // -------------------------------------
+        // NORMAL USER → Only own investments
+        // -------------------------------------
+
+        // Get user registration record
+        $registration = Registration::where('investor_id', $user->id)->first();
 
         if (!$registration) {
             return view('admin.investmentsDetailes.index', [
                 'investments' => [],
-                'message' => 'आपने अब तक कोई Registration या Investment नहीं किया है।'
+                'isAdmin'     => false,
+                'message'     => 'You have not completed your registration yet.',
             ]);
         }
 
+        // Get investments of registered user
         $investments = Investment::with('select_investor')
             ->where('select_investor_id', $registration->id)
             ->orderBy('id', 'DESC')
             ->get();
 
-        if ($investments->count() == 0) {
+        if ($investments->isEmpty()) {
             return view('admin.investmentsDetailes.index', [
                 'investments' => [],
-                'message' => 'आपने अब तक कोई Investment नहीं किया है।'
+                'isAdmin'     => false,
+                'message'     => 'You have not made any investments yet.',
             ]);
         }
+
+        return view('admin.investmentsDetailes.index', [
+            'investments' => $investments,
+            'isAdmin'     => false,
+            'message'     => null,
+        ]);
     }
 
-    return view('admin.investmentsDetailes.index', compact('investments'));
-}
 
-
-    public function fetchDetails($id)
+public function fetchDetails($id)
     {
         $investment = Investment::with([
             'select_investor.media',
@@ -169,8 +189,6 @@ public function index()
             'principal_from_totaltype' => round($principal_from_totaltype, 2),
             'final_interest'           => round($final_interest, 2),
             'final_principal'          => round($final_principal, 2),
-
-            /* 🔥 NEW: MEDIA ATTACHMENT RETURNED */
             'approved_withdrawals'     => $approved->map(function ($w) {
                 return [
                     'id'          => $w->id,
@@ -180,8 +198,6 @@ public function index()
                     'approved_at' => $w->approved_at ? Carbon::parse($w->approved_at)->format('d-m-Y H:i') : null,
                     'notes'       => $w->notes,
                     'remarks'     => $w->remarks,
-
-                    // 🔥 Add all media files
                     'media'       => $w->getMedia('withdrawal_attachments')->map(function($m){
                         return [
                             'file_name' => $m->file_name,
@@ -286,4 +302,22 @@ public function index()
             ->orderBy('interest_date', 'ASC')
             ->get(['interest_date', 'daily_interest_amount']);
     }
+    public function pendingReport()
+{
+    // 1. Pending Registrations (KYC Pending)
+    $registrations = \App\Models\Registration::where('account_status', 'Active')->get();
+
+    // 2. Pending Investments
+    $investments = \App\Models\Investment::where('status', 'active')
+        ->with(['select_investor', 'select_plan'])
+        ->get();
+
+    // 3. Pending Withdrawal Requests
+    $withdrawals = \App\Models\WithdrawalRequest::where('status', 'pending')
+        ->with(['select_investor', 'investment'])
+        ->get();
+
+    return view('admin.investmentsDetailes.pending_report', compact('registrations', 'investments', 'withdrawals'));
+}
+
 }

@@ -264,9 +264,9 @@ public function index()
         abort_if(Gate::denies('investment_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $data = $request->all();
-
+        
         // STATUS ALWAYS PENDING EVEN ON UPDATE
-        $data['status'] = 'Pending';
+        $data['status'] = $request->status ?? 'pending';
 
         // DATE CONVERSION d-m-Y → Y-m-d
         if (!empty($data['start_date'])) {

@@ -15,6 +15,7 @@ use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccountDeletionAdminController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
 use App\Http\Controllers\Admin\WithdrawalRequestsController;
+use Maatwebsite\Excel\Excel;
 
 Route::redirect('/', '/login');
 Route::get('/home', function () {
@@ -87,6 +88,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('login-logs/parse-csv-import', 'LoginLogsController@parseCsvImport')->name('login-logs.parseCsvImport');
     Route::post('login-logs/process-csv-import', 'LoginLogsController@processCsvImport')->name('login-logs.processCsvImport');
     Route::resource('login-logs', 'LoginLogsController');
+
+    // pending withdawals
+    Route::get('investment-details/pending-report', [InvestmentsDetailesController::class, 'pendingReport'])->name('pending.report');
+
+    Route::get('investment-details/pending-report/download', function () {
+        return Excel::download(new \App\Exports\PendingReportExport, 'pending-report.xlsx');
+    })->name('pending.report.download');
 
     // Investments Detailes
    

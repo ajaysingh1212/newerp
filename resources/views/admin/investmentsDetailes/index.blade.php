@@ -4,10 +4,11 @@
 @php
     $user = Auth::user();
     $userRole = $user->roles->first()->title ?? null;
+    // $investments, $isAdmin, $message are provided by controller
 @endphp
 
 <style>
-
+/* (same styles as before — kept intact) */
 .badge-status{
     padding:4px 8px;
     border-radius:6px;
@@ -18,7 +19,6 @@
 .badge-approved{ background:#059669; }
 .badge-pending{ background:#eab308; color:#000; }
 .badge-rejected{ background:#dc2626; }
-
 
 .badge{padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600}
 .badge-pending{background:#fbbf24;color:#000}
@@ -47,32 +47,66 @@
 .action-approve { background:#059669; color:#fff; }
 .action-view { background:#0ea5e9; color:#fff; }
 .action-download { background:#ef4444; color:#fff; }
-.small-link { color:#0ea5e9; text-decoration:underline; cursor:pointer; }
+.small-link { color:#0ea5e9; text-decoration:underline; cursor:pointer}
+
+/* Professional message card */
+.no-data-card {
+  max-width: 800px;
+  margin: 40px auto;
+  background: #fff9ed;
+  border-left: 6px solid #f59e0b;
+  padding: 28px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 6px 30px rgba(15, 23, 42, 0.06);
+  color: #92400e;
+  font-weight: 700;
+  font-size: 18px;
+}
 </style>
 
 <div class="max-w-7xl mx-auto py-8">
 
-  <div class="cardBox mb-6">
-    <h2 class="text-2xl font-bold text-indigo-600 mb-4">Investment Details</h2>
+  {{-- Header / Select (Admin only) --}}
+  <div class="cardBox mb-6" id="select-card">
+    <h2 class="text-2xl font-bold text-indigo-600 mb-4"  >Investment Details</h2>
 
-    <label class="text-sm font-semibold mb-2 block">Select Investment</label>
-    <select id="investment_id" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2">
-      <option value="">Select Investment</option>
-      @foreach($investments as $inv)
-        <option value="{{ $inv->id }}">#{{ $inv->id }} — {{ optional($inv->select_investor)->reg }} — ₹{{ $inv->principal_amount }}</option>
-      @endforeach
-    </select>
+    {{-- If admin: show a single dropdown to select investment.
+        If non-admin: this block will be hidden by JS (select not available) --}}
+    @if($isAdmin)
+      <label class="text-sm font-semibold mb-2 block">Select Investment</label>
+      <select id="investment_id" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2">
+        <option value="">Select Investment</option>
+        @foreach($investments as $inv)
+          <option value="{{ $inv->id }}">#{{ $inv->id }} — {{ optional($inv->select_investor)->reg }} — ₹{{ number_format($inv->principal_amount,2) }}</option>
+        @endforeach
+      </select>
+    @else
+      {{-- For non-admin we still render a hidden select so JS can reuse code (but hide it) --}}
+      <select id="investment_id" class="hidden">
+        @foreach($investments as $inv)
+          <option value="{{ $inv->id }}">#{{ $inv->id }}</option>
+        @endforeach
+      </select>
+    @endif
   </div>
 
-  <div class="cardBox mb-6">
-    <h3 class="cardTitle">Daily Interest Chart</h3>
-    <canvas id="dailyInterestChart" height="160"></canvas>
-  </div>
+  {{-- If controller passed a message (no registration / no investments), show a professional message card --}}
+  @if(!empty($message))
+    <div class="no-data-card">
+      {{ $message }}
+    </div>
+  @endif
 
-  <div id="result-area" class="hidden">
+  {{-- Result area: default hidden; shown when investment is loaded --}}
+  <div id="result-area" class="{{ empty($message) ? 'hidden' : 'hidden' }}">
+    {{-- (All the UI blocks remain the same as your existing Blade) --}}
+    <div class="cardBox mb-6">
+      <h3 class="cardTitle">Daily Interest Chart</h3>
+      <canvas id="dailyInterestChart" height="160"></canvas>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-
       <div class="cardBox gradient-card">
         <h3 class="cardTitle">Principal Details</h3>
         <div class="valueBig" id="principal_amount">₹0.00</div>
@@ -109,7 +143,6 @@
         <p class="text-sm">Final Interest Balance: <b id="final_interest_balance">₹0.00</b></p>
         <p class="text-sm">Final Principal Balance: <b id="final_principal_balance">₹0.00</b></p>
       </div>
-
     </div>
 
     <div class="cardBox mt-6">
@@ -148,7 +181,14 @@
     </div>
 
     <div class="cardBox mt-6">
-      <h3 class="cardTitle">Withdrawal Requests</h3>
+      <div style="display: flex;">
+        <div>
+          <h3 class="cardTitle">Withdrawal Requests</h3>
+        </div>
+        <div >
+          <a href="{{ route('admin.pending.report') }}" class="btn btn-outline-success">📑 Complete Pending / Active Report</a></a>
+        </div>
+      </div>
       <table class="table table-striped w-full table-fixed">
         <thead>
           <tr><th>Amount</th><th>Type</th><th>Status</th><th>Requested At</th><th>Action</th></tr>
@@ -168,7 +208,7 @@
             <th>Approved At</th>
             <th>Notes</th>
             <th>Remarks</th>
-            <th>Attachment</th> <!-- NEW -->
+            <th>Attachment</th>
           </tr>
         </thead>
 
@@ -182,10 +222,10 @@
       </a>
     </div>
 
-  </div>
-</div>
+  </div> {{-- end result-area --}}
+</div> {{-- end container --}}
 
-<!-- DETAILS MODAL -->
+{{-- DETAILS MODAL --}}
 <div id="detailsModal" class="modalOverlay" aria-hidden="true">
   <div class="modalPanel">
     <div class="flex justify-between items-center mb-3">
@@ -227,7 +267,7 @@
   </div>
 </div>
 
-<!-- CREATE WITHDRAWAL MODAL -->
+{{-- CREATE WITHDRAWAL MODAL --}}
 <div id="withdrawModal" class="modalOverlay" aria-hidden="true">
   <div class="modalPanel" style="max-width:420px;">
     <h2 class="text-xl font-semibold mb-4">Create Withdrawal Request</h2>
@@ -271,11 +311,9 @@
   </div>
 </div>
 
-<!-- ADMIN APPROVAL MODAL -->
+{{-- ADMIN APPROVAL MODAL (kept same) --}}
 <div id="approveModal" class="modalOverlay" aria-hidden="true">
   <div class="modalPanel" style="max-width:720px;">
-
-    <!-- Header -->
     <div class="flex justify-between items-center mb-4 border-b pb-2">
       <h3 class="text-2xl font-bold text-indigo-700 flex items-center gap-2">
         <i class="fas fa-check-circle text-indigo-600"></i> Approve / Update Withdrawal
@@ -291,10 +329,8 @@
     <form id="approveForm">
       <input type="hidden" id="ap_withdrawal_id" name="withdrawal_id">
 
-      <!-- Form grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <!-- STATUS -->
         <div class="gradient-card p-3 rounded-xl shadow-sm border">
           <label class="text-sm font-semibold text-gray-700">Status</label>
           <select id="ap_status" name="status"
@@ -305,14 +341,12 @@
           </select>
         </div>
 
-        <!-- APPROVED AT -->
         <div class="gradient-card p-3 rounded-xl shadow-sm border">
           <label class="text-sm font-semibold text-gray-700">Approved At</label>
           <input id="ap_approved_at" name="approved_at" type="datetime-local"
                  class="w-full mt-1 rounded-lg p-2 bg-white border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300"/>
         </div>
 
-        <!-- NOTES -->
         <div class="gradient-card md:col-span-2 p-3 rounded-xl shadow-sm border">
           <label class="text-sm font-semibold">Notes</label>
           <textarea id="ap_notes" name="notes"
@@ -320,7 +354,6 @@
                     rows="2"></textarea>
         </div>
 
-        <!-- REMARKS -->
         <div class="gradient-card md:col-span-2 p-3 rounded-xl shadow-sm border">
           <label class="text-sm font-semibold">Remarks</label>
           <textarea id="ap_remarks" name="remarks"
@@ -328,7 +361,6 @@
                     rows="2"></textarea>
         </div>
 
-        <!-- ATTACHMENT UPLOAD -->
         <div class="md:col-span-2">
           <label class="text-sm font-semibold text-gray-700">Attachment (PDF / JPG / PNG)</label>
 
@@ -355,7 +387,6 @@
 
       <hr class="my-4">
 
-      <!-- INVESTOR INFORMATION CARD -->
       <div class="gradient-card p-4 rounded-2xl shadow border">
         <h4 class="text-lg font-bold text-indigo-700 mb-3 flex items-center gap-2">
           <i class="fas fa-user-shield text-indigo-600"></i> Investor / User Details
@@ -364,7 +395,6 @@
         <div id="ap_investor_info" class="space-y-1 text-gray-800 text-sm"></div>
       </div>
 
-      <!-- Footer buttons -->
       <div class="flex justify-end gap-3 mt-5">
         <button type="button" id="ap_cancel"
                 class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg shadow">
@@ -382,13 +412,12 @@
   </div>
 </div>
 
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 /* Globals and endpoints */
 const CSRF = '{{ csrf_token() }}';
-const USER_ROLE = {!! json_encode($userRole) !!}; // e.g. "Admin" or null
+const IS_ADMIN = {!! json_encode($isAdmin) !!};
 const STORE_AJAX_URL = '/admin/withdrawal-requests/store-ajax';
 const FETCH_DETAILS_URL = id => '/admin/investment-details/' + id;
 const FETCH_DAILY_URL = id => '/admin/investment-details/daily-interest/' + id;
@@ -412,13 +441,53 @@ if (el('closeModal')) el('closeModal').addEventListener('click', () => { el('wit
 if (el('closeApprove')) el('closeApprove').addEventListener('click', () => { el('approveModal').style.display = 'none'; });
 if (el('ap_cancel')) el('ap_cancel').addEventListener('click', () => { el('approveModal').style.display = 'none'; });
 
-/* investment selection */
-el('investment_id').addEventListener('change', function() {
-  const id = this.value;
-  if (!id) return;
-  loadInvestment(id);
+/* investments array for JS (useful for auto-selection on non-admin) */
+const INVESTMENTS = {!! json_encode($investments->map(function($i){
+    return ['id'=>$i->id,'reg'=>optional($i->select_investor)->reg,'principal_amount'=>$i->principal_amount];
+})) !!};
+
+/* show/hide select for admin vs user and auto-load if non-admin */
+document.addEventListener('DOMContentLoaded', function() {
+
+  // If message present (no registration / no investments), hide result area and select
+  const serverMessage = {!! json_encode($message ?? null) !!};
+  if (serverMessage) {
+    if (el('select-card')) el('select-card').style.display = 'none';
+    if (el('result-area')) el('result-area').style.display = 'none';
+    // message card already rendered by blade
+    return;
+  }
+
+  // If admin: show select (already rendered). Attach change handler.
+  if (IS_ADMIN) {
+    if (el('investment_id')) {
+      el('investment_id').addEventListener('change', function(){
+        const id = this.value;
+        if (!id) return;
+        loadInvestment(id);
+      });
+    }
+  } else {
+    // Non-admin: hide select card visually (select exists but hidden in blade).
+    if (el('select-card')) el('select-card').style.display = 'none';
+
+    // Auto select first investment (if exists)
+    if (INVESTMENTS && INVESTMENTS.length > 0) {
+      const firstId = INVESTMENTS[0].id;
+      // Add a tiny delay so UI components are ready
+      setTimeout(() => {
+        loadInvestment(firstId);
+      }, 100);
+    } else {
+      // No investments (should normally be handled by $message), but safe-guard
+      if (el('result-area')) el('result-area').style.display = 'none';
+      const noDataHtml = `<div class="no-data-card">You have not made any investments yet.</div>`;
+      document.querySelector('.max-w-7xl')?.insertAdjacentHTML('afterbegin', noDataHtml);
+    }
+  }
 });
 
+/* loadInvestment + render + loadDailyGraph (same logic as your previous code) */
 function loadInvestment(id) {
   fetch(FETCH_DETAILS_URL(id))
     .then(checkFetch)
@@ -435,19 +504,20 @@ function loadInvestment(id) {
     });
 }
 
-/* render UI */
+/* renderData: update DOM with returned payload */
 function renderData(data) {
   const inv = data.investment;
 
-  el('result-area').classList.remove('hidden');
+  if (el('result-area')) el('result-area').classList.remove('hidden');
+
   el('principal_amount').innerText = '₹' + Number(inv.principal_amount).toFixed(2);
   el('start_date').innerText = data.safeStartDate || inv.start_date || '—';
-  el('status').innerHTML = `<span class="badge badge-${inv.status}">${inv.status}</span>`;
+  el('status').innerHTML = `<span class="badge badge-${inv.status}">${inv.status || '—'}</span>`;
   el('daily_interest').innerText = Number(data.dailyInterest).toFixed(2);
   el('days_passed').innerText = data.daysPassed;
   el('total_interest').innerText = Number(data.totalEarnedInterest).toFixed(2);
   el('principal_plus_interest').innerText =
-        '₹' + (Number(inv.principal_amount) + Number(data.totalEarnedInterest)).toFixed(2);
+        '₹' + (Number(inv.principal_amount || 0) + Number(data.totalEarnedInterest || 0)).toFixed(2);
 
   el('investor_reg').innerText = inv.select_investor?.reg || '—';
   el('investor_name').innerText = inv.select_investor?.father_name || '—';
@@ -464,6 +534,7 @@ function renderData(data) {
   el('plan_lockin').innerText = p?.lockin_days || '—';
   el('lockin_end').innerText = inv.lockin_end_date || '—';
 
+  // payout records
   let payoutHTML = '';
   (inv.investment_monthly_payout_records || []).forEach(x => {
     payoutHTML += `<tr>
@@ -476,40 +547,41 @@ function renderData(data) {
   });
   el('payout_table').innerHTML = payoutHTML;
 
+  // withdrawals table
   let withdrawHTML = '';
-(inv.investment_withdrawal_requests || []).forEach(w => {
+  (inv.investment_withdrawal_requests || []).forEach(w => {
 
-  let badgeClass =
-    w.status === 'approved' ? 'badge-approved' :
-    (w.status === 'pending' ? 'badge-pending' : 'badge-rejected');
+    let badgeClass =
+      w.status === 'approved' ? 'badge-approved' :
+      (w.status === 'pending' ? 'badge-pending' : 'badge-rejected');
 
-  withdrawHTML += `<tr>
-    <td>₹${Number(w.amount).toFixed(2)}</td>
-    <td>${w.type}</td>
-    <td><span class="badge-status ${badgeClass}">${w.status}</span></td>
-    <td>${w.requested_at||''}</td>
-    <td>
-      <button class="action-btn action-view"
-              onclick="openAdminView(${w.id})">
-        View
-      </button>
+    withdrawHTML += `<tr>
+      <td>₹${Number(w.amount).toFixed(2)}</td>
+      <td>${w.type}</td>
+      <td><span class="badge-status ${badgeClass}">${w.status}</span></td>
+      <td>${w.requested_at||''}</td>
+      <td>
+        <button class="action-btn action-view"
+                onclick="openAdminView(${w.id})">
+          View
+        </button>
 
-      ${ (USER_ROLE === 'Admin' && w.status !== 'approved')
-          ? `<button class="action-btn action-approve"
-                     onclick="openAdminApprove(${w.id})">
-                Approve
-             </button>`
-          : ''
-       }
-    </td>
-  </tr>`;
-});
-el('withdraw_table').innerHTML = withdrawHTML;
+        ${ (IS_ADMIN && w.status !== 'approved')
+            ? `<button class="action-btn action-approve"
+                       onclick="openAdminApprove(${w.id})">
+                  Approve
+               </button>`
+            : ''
+         }
+      </td>
+    </tr>`;
+  });
+  el('withdraw_table').innerHTML = withdrawHTML;
 
   el('pdf_btn').href = PDF_URL(inv.id);
 
-  el('moreDetailsBtn').onclick = () => openDetailsModal(inv);
-  el('withdrawBtn').onclick = () => openWithdrawModal(inv, data);
+  if (el('moreDetailsBtn')) el('moreDetailsBtn').onclick = () => openDetailsModal(inv);
+  if (el('withdrawBtn')) el('withdrawBtn').onclick = () => openWithdrawModal(inv, data);
 
   const s = data.approvedSummary || {
     total_approved:0, approved_interest:0, approved_principal:0, approved_totaltype:0, final_interest:0, final_principal:0, approved_withdrawals:[]
@@ -544,7 +616,6 @@ el('withdraw_table').innerHTML = withdrawHTML;
   });
 
   el('approved_withdrawals_table').innerHTML = apHTML;
-
 }
 
 /* load daily interest rows for totals & counts */
@@ -555,11 +626,11 @@ function loadDailyInterestData(id) {
     .then(rows => {
       let total = 0;
       rows.forEach(r => total += Number(r.daily_interest_amount || 0));
-      el('total_interest').innerText = total.toFixed(2);
-      el('days_passed').innerText = rows.length;
+      if (el('total_interest')) el('total_interest').innerText = total.toFixed(2);
+      if (el('days_passed')) el('days_passed').innerText = rows.length;
 
       const inv = lastLoadedInvestment.investment;
-      el('principal_plus_interest').innerText =
+      if (el('principal_plus_interest')) el('principal_plus_interest').innerText =
         '₹' + (Number(inv.principal_amount) + Number(total)).toFixed(2);
     })
     .catch(e => {
@@ -775,13 +846,17 @@ function openWithdrawModal(inv, data) {
           alert(res.message || "Request submitted");
           el('withdrawModal').style.display='none';
           loadInvestment(id);
+        })
+        .catch(err => {
+          console.error('withdraw submit error', err);
+          alert('Unable to submit withdrawal request.');
         });
       };
 
     });
 }
 
-/* Admin: view basic withdraw details popup (simple) */
+/* Admin: view basic withdraw details popup */
 function openAdminView(withdrawId) {
   fetch(WITHDRAWAL_DETAILS_URL(withdrawId))
     .then(checkFetch)
@@ -800,7 +875,7 @@ function openAdminView(withdrawId) {
     });
 }
 
-/* Admin: open approval modal (only reachable if user is Admin since the Approve button won't render otherwise) */
+/* Admin: open approval modal */
 function openAdminApprove(withdrawId) {
   fetch(WITHDRAWAL_DETAILS_URL(withdrawId))
     .then(checkFetch)
@@ -814,7 +889,6 @@ function openAdminApprove(withdrawId) {
       el('ap_status').value = w.status || 'pending';
 
       if (w.approved_at) {
-        // convert server datetime to local datetime-local input format (YYYY-MM-DDTHH:MM)
         const dt = new Date(w.approved_at);
         const tzOffset = dt.getTimezoneOffset() * 60000;
         const localISO = new Date(dt - tzOffset).toISOString().slice(0,16);
@@ -837,7 +911,6 @@ function openAdminApprove(withdrawId) {
         el('ap_existing_attachment').innerHTML = `<div><a href="/storage/${w.attachment_path}" target="_blank">Existing attachment</a></div>`;
       }
 
-      // investor info HTML
       let infoHtml = '';
       infoHtml += `<div><b>Reg:</b> ${reg.reg||'—'}</div>`;
       infoHtml += `<div><b>Aadhaar:</b> ${reg.aadhaar_number||'—'}</div>`;
@@ -865,60 +938,59 @@ function openAdminApprove(withdrawId) {
 }
 
 /* handle approve form with attachment (FormData) */
-el('approveForm').addEventListener('submit', function(e) {
-  e.preventDefault();
+if (el('approveForm')) {
+  el('approveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
 
-  const form = new FormData();
-  form.append('withdrawal_id', el('ap_withdrawal_id').value);
-  form.append('status', el('ap_status').value);
-  if (el('ap_approved_at').value) {
-    // convert to ISO for backend (browser sends local datetime-local as 'YYYY-MM-DDTHH:MM')
-    const dtLocal = el('ap_approved_at').value;
-    // append as-is; backend can parse
-    form.append('approved_at', dtLocal);
-  }
-  form.append('notes', el('ap_notes').value);
-  form.append('remarks', el('ap_remarks').value);
-
-  const fileEl = el('ap_attachment');
-  if (fileEl && fileEl.files && fileEl.files[0]) {
-    form.append('attachment', fileEl.files[0]);
-  }
-
-  fetch(WITHDRAWAL_APPROVE_URL, {
-    method: 'POST',
-    headers: {
-      'X-CSRF-TOKEN': CSRF,
-      'Accept': 'application/json'
-    },
-    body: form
-  })
-  .then(res => {
-    if (res.status === 422) return res.json().then(data => Promise.reject({validation: data}));
-    if (!res.ok) return Promise.reject({status: res.status});
-    return res.json();
-  })
-  .then(data => {
-    alert(data.message || 'Withdrawal updated');
-    el('approveModal').style.display = 'none';
-    if (lastLoadedInvestment && lastLoadedInvestment.investment) {
-      loadInvestment(lastLoadedInvestment.investment.id);
-    } else {
-      location.reload();
+    const form = new FormData();
+    form.append('withdrawal_id', el('ap_withdrawal_id').value);
+    form.append('status', el('ap_status').value);
+    if (el('ap_approved_at').value) {
+      form.append('approved_at', el('ap_approved_at').value);
     }
-  })
-  .catch(err => {
-    console.error('approve submit error', err);
-    if (err.validation && err.validation.errors) {
-      let messages = Object.values(err.validation.errors).flat().join('\n');
-      el('approve_errors').innerText = messages;
-      el('approve_errors').style.display = 'block';
-    } else {
-      el('approve_errors').innerText = 'Unable to update withdrawal. Try again.';
-      el('approve_errors').style.display = 'block';
+    form.append('notes', el('ap_notes').value);
+    form.append('remarks', el('ap_remarks').value);
+
+    const fileEl = el('ap_attachment');
+    if (fileEl && fileEl.files && fileEl.files[0]) {
+      form.append('attachment', fileEl.files[0]);
     }
+
+    fetch(WITHDRAWAL_APPROVE_URL, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': CSRF,
+        'Accept': 'application/json'
+      },
+      body: form
+    })
+    .then(res => {
+      if (res.status === 422) return res.json().then(data => Promise.reject({validation: data}));
+      if (!res.ok) return Promise.reject({status: res.status});
+      return res.json();
+    })
+    .then(data => {
+      alert(data.message || 'Withdrawal updated');
+      el('approveModal').style.display = 'none';
+      if (lastLoadedInvestment && lastLoadedInvestment.investment) {
+        loadInvestment(lastLoadedInvestment.investment.id);
+      } else {
+        location.reload();
+      }
+    })
+    .catch(err => {
+      console.error('approve submit error', err);
+      if (err.validation && err.validation.errors) {
+        let messages = Object.values(err.validation.errors).flat().join('\n');
+        el('approve_errors').innerText = messages;
+        el('approve_errors').style.display = 'block';
+      } else {
+        el('approve_errors').innerText = 'Unable to update withdrawal. Try again.';
+        el('approve_errors').style.display = 'block';
+      }
+    });
   });
-});
+}
 
 /* basic fetch error handling helper */
 function checkFetch(res) {

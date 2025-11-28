@@ -153,4 +153,5 @@ class Investment extends Model
     {
         return $this->flexibleDateGetter($value);
     }
+    
 }
