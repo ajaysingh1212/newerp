@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MonthlyPayoutRecord extends Model
 {
-    use SoftDeletes, MultiTenantModelTrait, Auditable, HasFactory;
+    use SoftDeletes,  Auditable, HasFactory;
 
     public $table = 'monthly_payout_records';
 

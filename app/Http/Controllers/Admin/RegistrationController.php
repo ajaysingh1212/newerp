@@ -36,6 +36,7 @@ public function index()
         // Normal user → सिर्फ अपना data देखेगा
         $registrations = Registration::with(['investor','created_by','media'])
             ->where('created_by_id', $user->id)
+            ->orWhere('investor_id', $user->id)
             ->get();
     }
 

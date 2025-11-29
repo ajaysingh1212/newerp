@@ -153,5 +153,9 @@ class Investment extends Model
     {
         return $this->flexibleDateGetter($value);
     }
-    
+    public function investorInvestorTransactions()
+{
+    return $this->hasOne(\App\Models\InvestorTransaction::class, 'investment_id');
+}
+
 }

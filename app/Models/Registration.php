@@ -257,7 +257,7 @@ class Registration extends Model implements HasMedia
 
     public function selectInvestorWithdrawalRequests()
     {
-        return $this->hasMany(\App\Models\WithdrawalRequest::class, 'investor_id', 'id');
+        return $this->hasMany(\App\Models\WithdrawalRequest::class, 'select_investor_id', 'id');
     }
 
     /**

@@ -14,7 +14,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class InvestorTransaction extends Model implements HasMedia
 {
-    use SoftDeletes, MultiTenantModelTrait, InteractsWithMedia, Auditable, HasFactory;
+    use SoftDeletes, InteractsWithMedia, Auditable, HasFactory;
 
     public $table = 'investor_transactions';
 
@@ -25,30 +25,28 @@ class InvestorTransaction extends Model implements HasMedia
     ];
 
     public const STATUS_SELECT = [
-        'pending' => 'pending',
-        'success' => 'success',
-        'failed'  => 'failed',
+        'pending' => 'Pending',
+        'success' => 'Success',
+        'failed'  => 'Failed',
     ];
 
     protected $fillable = [
-        'investor_id',
-        'investment_id',
+        'investor_id',      // Registration ka ID
+        'investment_id',    // Investment ka ID
         'transaction_type',
         'amount',
         'narration',
         'status',
-        'created_at',
-        'updated_at',
-        'deleted_at',
         'created_by_id',
+        'plan_id',
     ];
 
     public const TRANSACTION_TYPE_SELECT = [
-        'investment'           => 'investment',
-        'interest_payout'      => 'interest_payout',
-        'withdrawal_interest'  => 'withdrawal_interest',
-        'withdrawal_principal' => 'withdrawal_principal',
-        'over_all'             => 'over_all',
+        'investment'           => 'Investment',
+        'interest_payout'      => 'Interest Payout',
+        'withdrawal_interest'  => 'Withdrawal Interest',
+        'withdrawal_principal' => 'Withdrawal Principal',
+        'over_all'             => 'Overall',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
@@ -62,18 +60,24 @@ class InvestorTransaction extends Model implements HasMedia
         $this->addMediaConversion('preview')->fit('crop', 120, 120);
     }
 
+    /**
+     * investor_id → Registration table
+     */
     public function investor()
     {
-        return $this->belongsTo(Investment::class, 'investor_id');
+        return $this->belongsTo(\App\Models\Registration::class, 'investor_id');
     }
 
+    /**
+     * investment_id → Investment table
+     */
     public function investment()
     {
-        return $this->belongsTo(Registration::class, 'investment_id');
+        return $this->belongsTo(\App\Models\Investment::class, 'investment_id');
     }
 
     public function created_by()
     {
-        return $this->belongsTo(User::class, 'created_by_id');
+        return $this->belongsTo(\App\Models\User::class, 'created_by_id');
     }
 }

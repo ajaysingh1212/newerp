@@ -57,6 +57,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @if($investorTransactions && $investorTransactions->count())
                         @foreach($investorTransactions as $key => $investorTransaction)
                             <tr data-entry-id="{{ $investorTransaction->id }}">
                                 <td>
@@ -117,6 +118,9 @@
 
                             </tr>
                         @endforeach
+                        @else
+                            <p>No transactions found.</p>
+                        @endif
                     </tbody>
                 </table>
             </div>

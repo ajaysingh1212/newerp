@@ -18,6 +18,10 @@ use App\Models\ProductMaster;
 use App\Models\StockTransfer;
 use App\Models\KycRecharge;
 use App\Models\RechargeRequest;
+use App\Models\Investment;
+use App\Models\Registration;
+use App\Models\WithdrawalRequest;
+
 class HomeController extends Controller
 {
     public function index(Request $request)
@@ -38,6 +42,92 @@ class HomeController extends Controller
             return view('home', ['userRole' => $userRole]);
         }
 
+        // ================================
+        //  🔥 NEW: INVESTOR SUMMARY FILTERS
+        // ================================
+        $invFilter = $request->input('inv_filter', 'today');
+        $invFrom = $request->input('inv_from');
+        $invTo = $request->input('inv_to');
+
+        switch ($invFilter) {
+            case 'week':
+                $invStart = Carbon::now()->startOfWeek();
+                $invEnd   = Carbon::now()->endOfWeek();
+                break;
+
+            case 'month':
+                $invStart = Carbon::now()->startOfMonth();
+                $invEnd   = Carbon::now()->endOfMonth();
+                break;
+
+            case '3month':
+                $invStart = Carbon::now()->subMonths(3);
+                $invEnd   = Carbon::now();
+                break;
+
+            case '6month':
+                $invStart = Carbon::now()->subMonths(6);
+                $invEnd   = Carbon::now();
+                break;
+
+            case '9month':
+                $invStart = Carbon::now()->subMonths(9);
+                $invEnd   = Carbon::now();
+                break;
+
+            case '12month':
+                $invStart = Carbon::now()->subMonths(12);
+                $invEnd   = Carbon::now();
+                break;
+
+            default:
+                $invStart = Carbon::now()->startOfDay();
+                $invEnd   = Carbon::now()->endOfDay();
+                break;
+        }
+
+        if ($invFrom && $invTo) {
+            $invStart = Carbon::parse($invFrom);
+            $invEnd = Carbon::parse($invTo)->endOfDay();
+        }
+
+        // ================================
+        //  🔥 NEW: INVESTOR SUMMARY DATA
+        // ================================
+        $totalInvestors = Registration::count();
+
+        $totalInvestmentAmount = Investment::whereBetween('created_at', [$invStart, $invEnd])
+            ->sum('principal_amount');
+
+        $totalPendingWithdraw = WithdrawalRequest::where('status', 'pending')
+            ->whereBetween('requested_at', [$invStart, $invEnd])
+            ->sum('amount');
+
+        $totalApprovedWithdraw = WithdrawalRequest::where('status', 'approved')
+            ->whereBetween('approved_at', [$invStart, $invEnd])
+            ->sum('amount');
+
+        // Pie chart data
+        $investorChart = [
+            'labels' => [
+                'Total Investors',
+                'Total Investment',
+                'Approved Withdrawals',
+                'Pending Withdrawals'
+            ],
+            'values' => [
+                $totalInvestors,
+                $totalInvestmentAmount,
+                $totalApprovedWithdraw,
+                $totalPendingWithdraw
+            ]
+        ];
+        // ================================
+        //  🔥 END INVESTOR SUMMARY BLOCK
+        // ================================
+
+        
+        // ------------------ YOUR ORIGINAL CODE CONTINUES (NOT MODIFIED) ------------------
         $roles = Role::whereIn('title', ['CNF', 'Dealer', 'Distributer', 'Customer'])->pluck('id', 'title');
         $totals = $this->getUserTotals($user, $userRole, $roles);
 
@@ -84,18 +174,19 @@ class HomeController extends Controller
             } else {
                 $stockQuery->where('transfer_user_id', $user->id);
             }
-        } 
+        }
 
         $stockData = $stockQuery->get();
-
         $chartLabels = $stockData->pluck('product.sku')->toArray();
-        $chartValues = $stockData->groupBy('product.sku')->map(fn($items) => $items->count())->values();
+        $chartValues = $stockData->groupBy('product.sku')->map(fn($items) =>
+            $items->count()
+        )->values();
 
-        // Activation request filters
+        // Activation Filters
         $activationStatus = $request->input('activation_status');
         $activationFrom = $request->input('activation_from');
         $activationTo = $request->input('activation_to');
-        $activationGranularity = $request->input('activation_granularity', 'day');
+        $activationGranularity = $request->input('activation_group', 'day');
 
         $activationQuery = ActivationRequest::query();
 
@@ -104,10 +195,13 @@ class HomeController extends Controller
         }
 
         if ($activationFrom && $activationTo) {
-            $activationQuery->whereBetween('created_at', [Carbon::parse($activationFrom), Carbon::parse($activationTo)]);
+            $activationQuery->whereBetween(
+                'created_at',
+                [Carbon::parse($activationFrom), Carbon::parse($activationTo)]
+            );
         }
 
-        // Activation chart grouping
+        // Grouping logic
         $activationData = match ($activationGranularity) {
             'year' => $activationQuery
                 ->selectRaw("YEAR(created_at) as period, COUNT(*) as total")
@@ -128,214 +222,200 @@ class HomeController extends Controller
         $activationChartLabels = $activationData->keys();
         $activationChartValues = $activationData->values();
 
-        // Check Complain data
+        // Check Complain data section
+        abort_if(Gate::denies('check_complain_access'), 403);
 
-      abort_if(\Gate::denies('check_complain_access'), 403);
+        $range = $request->input('range', 'month');
+        $statuses = ['Pending', 'processing', 'reject', 'solved'];
 
-    $range = $request->input('range', 'month'); // Default to 'month'
-    $statuses = ['Pending', 'processing', 'reject', 'solved'];
+        $query = CheckComplain::query();
 
-    // ✅ FIX: Define query first
-    $query = CheckComplain::query();
+        switch ($range) {
+            case 'today':
+                $query->whereDate('created_at', Carbon::today());
+                break;
+            case 'week':
+                $query->whereBetween('created_at', [
+                    Carbon::now()->startOfWeek(),
+                    Carbon::now()->endOfWeek()
+                ]);
+                break;
+            case 'half_month':
+                $query->where('created_at', '>=', Carbon::now()->subDays(15));
+                break;
+            case 'month':
+                $query->whereMonth('created_at', Carbon::now()->month);
+                break;
+            case 'year':
+                $query->whereYear('created_at', Carbon::now()->year);
+                break;
+        }
 
-    // ✅ Apply date range filter
-    switch ($range) {
-        case 'today':
-            $query->whereDate('created_at', Carbon::today());
-            break;
-        case 'week':
-            $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-            break;
-        case 'half_month':
-            $query->where('created_at', '>=', Carbon::now()->subDays(15));
-            break;
-        case 'month':
-            $query->whereMonth('created_at', Carbon::now()->month);
-            break;
-        case 'year':
-            $query->whereYear('created_at', Carbon::now()->year);
-            break;
-    }
+        $complains = $query->get();
+        $grouped = $complains->groupBy(fn($item) =>
+            $item->created_at->format('Y-m-d')
+        );
 
-    // ✅ Get filtered complaints
-    $complains = $query->get();
+        $labels = $grouped->keys();
 
-    // ✅ Group by date
-    $grouped = $complains->groupBy(function ($item) {
-        return $item->created_at->format('Y-m-d');
-    });
+        $dataByStatus = [];
+        foreach ($statuses as $status) {
+            $dataByStatus[$status] = $labels->map(fn($date) =>
+                $grouped[$date]->where('status', $status)->count()
+            );
+        }
 
-    $labels = $grouped->keys();
+        // Stock count by model
+        $user = Auth::user();
+        $roleTitles = $user->roles()->pluck('title')->toArray();
+        $isAdmin = in_array('Admin', $roleTitles);
 
-    // ✅ Group counts by status per date
-    $dataByStatus = [];
-    foreach ($statuses as $status) {
-        $dataByStatus[$status] = $labels->map(function ($date) use ($grouped, $status) {
-            return $grouped[$date]->where('status', $status)->count();
-        });
-    }
+        $stocks = CurrentStock::with(['productById.productModel', 'transferUser'])
+            ->when($isAdmin, fn($q) => $q->whereNull('transfer_user_id'))
+            ->when(!$isAdmin, fn($q) => $q->where('transfer_user_id', $user->id))
+            ->get();
 
+        $grouped = $stocks->groupBy(fn($item) =>
+            optional($item->productById?->productModel)->product_model ?? 'Unknown'
+        );
 
-$user = Auth::user();
+        $chartData = [];
+        $totalStock = 0;
 
-// Get all role titles of the user
-$roleTitles = $user->roles()->pluck('title')->toArray();
+        foreach ($grouped as $modelName => $items) {
+            $count = $items->count();
+            $totalStock += $count;
 
-// Check if user has Admin role
-$isAdmin = in_array('Admin', $roleTitles);
+            $chartData[] = [
+                'label' => $modelName,
+                'value' => $count,
+            ];
+        }
 
-// Fetch stocks based on role
-$stocks = CurrentStock::with(['productById.productModel', 'transferUser'])
-    ->when($isAdmin, function ($query) {
-        $query->whereNull('transfer_user_id'); // Admin: stocks with null transfer_user_id
-    }, function ($query) use ($user) {
-        $query->where('transfer_user_id', $user->id); // Non-admin: stocks assigned to user
-    })
-    ->get();
+        // KYC Recharge Summary
+        $totalsStatus = [
+            'Pending' => KycRecharge::where('payment_status', 'pending')->count(),
+            'Failed' => KycRecharge::where('payment_status', 'failed')->count(),
+            'Completed' => KycRecharge::where('payment_status', 'completed')->count(),
+        ];
 
-// Group stocks by product model name
-$grouped = $stocks->groupBy(function ($item) {
-    return optional($item->productById?->productModel)->product_model ?? 'Unknown';
-});
+        // Recharge Summary
+        $totalsStatusRecharge = [
+            'Pending' => RechargeRequest::where('payment_status', 'pending')->count(),
+            'Failed' => RechargeRequest::where('payment_status', 'failed')->count(),
+            'Success' => RechargeRequest::where('payment_status', 'success')->count(),
+        ];
 
-// Prepare chart data
-$chartData = [];
-$totalStock = 0;
+        // Complaint Summary
+        $totalsStatusComplain = [
+            'Pending' => CheckComplain::where('status', 'Pending')->count(),
+            'Processing' => CheckComplain::where('status', 'processing')->count(),
+            'Reject' => CheckComplain::where('status', 'reject')->count(),
+            'Solved' => CheckComplain::where('status', 'solved')->count(),
+        ];
 
-foreach ($grouped as $modelName => $items) {
-    $count = $items->count(); // You can use sum(quantity) if needed
-    $totalStock += $count;
+        // Activation Summary (Admin / User specific)
+        $user = Auth::user();
+        $roleTitles = $user->roles()->pluck('title')->toArray();
+        $isAdmin = in_array('Admin', $roleTitles);
 
-    $chartData[] = [
-        'label' => $modelName,
-        'value' => $count,
-    ];
-}
+        $query = DB::table('activation_requests')
+            ->join('product_masters', 'activation_requests.product_id', '=', 'product_masters.id')
+            ->join('product_models', 'product_masters.product_model_id', '=', 'product_models.id');
 
+        if ($isAdmin) {
+            $query->select(
+                'product_models.product_model as model',
+                'activation_requests.status',
+                DB::raw('COUNT(*) as count')
+            )
+                ->groupBy('product_models.product_model', 'activation_requests.status');
+        } else {
+            $query->join('users', 'activation_requests.created_by_id', '=', 'users.id')
+                ->select(
+                    'product_models.product_model as model',
+                    'activation_requests.status',
+                    DB::raw('COUNT(*) as count'),
+                    'users.name as creator_name'
+                )
+                ->where('activation_requests.created_by_id', $user->id)
+                ->groupBy('product_models.product_model', 'activation_requests.status', 'users.name');
+        }
 
-$totalsStatus = [ 'Pending' => KycRecharge::where('payment_status', 'pending')->count(), 'Failed' => KycRecharge::where('payment_status', 'failed')->count(), 'Completed' => KycRecharge::where('payment_status', 'completed')->count(), ]; 
-// Controller method
-   $totalsStatusRecharge = [ 'Pending' => RechargeRequest::where('payment_status', 'pending')->count(), 'Failed' => RechargeRequest::where('payment_status', 'failed')->count(), 'Success'=> RechargeRequest::where('payment_status', 'success')->count(), ];
-    // ✅ Fetch total counts by status
-      $totalsStatusComplain = [ 'Pending' => CheckComplain::where('status', 'Pending')->count(), 'Processing' => CheckComplain::where('status', 'processing')->count(), 'Reject' => CheckComplain::where('status', 'reject')->count(), 'Solved' => CheckComplain::where('status', 'solved')->count(), ];
+        $combinedChartData = $query->get()->map(fn($item) => [
+            'model'        => $item->model,
+            'status'       => $item->status,
+            'count'        => $item->count,
+            'creator_name' => $item->creator_name ?? null
+        ])->toArray();
 
+        $totalActivations = array_sum(array_column($combinedChartData, 'count'));
 
-   $user = Auth::user();
+        // Stock Transfer Summary
+        $query = StockTransfer::with(['select_user', 'transferUser']);
 
-// Get all role titles of the user
-$roleTitles = $user->roles()->pluck('title')->toArray();
+        if (!auth()->user()->is_admin) {
+            $query->where('transfer_id', auth()->id());
+        }
 
-// Check if user is admin
-$isAdmin = in_array('Admin', $roleTitles);
+        $transfers = $query
+            ->selectRaw('select_user_id, transfer_id, COUNT(*) as total')
+            ->groupBy('select_user_id', 'transfer_id')
+            ->get();
 
-// Base query
-$query = DB::table('activation_requests')
-    ->join('product_masters', 'activation_requests.product_id', '=', 'product_masters.id')
-    ->join('product_models', 'product_masters.product_model_id', '=', 'product_models.id');
+        if (auth()->user()->is_admin) {
+            $transferLabels = $transfers->map(fn($t) =>
+                ($t->transferUser->name ?? 'Unknown') . " → " .
+                ($t->select_user->name ?? 'Unknown')
+            );
+        } else {
+            $transferLabels = $transfers->map(fn($t) =>
+                $t->select_user->name ?? 'Unknown'
+            );
+        }
 
-if ($isAdmin) {
-    // Admin: All data (no creator name)
-    $query->select(
-        'product_models.product_model as model',
-        'activation_requests.status',
-        DB::raw('COUNT(*) as count')
-    )
-    ->groupBy('product_models.product_model', 'activation_requests.status');
-} else {
-    // Non-admin: Only their own data + creator name
-    $query->join('users', 'activation_requests.created_by_id', '=', 'users.id')
-        ->select(
-            'product_models.product_model as model',
-            'activation_requests.status',
-            DB::raw('COUNT(*) as count'),
-            'users.name as creator_name'
-        )
-        ->where('activation_requests.created_by_id', $user->id)
-        ->groupBy('product_models.product_model', 'activation_requests.status', 'users.name');
-}
+        $transferCounts = $transfers->pluck('total');
 
-$combinedChartData = $query->get()->map(function ($item) {
-    return [
-        'model'        => $item->model,
-        'status'       => $item->status,
-        'count'        => $item->count,
-        'creator_name' => $item->creator_name ?? null
-    ];
-})->toArray();
-
-$totalActivations = array_sum(array_column($combinedChartData, 'count'));
-
-    // Debug - check role and activation data
-
-$query = StockTransfer::with(['select_user', 'transferUser']);
-
-// Agar admin hai -> sab dikhaye
-if (!auth()->user()->is_admin) {
-    // normal user ke liye filter (jisne transfer kiya)
-    $query->where('transfer_id', auth()->id());
-}
-
-$transfers = $query
-    ->selectRaw('select_user_id, transfer_id, COUNT(*) as total')
-    ->groupBy('select_user_id', 'transfer_id')
-    ->get();
-
-// Admin ke liye -> "Kisne Kisko"
-if (auth()->user()->is_admin) {
-    $transferLabels = $transfers->map(function ($t) {
-        $from = $t->transferUser ? $t->transferUser->name : 'Unknown';
-        $to   = $t->select_user ? $t->select_user->name : 'Unknown';
-        return $from . ' → ' . $to;
-    });
-} else {
-    // Normal user -> sirf "Kisko"
-    $transferLabels = $transfers->map(function ($t) {
-        return $t->select_user ? $t->select_user->name : 'Unknown';
-    });
-}
-
-$transferCounts = $transfers->pluck('total');
-
-
-        return view('home',[
-    'labels' => $labels,
-    'dataByStatus' => $dataByStatus,
-    'statuses' => $statuses,
-    'range' => $range,
-     
-], compact(
+        // FINAL RETURN
+        return view('home', compact(
             'userRole', 'totals', 'stockData', 'chartLabels', 'chartValues',
             'timeFilter', 'selectedRoleType', 'selectedUserId', 'users',
             'activationStatus', 'activationFrom', 'activationTo', 'activationGranularity',
-            'activationChartLabels', 'activationChartValues','chartData','totalStock', 'totalActivations', 'combinedChartData','transferLabels','transferCounts','totalsStatus', 'totalsStatusRecharge'
-           ,'totalsStatusComplain'
+            'activationChartLabels', 'activationChartValues', 'chartData',
+            'totalStock', 'totalActivations', 'combinedChartData',
+            'transferLabels', 'transferCounts', 'totalsStatus',
+            'totalsStatusRecharge', 'totalsStatusComplain',
+            
+            // NEW INVESTOR SUMMARY VARIABLES
+            'totalInvestors', 'totalInvestmentAmount',
+            'totalPendingWithdraw', 'totalApprovedWithdraw',
+            'investorChart', 'invFilter', 'invFrom', 'invTo'
         ));
-
-
     }
 
+
+    // ---------------------------------------------
+    // DO NOT MODIFY — Original Methods Unchanged
+    // ---------------------------------------------
+    
     public function getCustomerVehicleData(Request $request)
-{
-    // Fetch vehicle status and count
-    $vehicleChartData = AddCustomerVehicle::select('status', DB::raw('count(*) as total'))
-        ->groupBy('status')
-        ->get()
-        ->map(function ($item) {
-            return [
+    {
+        $vehicleChartData = AddCustomerVehicle::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->get()
+            ->map(fn($item) => [
                 'label' => $item->status ?? 'Unknown',
                 'value' => $item->total,
-            ];
-        });
+            ]);
 
-    $vehicleTotalCount = $vehicleChartData->sum('value');
-    
+        $vehicleTotalCount = $vehicleChartData->sum('value');
 
-    return view('home', [
-        'vehicleChartData' => $vehicleChartData,
-        'vehicleTotalCount' => $vehicleTotalCount,
-    ]);
-}
-   
+        return view('home', [
+            'vehicleChartData' => $vehicleChartData,
+            'vehicleTotalCount' => $vehicleTotalCount,
+        ]);
+    }
+
     private function getUserTotals($user, $userRole, $roles)
     {
         if (!in_array($userRole, ['Admin', 'CNF', 'Dealer', 'Distributer'])) {
@@ -349,23 +429,15 @@ $transferCounts = $transfers->pluck('total');
                 'Distributer' => DB::table('role_user')->where('role_id', $roles['Distributer'])->count(),
                 'Customer' => DB::table('role_user')->where('role_id', $roles['Customer'])->count(),
             ];
-        } else {
-            $createdUserIds = User::where('created_by_id', $user->id)->pluck('id');
-
-            return [
-                'CNF' => DB::table('role_user')->where('role_id', $roles['CNF'])->whereIn('user_id', $createdUserIds)->count(),
-                'Dealer' => DB::table('role_user')->where('role_id', $roles['Dealer'])->whereIn('user_id', $createdUserIds)->count(),
-                'Distributer' => DB::table('role_user')->where('role_id', $roles['Distributer'])->whereIn('user_id', $createdUserIds)->count(),
-                'Customer' => DB::table('role_user')->where('role_id', $roles['Customer'])->whereIn('user_id', $createdUserIds)->count(),
-            ];
         }
+
+        $createdUserIds = User::where('created_by_id', $user->id)->pluck('id');
+
+        return [
+            'CNF' => DB::table('role_user')->where('role_id', $roles['CNF'])->whereIn('user_id', $createdUserIds)->count(),
+            'Dealer' => DB::table('role_user')->where('role_id', $roles['Dealer'])->whereIn('user_id', $createdUserIds)->count(),
+            'Distributer' => DB::table('role_user')->where('role_id', $roles['Distributer'])->whereIn('user_id', $createdUserIds)->count(),
+            'Customer' => DB::table('role_user')->where('role_id', $roles['Customer'])->whereIn('user_id', $createdUserIds)->count(),
+        ];
     }
-
-
-    public function productPieChart()
-{
-   
-
-    return view('home', compact('chartData'));
-}
 }

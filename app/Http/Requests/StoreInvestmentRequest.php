@@ -38,7 +38,7 @@ class StoreInvestmentRequest extends FormRequest
             ],
             'start_date' => [
                 'required',
-                'date_format:' . config('panel.date_format'),
+               
             ],
         ];
     }
