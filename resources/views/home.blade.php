@@ -5,10 +5,13 @@
 
 @extends('layouts.admin')
 @section('content')
-<!-- ================= New Investor Dashboard (PUT THIS AT TOP) ================= -->
+
+<!-- ================= NEW INVESTOR DASHBOARD ================= -->
 <div class="row mb-4" id="investor-dashboard-card">
     <div class="col-12">
         <div class="card p-3 shadow-sm">
+
+            <!-- FILTER HEADER -->
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div>
                     <h5 class="mb-1">Investor Summary</h5>
@@ -37,8 +40,9 @@
                 </div>
             </div>
 
+            <!-- SUMMARY CARDS -->
             <div id="dash-cards" class="row gy-3">
-                <!-- Cards will be injected/updated by JS -->
+
                 <div class="col-md-3">
                     <div class="card text-white bg-success shadow-sm">
                         <div class="card-body text-center">
@@ -80,13 +84,25 @@
                 </div>
             </div>
 
-            <div class="row mt-4 align-items-center">
+            <!-- CHART + WITHDRAW LIST -->
+            <div class="row mt-4 align-items-start">
+
+                <!-- WITHDRAW LIST (LEFT) -->
                 <div class="col-md-6">
-                    <canvas id="withdrawPieChart" height="220"></canvas>
+                    <h6 class="mb-2">Withdrawal Requests</h6>
+
+                    <div id="withdraw-list-box"
+                         style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
+                        <div class="text-center text-muted py-4">Loading...</div>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="row">
+                <!-- PIE CHART (RIGHT) -->
+                <div class="col-md-6 text-center">
+                    <h6 class="mb-2">Withdrawal Status Summary</h6>
+                    <canvas id="withdrawPieChart" height="220"></canvas>
+
+                    <div class="row mt-3">
                         <div class="col-6">
                             <div class="card border-secondary mb-2">
                                 <div class="card-body text-center">
@@ -123,11 +139,11 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div> <!-- col-12 -->
-</div>
 
+            </div> <!-- END ROW -->
+        </div>
+    </div>
+</div>
 
 <!-- ================= end of Investor Dashboard ================= -->
 
@@ -697,38 +713,43 @@
 </div>
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<!-- ================= DASHBOARD JS ================= -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
     const apiUrl = "{{ route('admin.dashboard.data') }}";
     const filterEl = document.getElementById('dash-filter');
-    const fromEl = document.getElementById('dash-from');
-    const toEl   = document.getElementById('dash-to');
+    const fromEl   = document.getElementById('dash-from');
+    const toEl     = document.getElementById('dash-to');
     const applyBtn = document.getElementById('dash-apply');
     const resetBtn = document.getElementById('dash-reset');
 
     // Show/hide custom date inputs
     filterEl.addEventListener('change', function () {
-        if (this.value === 'custom') {
-            fromEl.style.display = 'inline-block';
-            toEl.style.display = 'inline-block';
-        } else {
-            fromEl.style.display = 'none';
-            toEl.style.display = 'none';
+        const isCustom = this.value === 'custom';
+        fromEl.style.display = isCustom ? 'inline-block' : 'none';
+        toEl.style.display   = isCustom ? 'inline-block' : 'none';
+
+        if (!isCustom) {
             fromEl.value = '';
-            toEl.value = '';
+            toEl.value   = '';
         }
     });
 
-    // Chart instance
+    // PIE CHART INSTANCE
     let pieChart = null;
     function createOrUpdatePie(labels, data) {
         const ctx = document.getElementById('withdrawPieChart').getContext('2d');
+
         if (pieChart) {
             pieChart.data.labels = labels;
             pieChart.data.datasets[0].data = data;
             pieChart.update();
             return;
         }
+
         pieChart = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -741,7 +762,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }]
             },
             options: {
-                responsive: true,
                 plugins: {
                     legend: { position: 'bottom' }
                 }
@@ -749,66 +769,109 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Fetch and render
+    // ================= AJAX FUNCTION =================
     async function fetchDashboard() {
-        const payload = {
-            filter: filterEl.value
-        };
+        const payload = { filter: filterEl.value };
+
         if (filterEl.value === 'custom') {
             payload.from_date = fromEl.value;
             payload.to_date   = toEl.value;
         }
 
-        // Build query string
         const params = new URLSearchParams(payload).toString();
+
         const res = await fetch(apiUrl + '?' + params, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
+
         const json = await res.json();
         if (!json || json.status !== 'success') return;
 
         const d = json.data;
 
-        // Update cards
+        // ================= UPDATE SUMMARY CARDS =================
         document.getElementById('card-verified').innerText = d.totalVerified;
         document.getElementById('card-not-verified').innerText = d.totalNotVerified;
-        document.getElementById('card-total-investment').innerText = '₹' + Number(d.totalInvestmentAmount).toLocaleString();
-        document.getElementById('card-withdraw-requested').innerText = '₹' + Number(d.withdraw.requested).toLocaleString();
+        document.getElementById('card-total-investment').innerText =
+            '₹' + Number(d.totalInvestmentAmount).toLocaleString();
+        document.getElementById('card-withdraw-requested').innerText =
+            '₹' + Number(d.withdraw.requested).toLocaleString();
 
-        // Withdraw breakdown
-        document.getElementById('withdraw-approved').innerText = '₹' + Number(d.withdraw.approved).toLocaleString();
-        document.getElementById('withdraw-pending').innerText = '₹' + Number(d.withdraw.pending).toLocaleString();
-        document.getElementById('withdraw-rejected').innerText = '₹' + Number(d.withdraw.rejected).toLocaleString();
+        // Breakdown under chart
+        document.getElementById('withdraw-approved').innerText =
+            '₹' + Number(d.withdraw.approved).toLocaleString();
+        document.getElementById('withdraw-pending').innerText =
+            '₹' + Number(d.withdraw.pending).toLocaleString();
+        document.getElementById('withdraw-rejected').innerText =
+            '₹' + Number(d.withdraw.rejected).toLocaleString();
 
-        // KYC totals
+        // KYC Total
         document.getElementById('kyc-total').innerText = d.kyc.total;
 
-        // Pie chart
-        const labels = d.chartData.map(x => x.label);
-        const values = d.chartData.map(x => x.value);
-        createOrUpdatePie(labels, values);
+        // ================= UPDATE PIE CHART =================
+        createOrUpdatePie(
+            d.chartData.map(x => x.label),
+            d.chartData.map(x => x.value)
+        );
+
+        // ================= WITHDRAW LIST =================
+        let listBox = document.getElementById('withdraw-list-box');
+
+        if (!d.withdrawList.length) {
+            listBox.innerHTML = `<div class="text-center text-muted py-4">No withdrawal requests found</div>`;
+            return;
+        }
+
+        let html = "";
+        d.withdrawList.forEach(item => {
+            let color =
+                item.status === 'approved' ? 'success' :
+                item.status === 'pending' ? 'warning' :
+                'danger';
+
+            html += `
+                <div class="p-2 mb-2 border rounded bg-light">
+                    <div class="d-flex justify-content-between">
+                        <strong>${item.investor_name}</strong>
+                        <span class="badge bg-${color} text-capitalize">${item.status}</span>
+                    </div>
+
+                    <small class="text-muted">Request ID: ${item.id}</small>
+
+                    <div class="d-flex justify-content-between mt-1">
+                        <span class="fw-bold text-dark">₹${Number(item.amount).toLocaleString()}</span>
+                        <small>${item.date}</small>
+                    </div>
+                </div>
+            `;
+        });
+
+        listBox.innerHTML = html;
     }
 
-    // initial load
+    // INITIAL LOAD
     fetchDashboard();
 
-    applyBtn.addEventListener('click', function (e) {
+    // Apply Button
+    applyBtn.addEventListener('click', e => {
         e.preventDefault();
         fetchDashboard();
     });
 
-    resetBtn.addEventListener('click', function (e) {
+    // Reset Button
+    resetBtn.addEventListener('click', e => {
         e.preventDefault();
         filterEl.value = 'all';
         fromEl.value = '';
-        toEl.value = '';
+        toEl.value   = '';
         fromEl.style.display = 'none';
-        toEl.style.display = 'none';
+        toEl.style.display   = 'none';
         fetchDashboard();
     });
 
 });
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const transferLabels = @json($transferLabels);
