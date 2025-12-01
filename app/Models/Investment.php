@@ -45,6 +45,8 @@ class Investment extends Model
         'status',
         'created_by_id',
         'deleted_at',
+        'select_agent_id',
+        'admin_remarks',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
@@ -157,5 +159,8 @@ class Investment extends Model
 {
     return $this->hasOne(\App\Models\InvestorTransaction::class, 'investment_id');
 }
-
+    public function select_agent()
+    {
+        return $this->belongsTo(Agent::class, 'select_agent_id');
+    }
 }

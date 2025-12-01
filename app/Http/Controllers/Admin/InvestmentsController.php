@@ -7,6 +7,7 @@ use App\Http\Controllers\Traits\CsvImportTrait;
 use App\Http\Requests\MassDestroyInvestmentRequest;
 use App\Http\Requests\StoreInvestmentRequest;
 use App\Http\Requests\UpdateInvestmentRequest;
+use App\Models\Agent;
 use App\Models\Investment;
 use App\Models\InvestorTransaction;
 use App\Models\Plan;
@@ -29,7 +30,7 @@ class InvestmentsController extends Controller
         $role = $user->roles->first()->title ?? null;
 
         if ($role === 'Admin') {
-            $investments = Investment::with(['select_investor', 'select_plan', 'created_by'])
+            $investments = Investment::with(['select_investor', 'select_plan', 'created_by','select_agent'])
                 ->orderBy('id', 'DESC')
                 ->get();
 
@@ -45,7 +46,7 @@ class InvestmentsController extends Controller
             ]);
         }
 
-        $investments = Investment::with(['select_investor', 'select_plan', 'created_by'])
+        $investments = Investment::with(['select_investor', 'select_plan', 'created_by','select_agent'])
             ->where('select_investor_id', $registration->id)
             ->orderBy('id', 'DESC')
             ->get();
@@ -67,7 +68,7 @@ class InvestmentsController extends Controller
 
         $user = Auth::user();
         $userRole = $user->roles->first()->title ?? null;
-
+        $select_agents = Agent::pluck('full_name', 'id', 'status','phone_number')->prepend(trans('global.pleaseSelect'), '');
         $plans = Plan::all();
 
         if ($userRole === 'Admin') {
@@ -108,7 +109,7 @@ class InvestmentsController extends Controller
         }
 
         return view('admin.investments.create', compact(
-            'select_investors', 'plans', 'registrations', 'selected_investor'
+            'select_investors', 'plans', 'registrations', 'selected_investor','select_agents'
         ));
     }
 
@@ -170,7 +171,7 @@ class InvestmentsController extends Controller
 
         $user = Auth::user();
         $userRole = $user->roles->first()->title ?? null;
-
+        $select_agents = Agent::pluck('full_name', 'id')->prepend(trans('global.pleaseSelect'), '');
         $plans = Plan::all();
 
         if ($userRole === 'Admin') {
@@ -213,7 +214,7 @@ class InvestmentsController extends Controller
         $investment->load('select_investor', 'select_plan', 'created_by');
 
         return view('admin.investments.edit', compact(
-            'investment', 'select_investors', 'registrations', 'selected_investor', 'plans'
+            'investment', 'select_investors', 'registrations', 'selected_investor', 'plans', 'select_agents'
         ));
     }
 
@@ -225,7 +226,7 @@ public function update(UpdateInvestmentRequest $request, Investment $investment)
     abort_if(Gate::denies('investment_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
     $data = $request->all();
-    $data['status'] = 'pending';
+    $data['status'] = $request->status ?? $investment->status;
 
     // ---- DATE FIX ----
     foreach (['start_date','lockin_end_date','next_payout_date'] as $field) {

@@ -177,7 +177,8 @@ class HomeController extends Controller
         }
 
         $stockData = $stockQuery->get();
-        $chartLabels = $stockData->pluck('product.sku')->toArray();
+
+                $chartLabels = $stockData->pluck('product.sku')->toArray();
         $chartValues = $stockData->groupBy('product.sku')->map(fn($items) =>
             $items->count()
         )->values();
@@ -439,5 +440,135 @@ class HomeController extends Controller
             'Distributer' => DB::table('role_user')->where('role_id', $roles['Distributer'])->whereIn('user_id', $createdUserIds)->count(),
             'Customer' => DB::table('role_user')->where('role_id', $roles['Customer'])->whereIn('user_id', $createdUserIds)->count(),
         ];
+    }
+
+
+    // ---------------------------------------------
+    // DO NOT MODIFY — Original Methods Unchanged
+    // ---------------------------------------------
+    
+    
+    public function dashboardData(Request $request)
+    {
+        $filter = $request->get('filter', 'all'); // today, yesterday, this_week, this_month, last_3_month, last_6_month, last_9_month, this_year, custom, all
+        $from = $request->get('from_date');
+        $to   = $request->get('to_date');
+
+        $dateRange = $this->computeDateRange($filter, $from, $to);
+
+        // Base query builders with optional date range filtering
+        $registrationsQ = Registration::query();
+        $investmentsQ   = Investment::query();
+        $withdrawalsQ   = WithdrawalRequest::query();
+
+        if ($dateRange) {
+            $registrationsQ->whereBetween('created_at', [$dateRange['from'], $dateRange['to']]);
+            $investmentsQ->whereBetween('created_at', [$dateRange['from'], $dateRange['to']]);
+            $withdrawalsQ->whereBetween('created_at', [$dateRange['from'], $dateRange['to']]);
+        }
+
+        // 1. Total Verified Investors
+        $totalVerified = (clone $registrationsQ)->where('kyc_status', 'Verified')->count();
+
+        // 2. Total Not Verified (Pending + Submitted)
+        $totalNotVerified = (clone $registrationsQ)->whereIn('kyc_status', ['Pending', 'Submitted'])->count();
+
+        // 3. KYC breakdown counts (for cards)
+        $kycPending   = (clone $registrationsQ)->where('kyc_status', 'Pending')->count();
+        $kycSubmitted = (clone $registrationsQ)->where('kyc_status', 'Submitted')->count();
+        $kycVerified  = $totalVerified;
+
+        // 4. Total Investment Amount (sum principal_amount)
+        $totalInvestmentAmount = (clone $investmentsQ)->sum('principal_amount');
+
+        // 5. Withdrawal summary
+        $withdrawRequested = (clone $withdrawalsQ)->sum('amount');
+        $withdrawApproved  = (clone $withdrawalsQ)->where('status', 'approved')->sum('amount');
+        $withdrawPending   = (clone $withdrawalsQ)->where('status', 'pending')->sum('amount');
+        $withdrawRejected  = (clone $withdrawalsQ)->where('status', 'rejected')->sum('amount');
+
+        // 6. Pie chart data for withdrawals
+        $chartData = [
+            ['label' => 'Approved', 'value' => (float) $withdrawApproved],
+            ['label' => 'Pending',  'value' => (float) $withdrawPending],
+            ['label' => 'Rejected', 'value' => (float) $withdrawRejected],
+        ];
+
+        // Return JSON
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'totalVerified'         => $totalVerified,
+                'totalNotVerified'      => $totalNotVerified,
+                'kyc' => [
+                    'pending'   => $kycPending,
+                    'submitted' => $kycSubmitted,
+                    'verified'  => $kycVerified,
+                    'total'     => $kycPending + $kycSubmitted + $kycVerified,
+                ],
+                'totalInvestmentAmount' => (float) $totalInvestmentAmount,
+                'withdraw' => [
+                    'requested' => (float) $withdrawRequested,
+                    'approved'  => (float) $withdrawApproved,
+                    'pending'   => (float) $withdrawPending,
+                    'rejected'  => (float) $withdrawRejected,
+                ],
+                'chartData' => $chartData,
+                'dateRange' => $dateRange
+            ]
+        ]);
+    }
+
+    /**
+     * Compute from/to based on filter & optional custom dates
+     *
+     * @param string $filter
+     * @param string|null $from
+     * @param string|null $to
+     * @return array|null
+     */
+    private function computeDateRange($filter, $from = null, $to = null)
+    {
+        $today = Carbon::today();
+
+        switch ($filter) {
+            case 'today':
+                return ['from' => $today->copy()->startOfDay(), 'to' => $today->copy()->endOfDay()];
+
+            case 'yesterday':
+                $y = $today->copy()->subDay();
+                return ['from' => $y->copy()->startOfDay(), 'to' => $y->copy()->endOfDay()];
+
+            case 'this_week':
+                return ['from' => $today->copy()->startOfWeek(), 'to' => $today->copy()->endOfWeek()];
+
+            case 'this_month':
+                return ['from' => $today->copy()->startOfMonth(), 'to' => $today->copy()->endOfMonth()];
+
+            case 'last_3_month':
+                return ['from' => $today->copy()->subMonths(3)->startOfDay(), 'to' => Carbon::now()->endOfDay()];
+
+            case 'last_6_month':
+                return ['from' => $today->copy()->subMonths(6)->startOfDay(), 'to' => Carbon::now()->endOfDay()];
+
+            case 'last_9_month':
+                return ['from' => $today->copy()->subMonths(9)->startOfDay(), 'to' => Carbon::now()->endOfDay()];
+
+            case 'this_year':
+                return ['from' => $today->copy()->startOfYear(), 'to' => $today->copy()->endOfYear()];
+
+            case 'custom':
+                try {
+                    $f = Carbon::parse($from)->startOfDay();
+                    $t = Carbon::parse($to)->endOfDay();
+                    return ['from' => $f, 'to' => $t];
+                } catch (\Exception $e) {
+                    return null;
+                }
+
+            case 'all':
+            default:
+                return null;
+        }
     }
 }

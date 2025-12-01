@@ -163,6 +163,7 @@ public function store(StoreRegistrationRequest $request)
     // ============================================================
 public function update(UpdateRegistrationRequest $request, Registration $registration)
 {
+    dd($request->all());
     // Update normal fields
     $registration->update($request->all());
 

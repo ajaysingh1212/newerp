@@ -1,81 +1,72 @@
 @extends('layouts.admin')
 @section('content')
-@can('investment_create')
+@can('agent_create')
     <div style="margin-bottom: 10px;" class="row">
         <div class="col-lg-12">
-            <a class="btn btn-success" href="{{ route('admin.investments.create') }}">
-                {{ trans('global.add') }} {{ trans('cruds.investment.title_singular') }}
+            <a class="btn btn-success" href="{{ route('admin.agents.create') }}">
+                {{ trans('global.add') }} {{ trans('cruds.agent.title_singular') }}
             </a>
             <button class="btn btn-warning" data-toggle="modal" data-target="#csvImportModal">
                 {{ trans('global.app_csvImport') }}
             </button>
-            @include('csvImport.modal', ['model' => 'Investment', 'route' => 'admin.investments.parseCsvImport'])
+            @include('csvImport.modal', ['model' => 'Agent', 'route' => 'admin.agents.parseCsvImport'])
         </div>
     </div>
 @endcan
 <div class="card">
     <div class="card-header">
-        {{ trans('cruds.investment.title_singular') }} {{ trans('global.list') }}
+        {{ trans('cruds.agent.title_singular') }} {{ trans('global.list') }}
     </div>
 
     <div class="card-body">
         <div class="table-responsive">
-            <table class=" table table-bordered table-striped table-hover datatable datatable-Investment">
+            <table class=" table table-bordered table-striped table-hover datatable datatable-Agent">
                 <thead>
                     <tr>
                         <th width="10">
 
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.id') }}
+                            {{ trans('cruds.agent.fields.id') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.select_investor') }}
+                            {{ trans('cruds.agent.fields.full_name') }}
                         </th>
                         <th>
-                            {{ trans('cruds.registration.fields.referral_code') }}
+                            {{ trans('cruds.agent.fields.phone_number') }}
                         </th>
                         <th>
-                            {{ trans('cruds.registration.fields.aadhaar_number') }}
+                            {{ trans('cruds.agent.fields.whatsapp_number') }}
                         </th>
                         <th>
-                            {{ trans('cruds.registration.fields.pan_number') }}
+                            {{ trans('cruds.agent.fields.email') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.select_plan') }}
+                            {{ trans('cruds.agent.fields.pin_code') }}
                         </th>
                         <th>
-                            {{ trans('cruds.plan.fields.total_interest_percent') }}
+                            {{ trans('cruds.agent.fields.state') }}
                         </th>
                         <th>
-                            {{ trans('cruds.plan.fields.min_invest_amount') }}
+                            {{ trans('cruds.agent.fields.city') }}
                         </th>
                         <th>
-                            {{ trans('cruds.plan.fields.max_invest_amount') }}
+                            {{ trans('cruds.agent.fields.district') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.principal_amount') }}
+                            {{ trans('cruds.agent.fields.aadhar_front') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.secure_interest_percent') }}
+                            {{ trans('cruds.agent.fields.aadhar_back') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.market_interest_percent') }}
+                            {{ trans('cruds.agent.fields.pan_card') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.total_interest_percent') }}
+                            {{ trans('cruds.agent.fields.additional_document') }}
                         </th>
                         <th>
-                            {{ trans('cruds.investment.fields.start_date') }}
-                        </th>
-                        <th>
-                            {{ trans('cruds.investment.fields.lockin_end_date') }}
-                        </th>
-                        <th>
-                            {{ trans('cruds.investment.fields.next_payout_date') }}
-                        </th>
-                        <th>
-                            {{ trans('cruds.investment.fields.status') }}
+                            {{ trans('cruds.agent.fields.status') }}
                         </th>
                         <th>
                             &nbsp;
@@ -83,77 +74,84 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($investments as $key => $investment)
-                        <tr data-entry-id="{{ $investment->id }}">
+                    @foreach($agents as $key => $agent)
+                        <tr data-entry-id="{{ $agent->id }}">
                             <td>
 
                             </td>
                             <td>
-                                {{ $investment->id ?? '' }}
+                                {{ $agent->id ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_investor->reg ?? '' }}
+                                {{ $agent->full_name ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_agent->full_name ?? '' }}
+                                {{ $agent->phone_number ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_investor->aadhaar_number ?? '' }}
+                                {{ $agent->whatsapp_number ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_investor->pan_number ?? '' }}
+                                {{ $agent->email ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_plan->plan_name ?? '' }}
+                                {{ $agent->pin_code ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_plan->total_interest_percent ?? '' }}
+                                {{ $agent->state ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_plan->min_invest_amount ?? '' }}
+                                {{ $agent->city ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->select_plan->max_invest_amount ?? '' }}
+                                {{ $agent->district ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->principal_amount ?? '' }}
+                                @if($agent->aadhar_front)
+                                    <a href="{{ $agent->aadhar_front->getUrl() }}" target="_blank">
+                                        {{ trans('global.view_file') }}
+                                    </a>
+                                @endif
                             </td>
                             <td>
-                                {{ $investment->secure_interest_percent ?? '' }}
+                                @if($agent->aadhar_back)
+                                    <a href="{{ $agent->aadhar_back->getUrl() }}" target="_blank">
+                                        {{ trans('global.view_file') }}
+                                    </a>
+                                @endif
                             </td>
                             <td>
-                                {{ $investment->market_interest_percent ?? '' }}
+                                @if($agent->pan_card)
+                                    <a href="{{ $agent->pan_card->getUrl() }}" target="_blank">
+                                        {{ trans('global.view_file') }}
+                                    </a>
+                                @endif
                             </td>
                             <td>
-                                {{ $investment->total_interest_percent ?? '' }}
+                                @foreach($agent->additional_document as $key => $media)
+                                    <a href="{{ $media->getUrl() }}" target="_blank">
+                                        {{ trans('global.view_file') }}
+                                    </a>
+                                @endforeach
                             </td>
                             <td>
-                                {{ $investment->start_date ?? '' }}
+                                {{ App\Models\Agent::STATUS_SELECT[$agent->status] ?? '' }}
                             </td>
                             <td>
-                                {{ $investment->lockin_end_date ?? '' }}
-                            </td>
-                            <td>
-                                {{ $investment->next_payout_date ?? '' }}
-                            </td>
-                            <td>
-                                {{ App\Models\Investment::STATUS_SELECT[$investment->status] ?? '' }}
-                            </td>
-                            <td>
-                                @can('investment_show')
-                                    <a class="btn btn-xs btn-primary" href="{{ route('admin.investments.show', $investment->id) }}">
+                                @can('agent_show')
+                                    <a class="btn btn-xs btn-primary" href="{{ route('admin.agents.show', $agent->id) }}">
                                         {{ trans('global.view') }}
                                     </a>
                                 @endcan
 
-                                @can('investment_edit')
-                                    <a class="btn btn-xs btn-info" href="{{ route('admin.investments.edit', $investment->id) }}">
+                                @can('agent_edit')
+                                    <a class="btn btn-xs btn-info" href="{{ route('admin.agents.edit', $agent->id) }}">
                                         {{ trans('global.edit') }}
                                     </a>
                                 @endcan
 
-                                @can('investment_delete')
-                                    <form action="{{ route('admin.investments.destroy', $investment->id) }}" method="POST" onsubmit="return confirm('{{ trans('global.areYouSure') }}');" style="display: inline-block;">
+                                @can('agent_delete')
+                                    <form action="{{ route('admin.agents.destroy', $agent->id) }}" method="POST" onsubmit="return confirm('{{ trans('global.areYouSure') }}');" style="display: inline-block;">
                                         <input type="hidden" name="_method" value="DELETE">
                                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                                         <input type="submit" class="btn btn-xs btn-danger" value="{{ trans('global.delete') }}">
@@ -178,11 +176,11 @@
 <script>
     $(function () {
   let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
-@can('investment_delete')
+@can('agent_delete')
   let deleteButtonTrans = '{{ trans('global.datatables.delete') }}'
   let deleteButton = {
     text: deleteButtonTrans,
-    url: "{{ route('admin.investments.massDestroy') }}",
+    url: "{{ route('admin.agents.massDestroy') }}",
     className: 'btn-danger',
     action: function (e, dt, node, config) {
       var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
@@ -213,7 +211,7 @@
     order: [[ 1, 'desc' ]],
     pageLength: 100,
   });
-  let table = $('.datatable-Investment:not(.ajaxTable)').DataTable({ buttons: dtButtons })
+  let table = $('.datatable-Agent:not(.ajaxTable)').DataTable({ buttons: dtButtons })
   $('a[data-toggle="tab"]').on('shown.bs.tab click', function(e){
       $($.fn.dataTable.tables(true)).DataTable()
           .columns.adjust();

@@ -326,6 +326,18 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('agent_access')
+                                <li class="nav-item">
+                                    <a href="{{ route("admin.agents.index") }}" class="nav-link {{ request()->is("admin/agents") || request()->is("admin/agents/*") ? "active" : "" }}">
+                                        <i class="fa-fw nav-icon fas fa-user-friends">
+
+                                        </i>
+                                        <p>
+                                            {{ trans('cruds.agent.title') }}
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
                         </ul>
                     </li>
                 @endcan

@@ -30,6 +30,18 @@ Auth::routes();
 
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'middleware' => ['auth']], function () {
     Route::get('/', 'HomeController@index')->name('home');
+    // dashboard data (AJAX)
+    Route::get('dashboard/data', [App\Http\Controllers\Admin\HomeController::class, 'dashboardData'])
+        ->name('dashboard.data');
+
+        // Agents
+    Route::delete('agents/destroy', 'AgentsController@massDestroy')->name('agents.massDestroy');
+    Route::post('agents/media', 'AgentsController@storeMedia')->name('agents.storeMedia');
+    Route::post('agents/ckmedia', 'AgentsController@storeCKEditorImages')->name('agents.storeCKEditorImages');
+    Route::post('agents/parse-csv-import', 'AgentsController@parseCsvImport')->name('agents.parseCsvImport');
+    Route::post('agents/process-csv-import', 'AgentsController@processCsvImport')->name('agents.processCsvImport');
+    Route::resource('agents', 'AgentsController');
+
     // Permissions
     Route::delete('permissions/destroy', 'PermissionsController@massDestroy')->name('permissions.massDestroy');
     Route::post('permissions/parse-csv-import', 'PermissionsController@parseCsvImport')->name('permissions.parseCsvImport');

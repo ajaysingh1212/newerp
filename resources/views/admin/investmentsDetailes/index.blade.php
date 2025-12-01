@@ -564,99 +564,43 @@
 </div>
 
 
-{{-- APPROVAL MODAL (Admin only) --}}
-<div id="approveModal" class="modalOverlay" aria-hidden="true">
-    <div class="modalPanel" style="max-width:720px;">
-
-        <div class="flex justify-between items-center mb-4 border-b pb-2">
-            <h3 class="text-2xl font-bold text-indigo-700 flex items-center gap-2">
-                <i class="fas fa-check-circle text-indigo-600"></i>
-                Approve / Update Withdrawal
-            </h3>
-            <button id="closeApprove" type="button" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded shadow">
-                Close
-            </button>
-        </div>
-
-        <div id="approve_errors" style="display:none"
-             class="error-text mb-2 bg-red-50 border border-red-300 p-3 rounded-lg"></div>
-
-        <form id="approveForm">
-
-            <input type="hidden" id="ap_withdrawal_id" name="withdrawal_id">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <div class="gradient-card p-3 rounded-xl shadow-sm border">
-                    <label class="text-sm font-semibold text-gray-700">Status</label>
-                    <select id="ap_status" name="status"
-                            class="w-full mt-1 rounded-lg p-2 bg-white border border-gray-300">
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="pending">Pending</option>
-                    </select>
-                </div>
-
-                <div class="gradient-card p-3 rounded-xl shadow-sm border">
-                    <label class="text-sm font-semibold text-gray-700">Approved At</label>
-                    <input id="ap_approved_at" name="approved_at" type="datetime-local"
-                           class="w-full mt-1 rounded-lg p-2 bg-white border border-gray-300"/>
-                </div>
-
-                <div class="gradient-card md:col-span-2 p-3 rounded-xl shadow-sm border">
-                    <label class="text-sm font-semibold">Notes</label>
-                    <textarea id="ap_notes" name="notes"
-                              class="w-full mt-1 rounded-lg p-2 border border-gray-300"
-                              rows="2"></textarea>
-                </div>
-
-                <div class="gradient-card md:col-span-2 p-3 rounded-xl shadow-sm border">
-                    <label class="text-sm font-semibold">Remarks</label>
-                    <textarea id="ap_remarks" name="remarks"
-                              class="w-full mt-1 rounded-lg p-2 border border-gray-300"
-                              rows="2"></textarea>
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="text-sm font-semibold text-gray-700">Attachment (PDF / JPG / PNG)</label>
-
-                    <input id="ap_attachment" name="attachment" type="file"
-                           class="mt-3 w-full text-sm text-gray-700"/>
-
-                    <div id="ap_existing_attachment" class="mt-2 smallMuted text-gray-700"></div>
-                </div>
-
-            </div>
-
-            <hr class="my-4">
-
-            <div class="gradient-card p-4 rounded-2xl shadow border">
-                <h4 class="text-lg font-bold text-indigo-700 mb-3 flex items-center gap-2">
-                    <i class="fas fa-user-shield text-indigo-600"></i>
-                    Investor / User Details
-                </h4>
-
-                <div id="ap_investor_info"
-                     class="space-y-1 text-gray-800 text-sm"></div>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-5">
-                <button type="button" id="ap_cancel"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg shadow">
-                    Cancel
-                </button>
-
-                <button type="submit" id="ap_submit"
-                        class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-lg">
-                    Save Approval
-                </button>
-            </div>
-
-        </form>
-
-    </div>
-</div>
-
+{{-- ADMIN APPROVAL MODAL (kept same) --}} 
+<div id="approveModal" class="modalOverlay" aria-hidden="true"> 
+    <div class="modalPanel" style="max-width:720px;"> 
+        <div class="flex justify-between items-center mb-4 border-b pb-2"> 
+            <h3 class="text-2xl font-bold text-indigo-700 flex items-center gap-2"> 
+                <i class="fas fa-check-circle text-indigo-600"></i> Approve / Update Withdrawal </h3> 
+                <button id="closeApprove" type="button" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded shadow"> Close </button> 
+            </div> 
+            <div id="approve_errors" style="display:none" class="error-text mb-2 bg-red-50 border border-red-300 p-3 rounded-lg">
+                </div> 
+                <form id="approveForm"> 
+                    <input type="hidden" id="ap_withdrawal_id" name="withdrawal_id"> 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> 
+                        <div class="gradient-card p-3 rounded-xl shadow-sm border"> 
+                            <label class="text-sm font-semibold text-gray-700">Status</label> 
+                            <select id="ap_status" name="status" class="w-full mt-1 rounded-lg p-2 bg-white border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300"> 
+                                <option value="approved">Approved</option> 
+                                <option value="rejected">Rejected</option> 
+                                <option value="pending">Pending</option> 
+                            </select> 
+                        </div> 
+                        <div class="gradient-card p-3 rounded-xl shadow-sm border"> 
+                            <label class="text-sm font-semibold text-gray-700">Approved At</label> 
+                            <input id="ap_approved_at" name="approved_at" type="datetime-local" class="w-full mt-1 rounded-lg p-2 bg-white border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300"/> 
+                        </div> 
+                        <div class="gradient-card md:col-span-2 p-3 rounded-xl shadow-sm border"> 
+                            <label class="text-sm font-semibold">Notes</label> 
+                            <textarea id="ap_notes" name="notes" class="w-full mt-1 rounded-lg p-2 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300" rows="2"></textarea> 
+                        </div> 
+                        <div class="gradient-card md:col-span-2 p-3 rounded-xl shadow-sm border"> 
+                            <label class="text-sm font-semibold">Remarks</label> 
+                            <textarea id="ap_remarks" name="remarks" class="w-full mt-1 rounded-lg p-2 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300" rows="2"></textarea> 
+                        </div> 
+                        <div class="md:col-span-2"> 
+                            <label class="text-sm font-semibold text-gray-700">Attachment (PDF / JPG / PNG)</label> 
+                            <div class="mt-2 p-4 border-2 border-dashed border-indigo-400 rounded-xl bg-indigo-50 cursor-pointer hover:bg-indigo-100 transition"> 
+                                <div class="flex items-center gap-3"> <div class="bg-indigo-200 p-3 rounded-full"> <i class="fas fa-upload text-indigo-700 text-xl"></i> </div> <div> <p class="font-semibold text-indigo-700">Upload File</p> <p class="text-sm text-gray-600">Choose attachment to upload for approval record.</p> </div> </div> <input id="ap_attachment" name="attachment" type="file" class="mt-3 w-full text-sm text-gray-700 file:bg-indigo-600 file:text-white file:px-4 file:py-2 file:rounded-lg file:cursor-pointer"/> </div> <div id="ap_existing_attachment" class="mt-2 smallMuted text-gray-700"></div> </div> </div> <hr class="my-4"> <div class="gradient-card p-4 rounded-2xl shadow border"> <h4 class="text-lg font-bold text-indigo-700 mb-3 flex items-center gap-2"> <i class="fas fa-user-shield text-indigo-600"></i> Investor / User Details </h4> <div id="ap_investor_info" class="space-y-1 text-gray-800 text-sm"></div> </div> <div class="flex justify-end gap-3 mt-5"> <button type="button" id="ap_cancel" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg shadow"> Cancel </button> <button type="submit" id="ap_submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-lg"> Save Approval </button> </div> </form> </div> </div>
 {{-- END PART 2 --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -925,9 +869,10 @@ function renderData(data) {
     (s.approved_withdrawals || []).forEach(w => {
 
         let attachHTML = '—';
+
         if (w.media && w.media.length) {
             attachHTML = w.media.map(m =>
-                `<a href="${m.url}" target="_blank">${m.file_name}</a>`
+                `<a href="${m.original_url}" target="_blank">${m.file_name}</a>`
             ).join('<br>');
         }
 
@@ -943,6 +888,7 @@ function renderData(data) {
             </tr>
         `;
     });
+
     el('approved_withdrawals_table').innerHTML = approvedHTML;
 }
 

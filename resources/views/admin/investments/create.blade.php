@@ -276,17 +276,17 @@
 
                 <div class="bg-yellow-50 p-4 rounded-lg">
                     <label class="block text-sm font-semibold text-gray-700 mb-1">{{ trans('cruds.investment.fields.secure_interest_percent') }}</label>
-                    <input type="text" name="secure_interest_percent" id="secure_interest_percent" value="{{ old('secure_interest_percent') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
+                    <input type="text" name="secure_interest_percent" id="secure_interest_percent" value="{{ old('secure_interest_percent') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
                 </div>
 
                 <div class="bg-yellow-50 p-4 rounded-lg">
                     <label class="block text-sm font-semibold text-gray-700 mb-1">{{ trans('cruds.investment.fields.market_interest_percent') }}</label>
-                    <input type="text" name="market_interest_percent" id="market_interest_percent" value="{{ old('market_interest_percent') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
+                    <input type="text" name="market_interest_percent" id="market_interest_percent" value="{{ old('market_interest_percent') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
                 </div>
 
                 <div class="bg-yellow-50 p-4 rounded-lg">
                     <label class="block text-sm font-semibold text-gray-700 mb-1">{{ trans('cruds.investment.fields.total_interest_percent') }}</label>
-                    <input type="text" name="total_interest_percent" id="total_interest_percent" value="{{ old('total_interest_percent') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm">
+                    <input type="text" name="total_interest_percent" id="total_interest_percent" value="{{ old('total_interest_percent') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
                 </div>
 
                 <div class="bg-purple-50 p-4 rounded-lg">
@@ -294,7 +294,18 @@
                     <input type="text" name="start_date" id="start_date" value="{{ date('Y-m-d') }}" class="w-full rounded-lg border-gray-300 shadow-sm px-3 py-2 text-sm" readonly>
                 </div>
             </div>
-
+            <div class="form-group">
+                <label for="select_agent_id">Select Agent</label>
+                <select class="form-control select2 {{ $errors->has('select_agent') ? 'is-invalid' : '' }}" name="select_agent_id" id="select_agent_id">
+                    @foreach($select_agents as $id => $entry)
+                        <option value="{{ $id }}" {{ old('select_agent_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
+                    @endforeach
+                </select>
+                @if($errors->has('select_agent'))
+                    <span class="text-danger">{{ $errors->first('select_agent') }}</span>
+                @endif
+                
+            </div>
         </div>
 
         <div class="mt-8 text-right">

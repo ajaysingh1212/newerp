@@ -5,6 +5,131 @@
 
 @extends('layouts.admin')
 @section('content')
+<!-- ================= New Investor Dashboard (PUT THIS AT TOP) ================= -->
+<div class="row mb-4" id="investor-dashboard-card">
+    <div class="col-12">
+        <div class="card p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="mb-1">Investor Summary</h5>
+                    <small class="text-muted">Overview of investors, KYC & investments</small>
+                </div>
+
+                <div class="d-flex gap-2 align-items-center">
+                    <select id="dash-filter" class="form-control form-select">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="this_week">This Week</option>
+                        <option value="this_month">This Month</option>
+                        <option value="last_3_month">Last 3 Months</option>
+                        <option value="last_6_month">Last 6 Months</option>
+                        <option value="last_9_month">Last 9 Months</option>
+                        <option value="this_year">This Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+
+                    <input type="date" id="dash-from" class="form-control" style="display:none;">
+                    <input type="date" id="dash-to" class="form-control" style="display:none;">
+
+                    <button id="dash-apply" class="btn btn-primary">Apply</button>
+                    <button id="dash-reset" class="btn btn-outline-secondary">Reset</button>
+                </div>
+            </div>
+
+            <div id="dash-cards" class="row gy-3">
+                <!-- Cards will be injected/updated by JS -->
+                <div class="col-md-3">
+                    <div class="card text-white bg-success shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="small">Verified Investors</div>
+                            <h4 id="card-verified">0</h4>
+                            <div class="small">KYC Verified</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="small">Not Verified</div>
+                            <h4 id="card-not-verified">0</h4>
+                            <div class="small">Pending / Submitted</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card text-white bg-primary shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="small">Total Investment</div>
+                            <h4 id="card-total-investment">₹0</h4>
+                            <div class="small">Principal Sum</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card text-white bg-info shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="small">Withdrawals (Requested)</div>
+                            <h4 id="card-withdraw-requested">₹0</h4>
+                            <div class="small">Requested Amount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4 align-items-center">
+                <div class="col-md-6">
+                    <canvas id="withdrawPieChart" height="220"></canvas>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="card border-secondary mb-2">
+                                <div class="card-body text-center">
+                                    <small>Approved</small>
+                                    <h5 id="withdraw-approved">₹0</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card border-secondary mb-2">
+                                <div class="card-body text-center">
+                                    <small>Pending</small>
+                                    <h5 id="withdraw-pending">₹0</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="card border-secondary mb-2">
+                                <div class="card-body text-center">
+                                    <small>Rejected</small>
+                                    <h5 id="withdraw-rejected">₹0</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="card border-secondary mb-2">
+                                <div class="card-body text-center">
+                                    <small>Total KYC</small>
+                                    <h5 id="kyc-total">0</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- col-12 -->
+</div>
+
+
+<!-- ================= end of Investor Dashboard ================= -->
 
 <div class="container">
     @if($role !== 'Customer')
@@ -571,6 +696,119 @@
     </div>
 </div>
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const apiUrl = "{{ route('admin.dashboard.data') }}";
+    const filterEl = document.getElementById('dash-filter');
+    const fromEl = document.getElementById('dash-from');
+    const toEl   = document.getElementById('dash-to');
+    const applyBtn = document.getElementById('dash-apply');
+    const resetBtn = document.getElementById('dash-reset');
+
+    // Show/hide custom date inputs
+    filterEl.addEventListener('change', function () {
+        if (this.value === 'custom') {
+            fromEl.style.display = 'inline-block';
+            toEl.style.display = 'inline-block';
+        } else {
+            fromEl.style.display = 'none';
+            toEl.style.display = 'none';
+            fromEl.value = '';
+            toEl.value = '';
+        }
+    });
+
+    // Chart instance
+    let pieChart = null;
+    function createOrUpdatePie(labels, data) {
+        const ctx = document.getElementById('withdrawPieChart').getContext('2d');
+        if (pieChart) {
+            pieChart.data.labels = labels;
+            pieChart.data.datasets[0].data = data;
+            pieChart.update();
+            return;
+        }
+        pieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#198754', '#ffc107', '#dc3545'],
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // Fetch and render
+    async function fetchDashboard() {
+        const payload = {
+            filter: filterEl.value
+        };
+        if (filterEl.value === 'custom') {
+            payload.from_date = fromEl.value;
+            payload.to_date   = toEl.value;
+        }
+
+        // Build query string
+        const params = new URLSearchParams(payload).toString();
+        const res = await fetch(apiUrl + '?' + params, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const json = await res.json();
+        if (!json || json.status !== 'success') return;
+
+        const d = json.data;
+
+        // Update cards
+        document.getElementById('card-verified').innerText = d.totalVerified;
+        document.getElementById('card-not-verified').innerText = d.totalNotVerified;
+        document.getElementById('card-total-investment').innerText = '₹' + Number(d.totalInvestmentAmount).toLocaleString();
+        document.getElementById('card-withdraw-requested').innerText = '₹' + Number(d.withdraw.requested).toLocaleString();
+
+        // Withdraw breakdown
+        document.getElementById('withdraw-approved').innerText = '₹' + Number(d.withdraw.approved).toLocaleString();
+        document.getElementById('withdraw-pending').innerText = '₹' + Number(d.withdraw.pending).toLocaleString();
+        document.getElementById('withdraw-rejected').innerText = '₹' + Number(d.withdraw.rejected).toLocaleString();
+
+        // KYC totals
+        document.getElementById('kyc-total').innerText = d.kyc.total;
+
+        // Pie chart
+        const labels = d.chartData.map(x => x.label);
+        const values = d.chartData.map(x => x.value);
+        createOrUpdatePie(labels, values);
+    }
+
+    // initial load
+    fetchDashboard();
+
+    applyBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        fetchDashboard();
+    });
+
+    resetBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        filterEl.value = 'all';
+        fromEl.value = '';
+        toEl.value = '';
+        fromEl.style.display = 'none';
+        toEl.style.display = 'none';
+        fetchDashboard();
+    });
+
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const transferLabels = @json($transferLabels);

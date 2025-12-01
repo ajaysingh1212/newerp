@@ -195,6 +195,22 @@
                             @error('status') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="select_agent_id">Select Agent</label>
+                        <select class="form-control select2 {{ $errors->has('select_agent') ? 'is-invalid' : '' }}" name="select_agent_id" id="select_agent_id">
+                            @foreach($select_agents as $id => $entry)
+                                <option value="{{ $id }}" {{ (old('select_agent_id') ? old('select_agent_id') : $investment->select_agent->id ?? '') == $id ? 'selected' : '' }}>{{ $entry }}</option>
+                            @endforeach
+                        </select>
+                        @if($errors->has('select_agent'))
+                            <span class="text-danger">{{ $errors->first('select_agent') }}</span>
+                        @endif
+                        
+                    </div>
+                    <div class="form-group">
+                        <label for="admin_remarks">Agent Remarks</label>
+                        <textarea name="admin_remarks" id="" cols="30" rows="10" class="form-control"></textarea>
+                    </div>
                 @endif
 
             </div>

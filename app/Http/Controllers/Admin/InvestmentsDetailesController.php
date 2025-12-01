@@ -131,7 +131,7 @@ public function fetchDetails($id)
         'investmentWithdrawalRequests.media',
     ])->findOrFail($id);
 
-    // Daily interest rows
+    // ===================== DAILY INTEREST =====================
     $dailyRows = DailyInterest::where('investment_id', $id)
         ->orderBy('interest_date', 'ASC')
         ->get();
@@ -148,35 +148,43 @@ public function fetchDetails($id)
     // Daily Interest Formula
     $dailyInterest = ($principal * $totalPercent / 100) / 30;
 
-    // Safe date
+    // Safe start date
     try {
         $safeStartDate = Carbon::parse($investment->start_date)->format('d-m-Y');
     } catch (\Exception $e) {
         $safeStartDate = Carbon::now()->format('d-m-Y');
     }
 
-    // All approved withdrawals
+    // ===================== APPROVED WITHDRAWALS =====================
     $approved = WithdrawalRequest::where('investment_id', $id)
         ->where('status', 'approved')
         ->orderBy('approved_at', 'ASC')
         ->get();
 
-    $approved_interest   = $approved->where('type','interest')->sum('amount');
-    $approved_principal  = $approved->where('type','principal')->sum('amount');
-    $approved_totaltype  = $approved->where('type','total')->sum('amount');
+    $approved_interest   = $approved->where('type', 'interest')->sum('amount');
+    $approved_principal  = $approved->where('type', 'principal')->sum('amount');
+    $approved_totaltype  = $approved->where('type', 'total')->sum('amount');
 
-    // Calculate impact of "total" withdrawals
-    $remainingInterestCap = max(0, $totalEarnedInterest - $approved_interest);
-    $interest_from_totaltype = min($approved_totaltype, $remainingInterestCap);
+    // Handle total-type split
+    $remainingInterestCap     = max(0, $totalEarnedInterest - $approved_interest);
+    $interest_from_totaltype  = min($approved_totaltype, $remainingInterestCap);
     $principal_from_totaltype = max(0, $approved_totaltype - $interest_from_totaltype);
 
-    // Final remaining balances
-    $final_interest = max(0, $totalEarnedInterest - $approved_interest - $interest_from_totaltype);
+    // Final balances
+    $final_interest  = max(0, $totalEarnedInterest - $approved_interest - $interest_from_totaltype);
     $final_principal = max(0, $principal - $approved_principal - $principal_from_totaltype);
 
-    // ✅ MAIN FIX — ADD total_approved
+    // Total approved sum
     $total_approved = $approved_interest + $approved_principal + $approved_totaltype;
 
+    // ===================== APPROVED LIST WITH MEDIA =====================
+    $approved_withdrawals = WithdrawalRequest::with('media')
+        ->where('investment_id', $id)
+        ->where('status', 'approved')
+        ->orderBy('approved_at', 'ASC')
+        ->get();
+
+    // ===================== RETURN RESPONSE =====================
     return response()->json([
         'investment'          => $investment,
         'dailyInterest'       => round($dailyInterest, 2),
@@ -184,7 +192,7 @@ public function fetchDetails($id)
         'totalEarnedInterest' => round($totalEarnedInterest, 2),
 
         'approvedSummary'     => [
-            'total_approved'            => round($total_approved, 2), // ⭐ FIXED
+            'total_approved'            => round($total_approved, 2),
             'approved_interest'         => round($approved_interest, 2),
             'approved_principal'        => round($approved_principal, 2),
             'approved_totaltype'        => round($approved_totaltype, 2),
@@ -192,11 +200,15 @@ public function fetchDetails($id)
             'principal_from_totaltype'  => round($principal_from_totaltype, 2),
             'final_interest'            => round($final_interest, 2),
             'final_principal'           => round($final_principal, 2),
+
+            // ⭐ NEW → REQUIRED BY BLADE TABLE
+            'approved_withdrawals'      => $approved_withdrawals,
         ],
 
         'safeStartDate' => $safeStartDate,
     ]);
 }
+
 
 
 
