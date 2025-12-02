@@ -15,6 +15,7 @@ use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccountDeletionAdminController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
 use App\Http\Controllers\Admin\WithdrawalRequestsController;
+use App\Http\Controllers\HomeController;
 use Maatwebsite\Excel\Excel;
 
 Route::redirect('/', '/login');
@@ -33,6 +34,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     // dashboard data (AJAX)
     Route::get('dashboard/data', [App\Http\Controllers\Admin\HomeController::class, 'dashboardData'])
         ->name('dashboard.data');
+    Route::get('state-counts', [HomeController::class, 'getStateCounts'])->name('map.counts');
+    Route::get('state-registrations/{state}', [HomeController::class, 'getStateRegistrations'])->name('map.reg');
 
         // Agents
     Route::delete('agents/destroy', 'AgentsController@massDestroy')->name('agents.massDestroy');

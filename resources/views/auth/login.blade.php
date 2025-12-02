@@ -1,6 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
 
 <div class="container" id="container">
 	<!-- Sign Up Form -->
@@ -8,44 +19,19 @@
 		<form method="POST" action="{{ route('register') }}">
 			@csrf
 			<h1>Create Account</h1>
-			<div class="social-container">
-				<a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-				<a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-				<a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-			</div>
-			<span>or use your email for registration</span>
 
 			<input type="text" name="name" value="{{ old('name') }}" placeholder="Name" required />
-			@if($errors->has('name'))
-				<div class="invalid-feedback">{{ $errors->first('name') }}</div>
-			@endif
-
 			<input type="text" name="mobile_number" value="{{ old('mobile_number') }}" placeholder="Phone Number" required />
-			@if($errors->has('mobile_number'))
-				<div class="invalid-feedback">{{ $errors->first('mobile_number') }}</div>
-			@endif
-
 			<input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required />
-			@if($errors->has('email'))
-				<div class="invalid-feedback">{{ $errors->first('email') }}</div>
-			@endif
 
-			<!-- Password with Eye Icon -->
 			<div class="password-wrapper">
 				<input id="registerPassword" type="password" name="password" placeholder="Password" required />
-				<span class="toggle-password" data-target="registerPassword">
-					<i class="fa-solid fa-eye"></i>
-				</span>
+				<span class="toggle-password" data-target="registerPassword"><i class="fa-solid fa-eye"></i></span>
 			</div>
-			@if($errors->has('password'))
-				<div class="invalid-feedback">{{ $errors->first('password') }}</div>
-			@endif
 
 			<div class="password-wrapper">
 				<input id="registerConfirm" type="password" name="password_confirmation" placeholder="Confirm Password" required />
-				<span class="toggle-password" data-target="registerConfirm">
-					<i class="fa-solid fa-eye"></i>
-				</span>
+				<span class="toggle-password" data-target="registerConfirm"><i class="fa-solid fa-eye"></i></span>
 			</div>
 
 			<button type="submit">Sign Up</button>
@@ -54,39 +40,31 @@
 
 	<!-- Sign In Form -->
 	<div class="form-container sign-in-container">
-		<form method="POST" action="{{ route('login') }}">
+		<form method="POST" action="{{ route('login') }}" id="loginForm">
 			@csrf
-			<div>
-				<img src="{{ asset('img/logo.webp') }}" alt="" width="100">
-			</div>
+
+			<input type="hidden" name="latitude" id="latitude">
+			<input type="hidden" name="longitude" id="longitude">
+			<input type="hidden" name="location_address" id="location_address">
+
+			<div><img src="{{ asset('img/logo.webp') }}" alt="" width="100"></div>
+
 			<h1>Sign in</h1>
-			<div class="social-container">
-				<a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-				<a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-				<a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-			</div>
-			<span>or use your account</span>
 
-			<input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Email"
-				class="{{ $errors->has('email') ? 'is-invalid' : '' }}" required autofocus />
-			@if($errors->has('email'))
-				<div class="invalid-feedback">{{ $errors->first('email') }}</div>
-			@endif
+			<input type="email" name="email" placeholder="Email" required autofocus />
 
-			<!-- Password with Eye Icon -->
 			<div class="password-wrapper">
-				<input id="loginPassword" type="password" name="password" placeholder="Password"
-					class="{{ $errors->has('password') ? 'is-invalid' : '' }}" required />
-				<span class="toggle-password" data-target="loginPassword">
-					<i class="fa-solid fa-eye"></i>
-				</span>
+				<input id="loginPassword" type="password" name="password" placeholder="Password" required />
+				<span class="toggle-password" data-target="loginPassword"><i class="fa-solid fa-eye"></i></span>
 			</div>
-			@if($errors->has('password'))
-				<div class="invalid-feedback">{{ $errors->first('password') }}</div>
+
+			@if(session('location_error'))
+				<p style="color:red">{{ session('location_error') }}</p>
 			@endif
+
+			<button type="submit" id="loginBtn">Sign In</button>
 
 			<a href="{{ route('password.request') }}">Forgot your password?</a>
-			<button type="submit">Sign In</button>
 		</form>
 	</div>
 
@@ -94,20 +72,16 @@
 	<div class="overlay-container">
 		<div class="overlay">
 			<div class="overlay-panel overlay-left">
-				<div>
-					<img src="{{ asset('img/logo.webp') }}" alt="" width="100">
-				</div>
+				<div><img src="{{ asset('img/logo.webp') }}" alt="" width="100"></div>
 				<h1>Welcome Back!</h1>
-				<p>To keep connected with us please login with your personal info</p>
+				<p>To keep connected, login with your personal info</p>
 				<button class="ghost" id="signIn">Sign In</button>
 			</div>
 
 			<div class="overlay-panel overlay-right">
-				<div>
-					<img src="{{ asset('img/logo.webp') }}" alt="" width="100">
-				</div>
+				<div><img src="{{ asset('img/logo.webp') }}" alt="" width="100"></div>
 				<h1>Hello, Friend!</h1>
-				<p>Enter your personal details and start journey with us</p>
+				<p>Enter personal details & start journey with us</p>
 				<button class="ghost" id="signUp">Sign Up</button>
 			</div>
 		</div>
@@ -122,6 +96,71 @@
 		<a target="_blank" href="tel:8294169540">here</a>.
 	</p>
 </footer>
+
+<style>
+/* SAME CSS YOU SHARED - OMITTED FOR BREVITY */
+</style>
+
+<script>
+const loginBtn = document.getElementById("loginBtn");
+const loginForm = document.getElementById("loginForm");
+
+loginBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+
+    if (!navigator.geolocation) {
+        alert("⚠️ Your browser does not support location.");
+        return false;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        successCallback,
+        errorCallback,
+        { enableHighAccuracy: true }
+    );
+});
+
+function successCallback(position) {
+
+    let lat = position.coords.latitude;
+    let lng = position.coords.longitude;
+
+    document.getElementById("latitude").value = lat;
+    document.getElementById("longitude").value = lng;
+
+    // CALL GOOGLE MAPS API
+    let apiKey = "{{ config('services.google_maps.key') ?? 'AIzaSyBgRXfXiK8KHfSnKtunSIpGpKNmLNGNUzM' }}";
+    let url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            
+            if (data.status === "OK" && data.results.length > 0) {
+                let addr = data.results[0].formatted_address;
+                document.getElementById("location_address").value = addr;
+            } else {
+                document.getElementById("location_address").value = "Unknown";
+            }
+
+            loginForm.submit();
+        })
+        .catch(err => {
+            console.log(err);
+            alert("⚠️ Error fetching location address.");
+        });
+}
+
+function errorCallback(error) {
+    alert("⚠️ Location permission is required to login.");
+    return false;
+}
+</script>
+
+
+</body>
+</html>
+
 
 <style>
 @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');

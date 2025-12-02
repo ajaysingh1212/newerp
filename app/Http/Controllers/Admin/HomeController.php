@@ -592,5 +592,33 @@ private function computeDateRange($filter, $from = null, $to = null)
             return null;
     }
 }
+// ================= INDIA MAP: STATE COUNTS =================
+public function getStateCounts()
+{
+    $data = Registration::select('state', DB::raw('COUNT(*) as total'))
+        ->groupBy('state')
+        ->pluck('total','state');
+
+    return response()->json([
+        'status' => 'success',
+        'data'   => $data
+    ]);
+}
+
+// ================= INDIA MAP: STATE REGISTRATION DETAIL =================
+public function getStateRegistrations($state)
+{
+    $list = Registration::where('state', $state)
+        ->select('id', 'father_name', 'city', 'pincode', 'kyc_status','created_at')
+        ->orderBy('created_at','desc')
+        ->limit(200)
+        ->get();
+
+    return response()->json([
+        'status' => 'success',
+        'state'  => $state,
+        'data'   => $list
+    ]);
+}
 
 }

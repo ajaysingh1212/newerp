@@ -39,6 +39,17 @@
                             {{ trans('cruds.loginLog.fields.ip_address') }}
                         </th>
                         <th>
+                            Log Out IP
+                        </th>
+                        <th>
+                            Type
+                        </th>
+                        <th>
+                            Latitude
+                        </th>
+                        <th>
+                            Longitude
+                        <th>
                             {{ trans('cruds.loginLog.fields.device') }}
                         </th>
                         <th>
@@ -47,6 +58,7 @@
                         <th>
                             {{ trans('cruds.loginLog.fields.logged_in_at') }}
                         </th>
+                       
                         <th>
                             &nbsp;
                         </th>
@@ -68,7 +80,19 @@
                                 {{ $loginLog->use->email ?? '' }}
                             </td>
                             <td>
-                                {{ $loginLog->ip_address ?? '' }}
+                                {{ $loginLog->logged_in_ip ?? '' }}
+                            </td>
+                            <td>
+                                {{ $loginLog->logged_out_ip ?? '' }}
+                            </td>
+                            <td>
+                                {{ $loginLog->type ?? '' }}
+                            </td>
+                            <td>
+                                {{ $loginLog->latitude ?? '' }}
+                            </td>
+                            <td>
+                                {{ $loginLog->longitude ?? '' }}
                             </td>
                             <td>
                                 {{ $loginLog->device ?? '' }}

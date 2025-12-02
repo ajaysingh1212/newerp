@@ -23,10 +23,15 @@ class LoginLog extends Model
 
     protected $fillable = [
         'use_id',
-        'ip_address',
+        'logged_in_ip',
+        'logged_out_ip',
         'device',
         'location',
         'logged_in_at',
+        'logged_out_at',
+        'type',
+        'latitude',
+        'longitude',
         'created_at',
         'updated_at',
         'deleted_at',

@@ -70,23 +70,24 @@
                             <td>
                                 {{ $investorTransaction->id ?? '' }}
                             </td>
+                             <td>
+                                {{ $investorTransaction->investor->reg ?? '' }}
+                            </td>
+                            
                             <td>
-                                {{ $investorTransaction->investor->principal_amount ?? '' }}
+                                {{ $investorTransaction->investment->secure_interest_percent ?? '' }}
                             </td>
                             <td>
-                                {{ $investorTransaction->investor->secure_interest_percent ?? '' }}
+                                {{ $investorTransaction->investment->total_interest_percent ?? '' }}
+                            </td>
+                           <td>
+                                {{ $investorTransaction->investment->principal_amount ?? '' }}
                             </td>
                             <td>
-                                {{ $investorTransaction->investor->total_interest_percent ?? '' }}
+                                {{ $investorTransaction->investor->aadhaar_number ?? '' }}
                             </td>
                             <td>
-                                {{ $investorTransaction->investment->reg ?? '' }}
-                            </td>
-                            <td>
-                                {{ $investorTransaction->investment->aadhaar_number ?? '' }}
-                            </td>
-                            <td>
-                                {{ $investorTransaction->investment->pan_number ?? '' }}
+                                {{ $investorTransaction->investor->pan_number ?? '' }}
                             </td>
                             <td>
                                 {{ App\Models\InvestorTransaction::TRANSACTION_TYPE_SELECT[$investorTransaction->transaction_type] ?? '' }}

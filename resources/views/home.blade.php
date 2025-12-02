@@ -6,6 +6,7 @@
 @extends('layouts.admin')
 @section('content')
 
+
 <!-- ================= NEW INVESTOR DASHBOARD ================= -->
 <div class="row mb-4" id="investor-dashboard-card">
     <div class="col-12">
@@ -44,7 +45,7 @@
             <div id="dash-cards" class="row gy-3">
 
                 <div class="col-md-3">
-                    <div class="card text-white bg-success shadow-sm">
+                    <div class="card text-white bg-success shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
                         <div class="card-body text-center">
                             <div class="small">Verified Investors</div>
                             <h4 id="card-verified">0</h4>
@@ -54,7 +55,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <div class="card text-white bg-warning shadow-sm">
+                    <div class="card text-white bg-warning shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
                         <div class="card-body text-center">
                             <div class="small">Not Verified</div>
                             <h4 id="card-not-verified">0</h4>
@@ -64,7 +65,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <div class="card text-white bg-primary shadow-sm">
+                    <div class="card text-white bg-primary shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
                         <div class="card-body text-center">
                             <div class="small">Total Investment</div>
                             <h4 id="card-total-investment">₹0</h4>
@@ -74,7 +75,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <div class="card text-white bg-info shadow-sm">
+                    <div class="card text-white bg-info shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
                         <div class="card-body text-center">
                             <div class="small">Withdrawals (Requested)</div>
                             <h4 id="card-withdraw-requested">₹0</h4>
@@ -104,7 +105,7 @@
 
                     <div class="row mt-3">
                         <div class="col-6">
-                            <div class="card border-secondary mb-2">
+                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
                                 <div class="card-body text-center">
                                     <small>Approved</small>
                                     <h5 id="withdraw-approved">₹0</h5>
@@ -112,7 +113,7 @@
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card border-secondary mb-2">
+                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
                                 <div class="card-body text-center">
                                     <small>Pending</small>
                                     <h5 id="withdraw-pending">₹0</h5>
@@ -121,7 +122,7 @@
                         </div>
 
                         <div class="col-6">
-                            <div class="card border-secondary mb-2">
+                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
                                 <div class="card-body text-center">
                                     <small>Rejected</small>
                                     <h5 id="withdraw-rejected">₹0</h5>
@@ -130,7 +131,7 @@
                         </div>
 
                         <div class="col-6">
-                            <div class="card border-secondary mb-2">
+                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
                                 <div class="card-body text-center">
                                     <small>Total KYC</small>
                                     <h5 id="kyc-total">0</h5>
@@ -713,7 +714,6 @@
 </div>
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 
 <!-- ================= DASHBOARD JS ================= -->
 <script>
