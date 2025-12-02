@@ -157,6 +157,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🔑 User Login (new short-response version)
     Route::post('user-login', 'UsersApiController@UserLogin')->name('user.login');
 
+    // 🔎 Get user by email OR mobile number
+    Route::post('find-user', 'UsersApiController@getUserByEmailOrMobile')->name('user.find');
+
 
    
     
