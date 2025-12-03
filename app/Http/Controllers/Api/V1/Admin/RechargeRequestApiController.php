@@ -263,8 +263,8 @@ public function CustomerRecharge(Request $request)
             ]);
         }
 
-        /** ALWAYS save recharge entry */
-        RechargeRequest::create([
+        /** CREATE RECHARGE ENTRY */
+        $recharge = RechargeRequest::create([
             'user_id'            => $request->user_id,
             'vehicle_number'     => $request->vehicle_number,
             'select_recharge_id' => $request->select_recharge_id,
@@ -276,6 +276,12 @@ public function CustomerRecharge(Request $request)
             'payment_id'         => 'TXN'.rand(1000000000,9999999999),
             'razorpay_payment_id'=> $request->razorpay_payment_id,
             'created_by_id'      => $request->created_by_id,
+        ]);
+
+        // ⭐ COMMISSION ENTRY SAVE – ONLY THESE TWO FIELDS NOW
+        \App\Models\Commission::create([
+            'recharge_request_id' => $recharge->id,
+            'customer_id'         => $request->user_id,
         ]);
 
         /** failed payment => STOP */
@@ -294,11 +300,9 @@ public function CustomerRecharge(Request $request)
             ->whereIn('payment_status',['success','completed','paid'])
             ->count() > 1;
 
-
-        /** ------ BASE CALC ------ */
+        /** FIRST or NEXT RECHARGE LOGIC */
         if(!$hasRechargeBefore)
         {
-            /** FIRST RECHARGE */
             $reqDate = $vehicle->request_date
                 ? Carbon::createFromFormat('d-m-Y',$vehicle->request_date)
                 : $today;
@@ -309,12 +313,10 @@ public function CustomerRecharge(Request $request)
         }
         else
         {
-            /** NEXT RECHARGE */
             $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty)     : null;
             $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : null;
             $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc)          : null;
         }
-
 
         /** APPLY PLAN DURATION */
         if($plan->warranty_duration > 0){
@@ -357,6 +359,7 @@ public function CustomerRecharge(Request $request)
         ],500);
     }
 }
+
 
 
 
