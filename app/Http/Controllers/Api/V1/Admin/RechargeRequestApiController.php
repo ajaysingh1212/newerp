@@ -280,13 +280,13 @@ public function CustomerRecharge(Request $request)
 
         /* ⭐⭐⭐ COMMISSION LOGIC START ⭐⭐⭐ */
         $commissionData = [
-            'recharge_request_id' => $recharge->id,
-            'customer_id'         => $request->user_id,
-            'dealer_id'           => null,
-            'distributor_id'      => null,
-            'vehicle_id'          => $vehicle->id ?? null,
-            'dealer_commission'   => null,
-            'distributor_commission' => null,
+            'recharge_request_id'      => $recharge->id,
+            'customer_id'              => $request->user_id,
+            'dealer_id'                => null,
+            'distributor_id'           => null,
+            'vehicle_id'               => $vehicle->id ?? null,
+            'dealer_commission'        => 0,   // ⭐ NULL की जगह 0
+            'distributor_commission'   => 0,   // ⭐ NULL की जगह 0
         ];
 
         $creator = \App\Models\User::with('roles')->find($request->created_by_id);
@@ -311,6 +311,7 @@ public function CustomerRecharge(Request $request)
 
         \App\Models\Commission::create($commissionData);
         /* ⭐⭐⭐ COMMISSION LOGIC END ⭐⭐⭐ */
+
 
         /** failed payment => STOP */
         if(!in_array(strtolower($request->payment_status),['success','completed','paid'])){
