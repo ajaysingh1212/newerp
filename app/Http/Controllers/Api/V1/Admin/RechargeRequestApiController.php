@@ -469,7 +469,7 @@ public function getCommissionAmount($user_id)
 
 
 
-public function getCommissionHistory($user_id)
+public function getCommissionHistory($user_id, Request $request)
 {
     try {
 
@@ -483,7 +483,6 @@ public function getCommissionHistory($user_id)
         }
 
         $roleIds = $user->roles->pluck('id')->toArray();
-
         $isDealer = in_array(4, $roleIds);
         $isDistributor = in_array(5, $roleIds);
 
@@ -494,16 +493,51 @@ public function getCommissionHistory($user_id)
             ], 400);
         }
 
-        // Fetch commissions with recharge + recharge_plan + users
-        $commissions = \App\Models\Commission::with([
-                'rechargeRequest.user',
-                'rechargeRequest.created_by',
-                'rechargeRequest.select_recharge'  // <-- RechargePlan relation
+        /* ----------------------------------------
+           ⭐ Month & Year Filters
+        ----------------------------------------- */
+        $month = $request->query('month');    // 1 - 12
+        $year  = $request->query('year');     // e.g., 2025
+
+        /* -------------------------------
+           Build main query
+        -------------------------------- */
+        $query = \App\Models\Commission::with([
+            'rechargeRequest.user',
+            'rechargeRequest.created_by',
+            'rechargeRequest.select_recharge'
         ])
             ->when($isDealer, fn($q) => $q->where('dealer_id', $user_id))
-            ->when($isDistributor, fn($q) => $q->where('distributor_id', $user_id))
-            ->orderBy('id', 'desc')
-            ->get();
+            ->when($isDistributor, fn($q) => $q->where('distributor_id', $user_id));
+
+        /* --------------------------------------------
+           ⭐ Apply month filter (if provided)
+        --------------------------------------------- */
+        if ($month) {
+            $query->whereMonth(
+                \DB::raw('(SELECT payment_date FROM recharge_requests WHERE recharge_requests.id = commissions.recharge_request_id)'),
+                $month
+            );
+        }
+
+        /* --------------------------------------------
+           ⭐ Apply year filter (if provided)
+        --------------------------------------------- */
+        if ($year) {
+            $query->whereYear(
+                \DB::raw('(SELECT payment_date FROM recharge_requests WHERE recharge_requests.id = commissions.recharge_request_id)'),
+                $year
+            );
+        }
+
+        /* --------------------------------------------
+           ⭐ Limit default results to prevent heavy load
+        --------------------------------------------- */
+        if (!$month && !$year) {
+            $query->limit(200);   // prevents loading 10,000+ rows
+        }
+
+        $commissions = $query->orderBy('id', 'desc')->get();
 
         $history = [];
 
@@ -512,59 +546,46 @@ public function getCommissionHistory($user_id)
             $recharge = $c->rechargeRequest;
             if (!$recharge) continue;
 
-            $plan = $recharge->select_recharge; // recharge plan model
+            $plan = $recharge->select_recharge;
 
-            // Earned commission
             $earned = $isDealer ? $c->dealer_commission : $c->distributor_commission;
-
-            // Redeemed (if any)
             $redeemed = $recharge->redeem_amount ?? 0;
-
-            // Customer
             $customer = $recharge->user;
-
-            // Creator (Dealer/Distributor)
             $creator = $recharge->created_by;
 
             $history[] = [
                 'recharge_request_id'  => $recharge->id,
                 'vehicle_number'       => $recharge->vehicle_number,
-
-                // Payment info
                 'payment_amount'       => $recharge->payment_amount,
                 'payment_status'       => $recharge->payment_status,
                 'payment_date'         => $recharge->payment_date,
-
-                // Plan details
                 'plan_id'              => $recharge->select_recharge_id,
-                'plan_name'            => $plan ? $plan->plan_name : null,
-                'plan_type'            => $plan ? $plan->type : null,        // ⭐ NEW FIELD
-
-                // Commissions
+                'plan_name'            => $plan?->plan_name,
+                'plan_type'            => $plan?->type,
                 'earned_commission'    => round($earned, 2),
                 'redeemed_commission'  => round($redeemed, 2),
-
-                // Razorpay info
                 'razorpay_payment_id'  => $recharge->razorpay_payment_id,
-
-                // Customer info
                 'customer_id'          => $recharge->user_id,
-                'customer_name'        => $customer ? $customer->name : null,
-
-                // Creator info
+                'customer_name'        => $customer?->name,
                 'creator_id'           => $recharge->created_by_id,
-                'creator_name'         => $creator ? $creator->name : null,
+                'creator_name'         => $creator?->name,
                 'creator_role'         => $creator && $creator->roles->count()
-                                        ? $creator->roles->pluck('title')->implode(', ')
-                                        : null,
+                    ? $creator->roles->pluck('title')->implode(', ')
+                    : null,
             ];
-
         }
 
         return response()->json([
             'status' => true,
             'user_id' => $user_id,
             'role' => $isDealer ? 'Dealer' : 'Distributor',
+
+            // Month-Year info send back
+            'filter' => [
+                'month' => $month ?: 'all',
+                'year'  => $year ?: 'all'
+            ],
+
             'history' => $history
         ]);
 
