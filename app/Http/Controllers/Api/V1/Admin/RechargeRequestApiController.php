@@ -538,25 +538,31 @@ public function getCommissionHistory($user_id)
                 // Plan details
                 'plan_id'              => $recharge->select_recharge_id,
                 'plan_name'            => $plan ? $plan->plan_name : null,
+                'plan_type'            => $plan ? $plan->type : null,        // ⭐ NEW FIELD
+                'plan_price'           => $plan ? $plan->price : null,       // ⭐ OPTIONAL
+                'plan_amc_months'      => $plan ? $plan->amc_duration : null,
+                'plan_subscription_months' => $plan ? $plan->subscription_duration : null,
+                'plan_warranty_months' => $plan ? $plan->warranty_duration : null,
 
                 // Commissions
                 'earned_commission'    => round($earned, 2),
                 'redeemed_commission'  => round($redeemed, 2),
 
-                // Razorpay
+                // Razorpay info
                 'razorpay_payment_id'  => $recharge->razorpay_payment_id,
 
-                // user(customer)
+                // Customer info
                 'customer_id'          => $recharge->user_id,
                 'customer_name'        => $customer ? $customer->name : null,
 
-                // creator (dealer/distributor)
+                // Creator info
                 'creator_id'           => $recharge->created_by_id,
                 'creator_name'         => $creator ? $creator->name : null,
                 'creator_role'         => $creator && $creator->roles->count()
-                                          ? $creator->roles->pluck('title')->implode(', ')
-                                          : null,
+                                        ? $creator->roles->pluck('title')->implode(', ')
+                                        : null,
             ];
+
         }
 
         return response()->json([
