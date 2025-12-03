@@ -278,11 +278,39 @@ public function CustomerRecharge(Request $request)
             'created_by_id'      => $request->created_by_id,
         ]);
 
-        // ⭐ COMMISSION ENTRY SAVE – ONLY THESE TWO FIELDS NOW
-        \App\Models\Commission::create([
+        /* ⭐⭐⭐ COMMISSION LOGIC START ⭐⭐⭐ */
+        $commissionData = [
             'recharge_request_id' => $recharge->id,
             'customer_id'         => $request->user_id,
-        ]);
+            'dealer_id'           => null,
+            'distributor_id'      => null,
+            'vehicle_id'          => $vehicle->id ?? null,
+            'dealer_commission'   => null,
+            'distributor_commission' => null,
+        ];
+
+        $creator = \App\Models\User::with('roles')->find($request->created_by_id);
+
+        if ($creator) {
+            $roleIds = $creator->roles->pluck('id')->toArray();
+
+            $amount = $request->payment_amount;
+            $commissionValue = ($amount * 20) / 100; // 20%
+
+            if (in_array(4, $roleIds)) { 
+                // Dealer
+                $commissionData['dealer_id'] = $creator->id;
+                $commissionData['dealer_commission'] = $commissionValue;
+            } 
+            else if (in_array(5, $roleIds)) { 
+                // Distributor
+                $commissionData['distributor_id'] = $creator->id;
+                $commissionData['distributor_commission'] = $commissionValue;
+            }
+        }
+
+        \App\Models\Commission::create($commissionData);
+        /* ⭐⭐⭐ COMMISSION LOGIC END ⭐⭐⭐ */
 
         /** failed payment => STOP */
         if(!in_array(strtolower($request->payment_status),['success','completed','paid'])){
@@ -292,15 +320,17 @@ public function CustomerRecharge(Request $request)
             ]);
         }
 
+        /* ------------------------------
+            BELOW LOGIC REMAINS SAME
+        ------------------------------- */
+
         $today = Carbon::now();
         $model = $vehicle->product_master?->product_model;
 
-        /** CHECK recharge history */
         $hasRechargeBefore = RechargeRequest::where('vehicle_number',$vehicle->vehicle_number)
             ->whereIn('payment_status',['success','completed','paid'])
             ->count() > 1;
 
-        /** FIRST or NEXT RECHARGE LOGIC */
         if(!$hasRechargeBefore)
         {
             $reqDate = $vehicle->request_date
@@ -318,7 +348,6 @@ public function CustomerRecharge(Request $request)
             $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc)          : null;
         }
 
-        /** APPLY PLAN DURATION */
         if($plan->warranty_duration > 0){
             $baseWarranty = ($baseWarranty && $baseWarranty->gt($today)) ? $baseWarranty : $today;
             $baseWarranty = $baseWarranty->copy()->addMonths($plan->warranty_duration);
@@ -334,7 +363,6 @@ public function CustomerRecharge(Request $request)
             $baseAmc = $baseAmc->copy()->addMonths($plan->amc_duration);
         }
 
-        /** UPDATE VEHICLE */
         $vehicle->update([
             'warranty'     => $baseWarranty,
             'subscription' => $baseSubscription,
@@ -359,6 +387,7 @@ public function CustomerRecharge(Request $request)
         ],500);
     }
 }
+
 
 
 
