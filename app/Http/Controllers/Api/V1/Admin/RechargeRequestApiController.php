@@ -396,7 +396,7 @@ public function getCommissionAmount($user_id)
 {
     try {
 
-        // Check user
+        // Find user with roles
         $user = \App\Models\User::with('roles')->find($user_id);
 
         if (!$user) {
@@ -406,41 +406,67 @@ public function getCommissionAmount($user_id)
             ], 404);
         }
 
-        // User roles
         $roleIds = $user->roles->pluck('id')->toArray();
 
-        // Default amount
-        $amount = 0;
+        $earned = 0;
+        $redeemed = 0;
 
-        // Dealer → role_id = 4
+        /* -------------------------------
+           CHECK ROLE → Dealer or Distributor
+        -------------------------------- */
+
+        // Dealer (role_id = 4)
         if (in_array(4, $roleIds)) {
-            $amount = \App\Models\Commission::where('dealer_id', $user_id)
+
+            // Total commission earned as Dealer
+            $earned = \App\Models\Commission::where('dealer_id', $user_id)
                         ->sum('dealer_commission');
+
         }
 
-        // Distributor → role_id = 5
+        // Distributor (role_id = 5)
         else if (in_array(5, $roleIds)) {
-            $amount = \App\Models\Commission::where('distributor_id', $user_id)
+
+            // Total commission earned as Distributor
+            $earned = \App\Models\Commission::where('distributor_id', $user_id)
                         ->sum('distributor_commission');
         }
 
-        // If neither dealer nor distributor, amount stays 0
+        /* -------------------------------
+           TOTAL REDEEM DONE BY USER
+           RechargeRequest → redeem_amount
+           created_by_id = user_id
+        -------------------------------- */
+
+        $redeemed = \App\Models\RechargeRequest::where('created_by_id', $user_id)
+                    ->whereNotNull('redeem_amount')
+                    ->sum('redeem_amount');
+
+        /* -------------------------------
+           FINAL COMMISSION = earned - redeemed
+        -------------------------------- */
+
+        $finalAmount = $earned - $redeemed;
 
         return response()->json([
             'status' => true,
             'user_id' => $user_id,
-            'amount' => round($amount, 2),
+            'role' => in_array(4, $roleIds) ? 'Dealer' : (in_array(5, $roleIds) ? 'Distributor' : 'None'),
+            'earned_commission' => round($earned, 2),
+            'redeemed_amount' => round($redeemed, 2),
+            'final_commission' => round($finalAmount, 2)
         ]);
 
     } catch (\Exception $e) {
 
         return response()->json([
             'status' => false,
-            'message' => 'Error occurred',
+            'message' => 'Error Occurred',
             'error' => $e->getMessage()
         ], 500);
     }
 }
+
 
 
 
