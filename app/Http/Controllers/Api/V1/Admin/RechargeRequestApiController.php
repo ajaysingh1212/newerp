@@ -494,8 +494,12 @@ public function getCommissionHistory($user_id)
             ], 400);
         }
 
-        // Fetch commissions
-        $commissions = \App\Models\Commission::with(['rechargeRequest.user', 'rechargeRequest.created_by'])
+        // Fetch commissions with recharge + recharge_plan + users
+        $commissions = \App\Models\Commission::with([
+                'rechargeRequest.user',
+                'rechargeRequest.created_by',
+                'rechargeRequest.select_recharge'  // <-- RechargePlan relation
+        ])
             ->when($isDealer, fn($q) => $q->where('dealer_id', $user_id))
             ->when($isDistributor, fn($q) => $q->where('distributor_id', $user_id))
             ->orderBy('id', 'desc')
@@ -508,42 +512,50 @@ public function getCommissionHistory($user_id)
             $recharge = $c->rechargeRequest;
             if (!$recharge) continue;
 
-            // Commission value
+            $plan = $recharge->select_recharge; // recharge plan model
+
+            // Earned commission
             $earned = $isDealer ? $c->dealer_commission : $c->distributor_commission;
 
-            // Redeem value per recharge
+            // Redeemed (if any)
             $redeemed = $recharge->redeem_amount ?? 0;
 
-            // Customer details
+            // Customer
             $customer = $recharge->user;
-            $customerName = $customer ? $customer->name : null;
 
-            // Creator details (dealer/distributor)
+            // Creator (Dealer/Distributor)
             $creator = $recharge->created_by;
-            $creatorName = $creator ? $creator->name : null;
-            $creatorRole = $creator && $creator->roles->count()
-                ? $creator->roles->pluck('title')->implode(', ')
-                : null;
 
             $history[] = [
                 'recharge_request_id'  => $recharge->id,
                 'vehicle_number'       => $recharge->vehicle_number,
+
+                // Payment info
                 'payment_amount'       => $recharge->payment_amount,
                 'payment_status'       => $recharge->payment_status,
                 'payment_date'         => $recharge->payment_date,
 
-                // commissions
+                // Plan details
+                'plan_id'              => $recharge->select_recharge_id,
+                'plan_name'            => $plan ? $plan->plan_name : null,
+
+                // Commissions
                 'earned_commission'    => round($earned, 2),
                 'redeemed_commission'  => round($redeemed, 2),
 
-                // Extra details
+                // Razorpay
                 'razorpay_payment_id'  => $recharge->razorpay_payment_id,
-                'customer_id'          => $recharge->user_id,
-                'customer_name'        => $customerName,
 
+                // user(customer)
+                'customer_id'          => $recharge->user_id,
+                'customer_name'        => $customer ? $customer->name : null,
+
+                // creator (dealer/distributor)
                 'creator_id'           => $recharge->created_by_id,
-                'creator_name'         => $creatorName,
-                'creator_role'         => $creatorRole,
+                'creator_name'         => $creator ? $creator->name : null,
+                'creator_role'         => $creator && $creator->roles->count()
+                                          ? $creator->roles->pluck('title')->implode(', ')
+                                          : null,
             ];
         }
 
@@ -563,6 +575,7 @@ public function getCommissionHistory($user_id)
         ], 500);
     }
 }
+
 
 
 
