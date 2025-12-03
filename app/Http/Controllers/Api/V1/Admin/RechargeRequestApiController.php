@@ -473,7 +473,6 @@ public function getCommissionHistory($user_id)
 {
     try {
 
-        // Fetch user with roles
         $user = \App\Models\User::with('roles')->find($user_id);
 
         if (!$user) {
@@ -491,12 +490,12 @@ public function getCommissionHistory($user_id)
         if (!$isDealer && !$isDistributor) {
             return response()->json([
                 'status' => false,
-                'message' => 'No commission available for this user.'
+                'message' => 'User is not eligible for commission'
             ], 400);
         }
 
-        // Fetch commission history
-        $commissions = \App\Models\Commission::with(['rechargeRequest'])
+        // Fetch commissions
+        $commissions = \App\Models\Commission::with(['rechargeRequest.user', 'rechargeRequest.created_by'])
             ->when($isDealer, fn($q) => $q->where('dealer_id', $user_id))
             ->when($isDistributor, fn($q) => $q->where('distributor_id', $user_id))
             ->orderBy('id', 'desc')
@@ -509,10 +508,22 @@ public function getCommissionHistory($user_id)
             $recharge = $c->rechargeRequest;
             if (!$recharge) continue;
 
+            // Commission value
             $earned = $isDealer ? $c->dealer_commission : $c->distributor_commission;
 
-            // If redeem happened on this recharge, fetch redeem value
+            // Redeem value per recharge
             $redeemed = $recharge->redeem_amount ?? 0;
+
+            // Customer details
+            $customer = $recharge->user;
+            $customerName = $customer ? $customer->name : null;
+
+            // Creator details (dealer/distributor)
+            $creator = $recharge->created_by;
+            $creatorName = $creator ? $creator->name : null;
+            $creatorRole = $creator && $creator->roles->count()
+                ? $creator->roles->pluck('title')->implode(', ')
+                : null;
 
             $history[] = [
                 'recharge_request_id'  => $recharge->id,
@@ -521,9 +532,18 @@ public function getCommissionHistory($user_id)
                 'payment_status'       => $recharge->payment_status,
                 'payment_date'         => $recharge->payment_date,
 
-                // ⭐ NEW FIELDS
+                // commissions
                 'earned_commission'    => round($earned, 2),
                 'redeemed_commission'  => round($redeemed, 2),
+
+                // Extra details
+                'razorpay_payment_id'  => $recharge->razorpay_payment_id,
+                'customer_id'          => $recharge->user_id,
+                'customer_name'        => $customerName,
+
+                'creator_id'           => $recharge->created_by_id,
+                'creator_name'         => $creatorName,
+                'creator_role'         => $creatorRole,
             ];
         }
 
@@ -543,6 +563,7 @@ public function getCommissionHistory($user_id)
         ], 500);
     }
 }
+
 
 
 
