@@ -539,10 +539,6 @@ public function getCommissionHistory($user_id)
                 'plan_id'              => $recharge->select_recharge_id,
                 'plan_name'            => $plan ? $plan->plan_name : null,
                 'plan_type'            => $plan ? $plan->type : null,        // ⭐ NEW FIELD
-                'plan_price'           => $plan ? $plan->price : null,       // ⭐ OPTIONAL
-                'plan_amc_months'      => $plan ? $plan->amc_duration : null,
-                'plan_subscription_months' => $plan ? $plan->subscription_duration : null,
-                'plan_warranty_months' => $plan ? $plan->warranty_duration : null,
 
                 // Commissions
                 'earned_commission'    => round($earned, 2),
