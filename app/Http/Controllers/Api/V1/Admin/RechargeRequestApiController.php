@@ -469,6 +469,84 @@ public function getCommissionAmount($user_id)
 
 
 
+public function getCommissionHistory($user_id)
+{
+    try {
+
+        // Fetch user with roles
+        $user = \App\Models\User::with('roles')->find($user_id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $roleIds = $user->roles->pluck('id')->toArray();
+
+        $isDealer = in_array(4, $roleIds);
+        $isDistributor = in_array(5, $roleIds);
+
+        if (!$isDealer && !$isDistributor) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No commission available for this user.'
+            ], 400);
+        }
+
+        // Fetch commission history
+        $commissions = \App\Models\Commission::with(['rechargeRequest'])
+            ->when($isDealer, fn($q) => $q->where('dealer_id', $user_id))
+            ->when($isDistributor, fn($q) => $q->where('distributor_id', $user_id))
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $history = [];
+
+        foreach ($commissions as $c) {
+
+            $recharge = $c->rechargeRequest;
+            if (!$recharge) continue;
+
+            $earned = $isDealer ? $c->dealer_commission : $c->distributor_commission;
+
+            // If redeem happened on this recharge, fetch redeem value
+            $redeemed = $recharge->redeem_amount ?? 0;
+
+            $history[] = [
+                'recharge_request_id'  => $recharge->id,
+                'vehicle_number'       => $recharge->vehicle_number,
+                'payment_amount'       => $recharge->payment_amount,
+                'payment_status'       => $recharge->payment_status,
+                'payment_date'         => $recharge->payment_date,
+
+                // ⭐ NEW FIELDS
+                'earned_commission'    => round($earned, 2),
+                'redeemed_commission'  => round($redeemed, 2),
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'user_id' => $user_id,
+            'role' => $isDealer ? 'Dealer' : 'Distributor',
+            'history' => $history
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Error Occurred',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
 
 
 

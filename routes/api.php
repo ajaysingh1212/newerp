@@ -160,6 +160,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 💰 Get Commission Amount
     Route::get('commission-amount/{user_id}', 'RechargeRequestApiController@getCommissionAmount');
 
+    // 🧾 Get Commission History
+    Route::get('commission-history/{user_id}', 'RechargeRequestApiController@getCommissionHistory');
+
     // 🔑 User Login (new short-response version)
     Route::post('user-login', 'UsersApiController@UserLogin')->name('user.login');
 
