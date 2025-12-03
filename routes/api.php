@@ -157,6 +157,9 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🧾 Customer Recharge API
     Route::post('customer-recharge', 'RechargeRequestApiController@CustomerRecharge')->name('customer.recharge');
 
+    // 💰 Get Commission Amount
+    Route::get('commission-amount/{user_id}', 'RechargeRequestApiController@getCommissionAmount');
+
     // 🔑 User Login (new short-response version)
     Route::post('user-login', 'UsersApiController@UserLogin')->name('user.login');
 

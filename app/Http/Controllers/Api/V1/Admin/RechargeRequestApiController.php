@@ -392,6 +392,60 @@ public function CustomerRecharge(Request $request)
 
 
 
+public function getCommissionAmount($user_id)
+{
+    try {
+
+        // Check user
+        $user = \App\Models\User::with('roles')->find($user_id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // User roles
+        $roleIds = $user->roles->pluck('id')->toArray();
+
+        // Default amount
+        $amount = 0;
+
+        // Dealer → role_id = 4
+        if (in_array(4, $roleIds)) {
+            $amount = \App\Models\Commission::where('dealer_id', $user_id)
+                        ->sum('dealer_commission');
+        }
+
+        // Distributor → role_id = 5
+        else if (in_array(5, $roleIds)) {
+            $amount = \App\Models\Commission::where('distributor_id', $user_id)
+                        ->sum('distributor_commission');
+        }
+
+        // If neither dealer nor distributor, amount stays 0
+
+        return response()->json([
+            'status' => true,
+            'user_id' => $user_id,
+            'amount' => round($amount, 2),
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Error occurred',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
+
 
 
 
