@@ -239,6 +239,8 @@ public function CustomerRecharge(Request $request)
             'select_recharge_id' => 'required|integer',
             'payment_status'     => 'required|string',
             'payment_amount'     => 'required|numeric',
+            'payment_method'     => 'required|string',   // ⭐ NEW
+            'redeem_amount'      => 'nullable|numeric',  // ⭐ NEW
             'created_by_id'      => 'required|integer',
             'razorpay_payment_id'=> 'nullable|string',
         ]);
@@ -263,68 +265,73 @@ public function CustomerRecharge(Request $request)
             ]);
         }
 
-        /** CREATE RECHARGE ENTRY */
+        $status = strtolower($request->payment_status);
+        $isSuccess = in_array($status, ['success','completed','paid']);
+
+        /** -----------------------------------------------------
+         ⭐ Recharge Always Save (success/fail/pending)
+        ------------------------------------------------------*/
         $recharge = RechargeRequest::create([
             'user_id'            => $request->user_id,
             'vehicle_number'     => $request->vehicle_number,
             'select_recharge_id' => $request->select_recharge_id,
             'notes'              => strtoupper($request->vehicle_number).', '.$plan->plan_name.' From Mobile',
-            'payment_method'     => 'online',
-            'payment_status'     => strtolower($request->payment_status),
+            'payment_method'     => strtolower($request->payment_method),
+            'payment_status'     => $status,
             'payment_amount'     => $request->payment_amount,
+            'redeem_amount'      => $isSuccess ? ($request->redeem_amount ?? 0) : 0,   // ⭐ redeem success पर ही
             'payment_date'       => now(),
             'payment_id'         => 'TXN'.rand(1000000000,9999999999),
             'razorpay_payment_id'=> $request->razorpay_payment_id,
             'created_by_id'      => $request->created_by_id,
         ]);
 
-        /* ⭐⭐⭐ COMMISSION LOGIC START ⭐⭐⭐ */
-        $commissionData = [
-            'recharge_request_id'      => $recharge->id,
-            'customer_id'              => $request->user_id,
-            'dealer_id'                => null,
-            'distributor_id'           => null,
-            'vehicle_id'               => $vehicle->id ?? null,
-            'dealer_commission'        => 0,   // ⭐ NULL की जगह 0
-            'distributor_commission'   => 0,   // ⭐ NULL की जगह 0
-        ];
-
-        $creator = \App\Models\User::with('roles')->find($request->created_by_id);
-
-        if ($creator) {
-            $roleIds = $creator->roles->pluck('id')->toArray();
-
-            $amount = $request->payment_amount;
-            $commissionValue = ($amount * 20) / 100; // 20%
-
-            if (in_array(4, $roleIds)) { 
-                // Dealer
-                $commissionData['dealer_id'] = $creator->id;
-                $commissionData['dealer_commission'] = $commissionValue;
-            } 
-            else if (in_array(5, $roleIds)) { 
-                // Distributor
-                $commissionData['distributor_id'] = $creator->id;
-                $commissionData['distributor_commission'] = $commissionValue;
-            }
-        }
-
-        \App\Models\Commission::create($commissionData);
-        /* ⭐⭐⭐ COMMISSION LOGIC END ⭐⭐⭐ */
-
-
-        /** failed payment => STOP */
-        if(!in_array(strtolower($request->payment_status),['success','completed','paid'])){
+        /** -----------------------------------------------------
+         ❌ Failed & Pending → Commission नहीं जोड़ना
+        ------------------------------------------------------*/
+        if(!$isSuccess){
             return response()->json([
-                'status'=>true,
-                'message'=>'Recharge saved but payment failed.'
+                'status' => true,
+                'message' => 'Recharge saved but payment failed or pending. No commission applied.'
             ]);
         }
 
-        /* ------------------------------
-            BELOW LOGIC REMAINS SAME
-        ------------------------------- */
+        /** -----------------------------------------------------
+         ⭐ SUCCESS → Commission Add
+        ------------------------------------------------------*/
+        $creator = \App\Models\User::with('roles')->find($request->created_by_id);
 
+        if ($creator) {
+
+            $roleIds = $creator->roles->pluck('id')->toArray();
+
+            $commissionValue = ($request->payment_amount * 20) / 100;
+
+            $commissionData = [
+                'recharge_request_id'      => $recharge->id,
+                'customer_id'              => $request->user_id,
+                'dealer_id'                => null,
+                'distributor_id'           => null,
+                'vehicle_id'               => $vehicle->id ?? null,
+                'dealer_commission'        => 0,
+                'distributor_commission'   => 0,
+            ];
+
+            if (in_array(4, $roleIds)) {
+                $commissionData['dealer_id'] = $creator->id;
+                $commissionData['dealer_commission'] = $commissionValue;
+            }
+            else if (in_array(5, $roleIds)) {
+                $commissionData['distributor_id'] = $creator->id;
+                $commissionData['distributor_commission'] = $commissionValue;
+            }
+
+            \App\Models\Commission::create($commissionData);
+        }
+
+        /** -----------------------------------------------------
+         ⭐ SUCCESS → Expiry Logic Apply
+        ------------------------------------------------------*/
         $today = Carbon::now();
         $model = $vehicle->product_master?->product_model;
 
@@ -381,6 +388,7 @@ public function CustomerRecharge(Request $request)
         ]);
 
     } catch (\Exception $e) {
+
         return response()->json([
             'status'=>false,
             'message'=>'Error Occurred',
@@ -388,6 +396,7 @@ public function CustomerRecharge(Request $request)
         ],500);
     }
 }
+
 
 
 
