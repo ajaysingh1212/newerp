@@ -93,6 +93,8 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     
     // 📩 Submit Complain
     Route::post('create-complain', 'CheckComplainApiController@storeComplain')->name('create-complain');
+
+    Route::post('user-create-complain', 'CheckComplainApiController@storeUserComplain');
     
     // 📝 Get Complaints by User ID
     Route::get('complaints-by-user/{user_id}', 'CheckComplainApiController@getComplaintsByUser')->name('complaints.by-user');
