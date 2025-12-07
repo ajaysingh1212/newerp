@@ -77,53 +77,54 @@ class CheckComplainApiController extends Controller
     
     
     public function storeComplain(Request $request)
-    {
-        // Validation
-        $validated = $request->validate([
-            'ticket_number' => 'required|string|unique:check_complains,ticket_number',
-            'vehicle_no' => 'required|string',
-            'customer_name' => 'required|string',
-            'phone_number' => 'required|string',
-            'reason' => 'required|string',
-            'vehicle_id' => 'nullable|exists:add_customer_vehicles,id',
-            'select_complain_ids' => 'nullable|array',
-            'select_complain_ids.*' => 'exists:complain_categories,id',
-            'created_by_id' => 'nullable|exists:users,id',
-            'attechment.*' => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
-        ]);
-    
-        // Create the record
-        $complain = CheckComplain::create([
-            'ticket_number' => $request->ticket_number,
-            'vehicle_no' => $request->vehicle_no,
-            'customer_name' => $request->customer_name,
-            'phone_number' => $request->phone_number,
-            'reason' => $request->reason,
-            'status' => 'Pending',
-            'vehicle_id' => $request->vehicle_id,
-            'created_by_id' => $request->created_by_id ?? auth()->id(), // manual or fallback
-        ]);
-    
-        // Attach complain categories
-        if ($request->has('select_complain_ids')) {
-            $complain->select_complains()->sync($request->select_complain_ids);
-        }
-    
-        // Handle media uploads
-        if ($request->hasFile('attechment')) {
-            foreach ($request->file('attechment') as $file) {
-                $complain->addMedia($file)->toMediaCollection('attechment');
-            }
-        }
-    
-        return response()->json([
-            'message' => 'Complaint created successfully',
-            'data' => [
-                'id' => $complain->id,
-                'ticket_number' => $complain->ticket_number,
-            ]
-        ], 201);
+{
+    // Validation
+    $validated = $request->validate([
+        'ticket_number' => 'required|string|unique:check_complains,ticket_number',
+        'vehicle_no' => 'nullable|string',  // ✔ optional
+        'vehicle_id' => 'nullable|exists:add_customer_vehicles,id', // ✔ optional
+        'customer_name' => 'required|string',
+        'phone_number' => 'required|string',
+        'reason' => 'required|string',
+        'select_complain_ids' => 'nullable|array',
+        'select_complain_ids.*' => 'exists:complain_categories,id',
+        'created_by_id' => 'nullable|exists:users,id',
+        'attechment.*' => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
+    ]);
+
+    // Create the record
+    $complain = CheckComplain::create([
+        'ticket_number' => $request->ticket_number,
+        'vehicle_no' => $request->vehicle_no,  // optional
+        'vehicle_id' => $request->vehicle_id,  // optional
+        'customer_name' => $request->customer_name,
+        'phone_number' => $request->phone_number,
+        'reason' => $request->reason,
+        'status' => 'Pending',
+        'created_by_id' => $request->created_by_id ?? auth()->id(),
+    ]);
+
+    // Attach complain categories
+    if ($request->has('select_complain_ids')) {
+        $complain->select_complains()->sync($request->select_complain_ids);
     }
+
+    // Handle media uploads
+    if ($request->hasFile('attechment')) {
+        foreach ($request->file('attechment') as $file) {
+            $complain->addMedia($file)->toMediaCollection('attechment');
+        }
+    }
+
+    return response()->json([
+        'message' => 'Complaint created successfully',
+        'data' => [
+            'id' => $complain->id,
+            'ticket_number' => $complain->ticket_number,
+        ]
+    ], 201);
+}
+
     
     public function getComplaintsByUser($user_id)
     {
