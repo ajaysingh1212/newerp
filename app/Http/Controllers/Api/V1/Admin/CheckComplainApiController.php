@@ -127,51 +127,41 @@ class CheckComplainApiController extends Controller
 
     public function storeUserComplain(Request $request)
 {
-    // Validate
     $validated = $request->validate([
         'user_id'       => 'required|exists:users,id',
         'reason'        => 'required|string',
-
-        // Required complain categories
         'select_complain_ids'   => 'required|array|min:1',
         'select_complain_ids.*' => 'exists:complain_categories,id',
-
-        // Optional vehicle
         'vehicle_no'    => 'nullable|string',
         'vehicle_id'    => 'nullable|exists:add_customer_vehicles,id',
-
         'attechment.*'  => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
     ]);
 
-    // Fetch user
     $user = \App\Models\User::find($request->user_id);
 
-    // AUTO ticket number: CMP-25-DEC-001
+    // AUTO ticket number: CMP2512012XX (No hyphen, month in number)
     $last = CheckComplain::latest('id')->first();
     $number = $last ? $last->id + 1 : 1;
 
-    $day   = strtoupper(date('d'));
-    $month = strtoupper(date('M'));
+    $day   = date('d');
+    $month = date('m');  // month number
     $autoNo = str_pad($number, 3, '0', STR_PAD_LEFT);
 
-    $ticket_number = "CMP-{$day}-{$month}-{$autoNo}";
+    $ticket_number = "CMP{$day}{$month}{$autoNo}";
 
-    // Create complaint
     $complain = CheckComplain::create([
-        'ticket_number'   => $ticket_number,
-        'vehicle_no'      => $request->vehicle_no,
-        'vehicle_id'      => $request->vehicle_id,
-        'customer_name'   => $user->name ?? null,
-        'phone_number'    => $user->phone ?? $user->mobile ?? null,
-        'reason'          => $request->reason,
-        'status'          => 'Pending',
-        'created_by_id'   => $user->id,
+        'ticket_number' => $ticket_number,
+        'vehicle_no'    => $request->vehicle_no,
+        'vehicle_id'    => $request->vehicle_id,
+        'customer_name' => $user->name ?? null,
+        'phone_number'  => $user->phone ?? $user->mobile ?? null,
+        'reason'        => $request->reason,
+        'status'        => 'Pending',
+        'created_by_id' => $user->id,
     ]);
 
-    // Attach categories
     $complain->select_complains()->sync($request->select_complain_ids);
 
-    // Media Upload
     if ($request->hasFile('attechment')) {
         foreach ($request->file('attechment') as $file) {
             $complain->addMedia($file)->toMediaCollection('attechment');
@@ -184,6 +174,7 @@ class CheckComplainApiController extends Controller
         'data'    => $complain
     ], 201);
 }
+
 
     
     public function getComplaintsByUser($user_id)
