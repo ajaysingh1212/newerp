@@ -126,88 +126,68 @@ class CheckComplainApiController extends Controller
     }
 
     public function storeUserComplain(Request $request)
-    {
-        $validated = $request->validate([
-            'user_id'       => 'required|exists:users,id',
-            'reason'        => 'required|string',
-            'select_complain_ids'   => 'required|array|min:1',
-            'select_complain_ids.*' => 'exists:complain_categories,id',
-            'vehicle_no'    => 'nullable|string',
-            'vehicle_id'    => 'nullable|exists:add_customer_vehicles,id',
-            'attechment.*'  => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
-        ]);
+{
+    $validated = $request->validate([
+        'user_id'               => 'required|exists:users,id',
+        'reason'                => 'nullable|string',   // 🔥 reason now optional
+        'select_complain_ids'   => 'required|array|min:1',
+        'select_complain_ids.*' => 'exists:complain_categories,id',
+        'vehicle_no'            => 'nullable|string',
+        'vehicle_id'            => 'nullable|exists:add_customer_vehicles,id',
+        'attechment.*'          => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
+    ]);
 
-        $user = \App\Models\User::find($request->user_id);
+    $user = \App\Models\User::find($request->user_id);
 
-        // 🔥 SAFE MOBILE PICK
-        $phone = $user->phone
-            ?? $user->mobile
-            ?? $user->mobile_number
-            ?? $user->contact
-            ?? $user->contact_number
-            ?? null;
+    // 🔥 SAFE MOBILE PICK
+    $phone = $user->phone
+        ?? $user->mobile
+        ?? $user->mobile_number
+        ?? $user->contact
+        ?? $user->contact_number
+        ?? null;
 
-        // ====================================================
-        // 🔥 AUTO-INCREMENT SEQUENCE PER DAY (NEVER DUPLICATE)
-        // ====================================================
-        $todayDate = date('Y-m-d'); // Example: 2025-12-08
+    // ====================================================
+    // 🔥 100% UNIQUE TICKET NUMBER (CMP + 10 digits)
+    // ====================================================
+    do {
+        $randomNumber = random_int(1000000000, 9999999999); // 10 digits
+        $ticket_number = "CMP" . $randomNumber;
+    } while (
+        \App\Models\CheckComplain::where('ticket_number', $ticket_number)->exists()
+    );
 
-        // Get last complaint created today
-        $lastToday = CheckComplain::whereDate('created_at', $todayDate)
-                        ->orderBy('id', 'DESC')
-                        ->first();
+    // ====================================================
+    // CREATE COMPLAINT
+    // ====================================================
+    $complain = CheckComplain::create([
+        'ticket_number' => $ticket_number,
+        'vehicle_no'    => $request->vehicle_no,
+        'vehicle_id'    => $request->vehicle_id,
+        'customer_name' => $user->name ?? null,
+        'phone_number'  => $phone,
+        'reason'        => $request->reason,   // optional now
+        'status'        => 'Pending',
+        'created_by_id' => $user->id,
+    ]);
 
-        // If today has complaints → take last sequence + 1
-        if ($lastToday) {
+    // Attach categories
+    $complain->select_complains()->sync($request->select_complain_ids);
 
-            // last ticket: CMP20251208003 → extract "003"
-            $lastTicket = $lastToday->ticket_number;
-            $lastSeq = (int) substr($lastTicket, -3); // last 3 digits
-
-            $newSeq = $lastSeq + 1;
-
-        } else {
-            // First complaint of the day
-            $newSeq = 1;
+    // Handle media
+    if ($request->hasFile('attechment')) {
+        foreach ($request->file('attechment') as $file) {
+            $complain->addMedia($file)->toMediaCollection('attechment');
         }
-
-        // sequence must be 3 digits
-        $seq3 = str_pad($newSeq, 3, '0', STR_PAD_LEFT);
-
-        // Build final ticket number
-        $ticket_number = "CMP" . date('Ymd') . $seq3;
-        // example: CMP20251208001
-
-        // ====================================================
-        // CREATE COMPLAINT
-        // ====================================================
-        $complain = CheckComplain::create([
-            'ticket_number' => $ticket_number,
-            'vehicle_no'    => $request->vehicle_no,
-            'vehicle_id'    => $request->vehicle_id,
-            'customer_name' => $user->name ?? null,
-            'phone_number'  => $phone,
-            'reason'        => $request->reason,
-            'status'        => 'Pending',
-            'created_by_id' => $user->id,
-        ]);
-
-        // Attach categories
-        $complain->select_complains()->sync($request->select_complain_ids);
-
-        // Handle media
-        if ($request->hasFile('attechment')) {
-            foreach ($request->file('attechment') as $file) {
-                $complain->addMedia($file)->toMediaCollection('attechment');
-            }
-        }
-
-        return response()->json([
-            'status'  => true,
-            'message' => 'User complaint submitted successfully.',
-            'data'    => $complain
-        ], 201);
     }
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'User complaint submitted successfully.',
+        'data'    => $complain
+    ], 201);
+}
+
 
 
     
