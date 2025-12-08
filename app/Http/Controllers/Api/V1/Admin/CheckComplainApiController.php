@@ -126,62 +126,73 @@ class CheckComplainApiController extends Controller
     }
 
     public function storeUserComplain(Request $request)
-{
-    $validated = $request->validate([
-        'user_id'       => 'required|exists:users,id',
-        'reason'        => 'required|string',
-        'select_complain_ids'   => 'required|array|min:1',
-        'select_complain_ids.*' => 'exists:complain_categories,id',
-        'vehicle_no'    => 'nullable|string',
-        'vehicle_id'    => 'nullable|exists:add_customer_vehicles,id',
-        'attechment.*'  => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
-    ]);
+    {
+        $validated = $request->validate([
+            'user_id'       => 'required|exists:users,id',
+            'reason'        => 'required|string',
+            'select_complain_ids'   => 'required|array|min:1',
+            'select_complain_ids.*' => 'exists:complain_categories,id',
+            'vehicle_no'    => 'nullable|string',
+            'vehicle_id'    => 'nullable|exists:add_customer_vehicles,id',
+            'attechment.*'  => 'file|mimes:jpg,jpeg,png,pdf,docx|max:2048',
+        ]);
 
-    $user = \App\Models\User::find($request->user_id);
+        $user = \App\Models\User::find($request->user_id);
 
-    // 🔥 SAFE MOBILE PICK
-    $phone = $user->phone
-        ?? $user->mobile
-        ?? $user->mobile_number
-        ?? $user->contact
-        ?? $user->contact_number
-        ?? null;
+        // 🔥 SAFE MOBILE PICK
+        $phone = $user->phone
+            ?? $user->mobile
+            ?? $user->mobile_number
+            ?? $user->contact
+            ?? $user->contact_number
+            ?? null;
 
-    // AUTO ticket number: CMPDDMMXXX
-    $last = CheckComplain::latest('id')->first();
-    $number = $last ? $last->id + 1 : 1;
+        // ==============================
+        // 🔥 NEW TICKET FORMAT:
+        // CMP + YYYY + MM + DD + 3-digit counter
+        // ==============================
+        $last = CheckComplain::latest('id')->first();
+        $number = $last ? $last->id + 1 : 1;
 
-    $day   = date('d');
-    $month = date('m');
-    $autoNo = str_pad($number, 3, '0', STR_PAD_LEFT);
+        $year  = date('Y'); // 2025
+        $month = date('m'); // 08
+        $day   = date('d'); // 12
 
-    $ticket_number = "CMP{$day}{$month}{$autoNo}";
+        $autoNo = str_pad($number, 3, '0', STR_PAD_LEFT); // 001
 
-    $complain = CheckComplain::create([
-        'ticket_number' => $ticket_number,
-        'vehicle_no'    => $request->vehicle_no,
-        'vehicle_id'    => $request->vehicle_id,
-        'customer_name' => $user->name ?? null,
-        'phone_number'  => $phone,   // 🔥 FIXED
-        'reason'        => $request->reason,
-        'status'        => 'Pending',
-        'created_by_id' => $user->id,
-    ]);
+        $ticket_number = "CMP{$year}{$month}{$day}{$autoNo}";
 
-    $complain->select_complains()->sync($request->select_complain_ids);
+        // ==============================
+        // CREATE COMPLAINT
+        // ==============================
+        $complain = CheckComplain::create([
+            'ticket_number' => $ticket_number,
+            'vehicle_no'    => $request->vehicle_no,
+            'vehicle_id'    => $request->vehicle_id,
+            'customer_name' => $user->name ?? null,
+            'phone_number'  => $phone,
+            'reason'        => $request->reason,
+            'status'        => 'Pending',
+            'created_by_id' => $user->id,
+        ]);
 
-    if ($request->hasFile('attechment')) {
-        foreach ($request->file('attechment') as $file) {
-            $complain->addMedia($file)->toMediaCollection('attechment');
+        // Category attach
+        $complain->select_complains()->sync($request->select_complain_ids);
+
+        // Media upload
+        if ($request->hasFile('attechment')) {
+            foreach ($request->file('attechment') as $file) {
+                $complain->addMedia($file)->toMediaCollection('attechment');
+            }
         }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'User complaint submitted successfully.',
+            'data'    => $complain
+        ], 201);
     }
 
-    return response()->json([
-        'status'  => true,
-        'message' => 'User complaint submitted successfully.',
-        'data'    => $complain
-    ], 201);
-}
 
 
 
