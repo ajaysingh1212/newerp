@@ -147,24 +147,40 @@ class CheckComplainApiController extends Controller
             ?? $user->contact_number
             ?? null;
 
-        // ==============================
-        // 🔥 NEW TICKET FORMAT:
-        // CMP + YYYY + MM + DD + 3-digit counter
-        // ==============================
-        $last = CheckComplain::latest('id')->first();
-        $number = $last ? $last->id + 1 : 1;
+        // ====================================================
+        // 🔥 AUTO-INCREMENT SEQUENCE PER DAY (NEVER DUPLICATE)
+        // ====================================================
+        $todayDate = date('Y-m-d'); // Example: 2025-12-08
 
-        $year  = date('Y'); // 2025
-        $month = date('m'); // 08
-        $day   = date('d'); // 12
+        // Get last complaint created today
+        $lastToday = CheckComplain::whereDate('created_at', $todayDate)
+                        ->orderBy('id', 'DESC')
+                        ->first();
 
-        $autoNo = str_pad($number, 3, '0', STR_PAD_LEFT); // 001
+        // If today has complaints → take last sequence + 1
+        if ($lastToday) {
 
-        $ticket_number = "CMP{$year}{$month}{$day}{$autoNo}";
+            // last ticket: CMP20251208003 → extract "003"
+            $lastTicket = $lastToday->ticket_number;
+            $lastSeq = (int) substr($lastTicket, -3); // last 3 digits
 
-        // ==============================
+            $newSeq = $lastSeq + 1;
+
+        } else {
+            // First complaint of the day
+            $newSeq = 1;
+        }
+
+        // sequence must be 3 digits
+        $seq3 = str_pad($newSeq, 3, '0', STR_PAD_LEFT);
+
+        // Build final ticket number
+        $ticket_number = "CMP" . date('Ymd') . $seq3;
+        // example: CMP20251208001
+
+        // ====================================================
         // CREATE COMPLAINT
-        // ==============================
+        // ====================================================
         $complain = CheckComplain::create([
             'ticket_number' => $ticket_number,
             'vehicle_no'    => $request->vehicle_no,
@@ -176,10 +192,10 @@ class CheckComplainApiController extends Controller
             'created_by_id' => $user->id,
         ]);
 
-        // Category attach
+        // Attach categories
         $complain->select_complains()->sync($request->select_complain_ids);
 
-        // Media upload
+        // Handle media
         if ($request->hasFile('attechment')) {
             foreach ($request->file('attechment') as $file) {
                 $complain->addMedia($file)->toMediaCollection('attechment');
@@ -192,8 +208,6 @@ class CheckComplainApiController extends Controller
             'data'    => $complain
         ], 201);
     }
-
-
 
 
     
