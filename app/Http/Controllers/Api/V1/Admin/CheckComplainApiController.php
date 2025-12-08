@@ -139,12 +139,20 @@ class CheckComplainApiController extends Controller
 
     $user = \App\Models\User::find($request->user_id);
 
-    // AUTO ticket number: CMP2512012XX (No hyphen, month in number)
+    // 🔥 SAFE MOBILE PICK
+    $phone = $user->phone
+        ?? $user->mobile
+        ?? $user->mobile_number
+        ?? $user->contact
+        ?? $user->contact_number
+        ?? null;
+
+    // AUTO ticket number: CMPDDMMXXX
     $last = CheckComplain::latest('id')->first();
     $number = $last ? $last->id + 1 : 1;
 
     $day   = date('d');
-    $month = date('m');  // month number
+    $month = date('m');
     $autoNo = str_pad($number, 3, '0', STR_PAD_LEFT);
 
     $ticket_number = "CMP{$day}{$month}{$autoNo}";
@@ -154,7 +162,7 @@ class CheckComplainApiController extends Controller
         'vehicle_no'    => $request->vehicle_no,
         'vehicle_id'    => $request->vehicle_id,
         'customer_name' => $user->name ?? null,
-        'phone_number'  => $user->phone ?? $user->mobile ?? null,
+        'phone_number'  => $phone,   // 🔥 FIXED
         'reason'        => $request->reason,
         'status'        => 'Pending',
         'created_by_id' => $user->id,
@@ -174,6 +182,7 @@ class CheckComplainApiController extends Controller
         'data'    => $complain
     ], 201);
 }
+
 
 
     
