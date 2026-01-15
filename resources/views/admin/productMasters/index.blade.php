@@ -30,6 +30,9 @@
 
                     </th>
                     <th>
+                        SKU
+                    </th>
+                    <th>
                         {{ trans('cruds.productMaster.fields.id') }}
                     </th>
                     <th>
@@ -117,6 +120,7 @@
     columns: [
       { data: 'placeholder', name: 'placeholder' },
 { data: 'id', name: 'id' },
+{ data: 'sku', name: 'sku' },
 { data: 'product_model_product_model', name: 'product_model.product_model' },
 { data: 'product_model.status', name: 'product_model.status' },
 { data: 'imei_imei_number', name: 'imei.imei_number' },
