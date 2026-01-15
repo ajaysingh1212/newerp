@@ -93,6 +93,8 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     
     // 📩 Submit Complain
     Route::post('create-complain', 'CheckComplainApiController@storeComplain')->name('create-complain');
+
+    Route::post('user-create-complain', 'CheckComplainApiController@storeUserComplain');
     
     // 📝 Get Complaints by User ID
     Route::get('complaints-by-user/{user_id}', 'CheckComplainApiController@getComplaintsByUser')->name('complaints.by-user');
@@ -154,8 +156,20 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🧾 New User Registration API (with address & location)
     Route::post('user-registration', 'UsersApiController@UserRegistration')->name('user.registration');
 
+    // 🧾 Customer Recharge API
+    Route::post('customer-recharge', 'RechargeRequestApiController@CustomerRecharge')->name('customer.recharge');
+
+    // 💰 Get Commission Amount
+    Route::get('commission-amount/{user_id}', 'RechargeRequestApiController@getCommissionAmount');
+
+    // 🧾 Get Commission History
+    Route::get('commission-history/{user_id}', 'RechargeRequestApiController@getCommissionHistory');
+
     // 🔑 User Login (new short-response version)
     Route::post('user-login', 'UsersApiController@UserLogin')->name('user.login');
+
+    // 🔎 Get user by email OR mobile number
+    Route::post('find-user', 'UsersApiController@getUserByEmailOrMobile')->name('user.find');
 
 
    

@@ -585,6 +585,50 @@ class UsersApiController extends Controller
 }
 
 
+public function getUserByEmailOrMobile(Request $request)
+{
+    // Validate input
+    $validator = Validator::make($request->all(), [
+        'input' => 'required|string'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Email or Mobile number required.'
+        ], 422);
+    }
+
+    $input = $request->input;
+
+    // Find user by email OR mobile number
+    $user = User::where('email', $input)
+        ->orWhere('mobile_number', $input)
+        ->first();
+
+    if (!$user) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'No user found with this email or mobile number.'
+        ], 404);
+    }
+
+    // Return only required details
+    return response()->json([
+        'status' => true,
+        'message' => 'User found successfully.',
+        'user' => [
+            'id'            => $user->id,
+            'name'          => $user->name,
+            'email'         => $user->email,
+            'mobile_number' => $user->mobile_number,
+            'profile_image' => $user->getFirstMediaUrl('profile_image'),
+        ]
+    ], 200);
+}
+
+
+
 
 
 

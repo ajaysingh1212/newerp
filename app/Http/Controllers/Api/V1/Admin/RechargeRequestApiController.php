@@ -229,6 +229,398 @@ class RechargeRequestApiController extends Controller
 
 
 
+public function CustomerRecharge(Request $request)
+{
+    try {
+
+        $request->validate([
+            'user_id'            => 'required|integer',
+            'vehicle_number'     => 'required|string',
+            'select_recharge_id' => 'required|integer',
+            'payment_status'     => 'required|string',
+            'payment_amount'     => 'required|numeric',
+            'payment_method'     => 'required|string',
+            'redeem_amount'      => 'nullable|numeric',
+            'created_by_id'      => 'required|integer',
+            'razorpay_payment_id'=> 'nullable|string',
+        ]);
+
+        $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
+            ->where('vehicle_number',$request->vehicle_number)
+            ->first();
+
+        if(!$vehicle){
+            return response()->json([
+                'status'=>false,
+                'message'=>"Vehicle not found"
+            ]);
+        }
+
+        $plan = RechargePlan::find($request->select_recharge_id);
+
+        if(!$plan){
+            return response()->json([
+                'status'=>false,
+                'message'=>"Recharge plan not found"
+            ]);
+        }
+
+        $status = strtolower($request->payment_status);
+        $isSuccess = in_array($status, ['success','completed','paid']);
+
+        /** ----------------------------------------------
+         ⭐ Recharge Always Save
+        ------------------------------------------------*/
+        $recharge = RechargeRequest::create([
+            'user_id'            => $request->user_id,
+            'vehicle_number'     => $request->vehicle_number,
+            'select_recharge_id' => $request->select_recharge_id,
+            'notes'              => strtoupper($request->vehicle_number).', '.$plan->plan_name.' From Mobile',
+            'payment_method'     => strtolower($request->payment_method),
+            'payment_status'     => $status,
+            'payment_amount'     => $request->payment_amount,
+            'redeem_amount'      => $isSuccess ? ($request->redeem_amount ?? 0) : 0,
+            'payment_date'       => now(),
+            'payment_id'         => 'TXN'.rand(1000000000,9999999999),
+            'razorpay_payment_id'=> $request->razorpay_payment_id,
+            'created_by_id'      => $request->created_by_id,
+        ]);
+
+        /** ----------------------------------------------
+         ❌ Failed & Pending → Commission नहीं बनेगा
+        ------------------------------------------------*/
+        if(!$isSuccess){
+            return response()->json([
+                'status' => true,
+                'message' => 'Recharge saved but payment failed or pending. No commission applied.'
+            ]);
+        }
+
+        /** ----------------------------------------------
+         ⭐ SUCCESS → Commission Add
+        ------------------------------------------------*/
+        $creator = \App\Models\User::with('roles')->find($request->created_by_id);
+
+        if ($creator) {
+
+            $roleIds = $creator->roles->pluck('id')->toArray();
+
+            // ⭐ Commission base amount = payment_amount + redeem_amount
+            $redeem = $request->redeem_amount ?? 0;
+            $baseAmount = $request->payment_amount + $redeem;
+
+            // ⭐ Now 20% of (payment + redeem)
+            $commissionValue = ($baseAmount * 20) / 100;
+
+            $commissionData = [
+                'recharge_request_id'      => $recharge->id,
+                'customer_id'              => $request->user_id,
+                'dealer_id'                => null,
+                'distributor_id'           => null,
+                'vehicle_id'               => $vehicle->id ?? null,
+                'dealer_commission'        => 0,
+                'distributor_commission'   => 0,
+            ];
+
+            if (in_array(4, $roleIds)) {
+                $commissionData['dealer_id'] = $creator->id;
+                $commissionData['dealer_commission'] = $commissionValue;
+            }
+            else if (in_array(5, $roleIds)) {
+                $commissionData['distributor_id'] = $creator->id;
+                $commissionData['distributor_commission'] = $commissionValue;
+            }
+
+            \App\Models\Commission::create($commissionData);
+        }
+
+        /** ----------------------------------------------
+         ⭐ SUCCESS → Apply Expiry Logic
+        ------------------------------------------------*/
+        $today = Carbon::now();
+        $model = $vehicle->product_master?->product_model;
+
+        $hasRechargeBefore = RechargeRequest::where('vehicle_number',$vehicle->vehicle_number)
+            ->whereIn('payment_status',['success','completed','paid'])
+            ->count() > 1;
+
+        if(!$hasRechargeBefore)
+        {
+            $reqDate = $vehicle->request_date
+                ? Carbon::createFromFormat('d-m-Y',$vehicle->request_date)
+                : $today;
+
+            $baseWarranty     = $model?->warranty     ? $reqDate->copy()->addMonths($model->warranty)     : null;
+            $baseSubscription = $model?->subscription ? $reqDate->copy()->addMonths($model->subscription) : null;
+            $baseAmc          = $model?->amc          ? $reqDate->copy()->addMonths($model->amc)          : null;
+        }
+        else
+        {
+            $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty)     : null;
+            $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : null;
+            $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc)          : null;
+        }
+
+        if($plan->warranty_duration > 0){
+            $baseWarranty = ($baseWarranty && $baseWarranty->gt($today)) ? $baseWarranty : $today;
+            $baseWarranty = $baseWarranty->copy()->addMonths($plan->warranty_duration);
+        }
+
+        if($plan->subscription_duration > 0){
+            $baseSubscription = ($baseSubscription && $baseSubscription->gt($today)) ? $baseSubscription : $today;
+            $baseSubscription = $baseSubscription->copy()->addMonths($plan->subscription_duration);
+        }
+
+        if($plan->amc_duration > 0){
+            $baseAmc = ($baseAmc && $baseAmc->gt($today)) ? $baseAmc : $today;
+            $baseAmc = $baseAmc->copy()->addMonths($plan->amc_duration);
+        }
+
+        $vehicle->update([
+            'warranty'     => $baseWarranty,
+            'subscription' => $baseSubscription,
+            'amc'          => $baseAmc,
+        ]);
+
+        return response()->json([
+            'status'=>true,
+            'message'=>'Recharge Successful',
+            'expiry'=>[
+                'warranty'=>$baseWarranty?->toDateString(),
+                'subscription'=>$baseSubscription?->toDateString(),
+                'amc'=>$baseAmc?->toDateString(),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status'=>false,
+            'message'=>'Error Occurred',
+            'error'=>$e->getMessage()
+        ],500);
+    }
+}
+
+
+
+
+
+
+public function getCommissionAmount($user_id)
+{
+    try {
+
+        // Find user with roles
+        $user = \App\Models\User::with('roles')->find($user_id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $roleIds = $user->roles->pluck('id')->toArray();
+
+        $earned = 0;
+        $redeemed = 0;
+
+        /* -------------------------------
+           CHECK ROLE → Dealer or Distributor
+        -------------------------------- */
+
+        // Dealer (role_id = 4)
+        if (in_array(4, $roleIds)) {
+
+            // Total commission earned as Dealer
+            $earned = \App\Models\Commission::where('dealer_id', $user_id)
+                        ->sum('dealer_commission');
+
+        }
+
+        // Distributor (role_id = 5)
+        else if (in_array(5, $roleIds)) {
+
+            // Total commission earned as Distributor
+            $earned = \App\Models\Commission::where('distributor_id', $user_id)
+                        ->sum('distributor_commission');
+        }
+
+        /* -------------------------------
+           TOTAL REDEEM DONE BY USER
+           RechargeRequest → redeem_amount
+           created_by_id = user_id
+        -------------------------------- */
+
+        $redeemed = \App\Models\RechargeRequest::where('created_by_id', $user_id)
+                    ->whereNotNull('redeem_amount')
+                    ->sum('redeem_amount');
+
+        /* -------------------------------
+           FINAL COMMISSION = earned - redeemed
+        -------------------------------- */
+
+        $finalAmount = $earned - $redeemed;
+
+        return response()->json([
+            'status' => true,
+            'user_id' => $user_id,
+            'role' => in_array(4, $roleIds) ? 'Dealer' : (in_array(5, $roleIds) ? 'Distributor' : 'None'),
+            'earned_commission' => round($earned, 2),
+            'redeemed_amount' => round($redeemed, 2),
+            'final_commission' => round($finalAmount, 2)
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Error Occurred',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+public function getCommissionHistory($user_id, Request $request)
+{
+    try {
+
+        $user = \App\Models\User::with('roles')->find($user_id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $roleIds = $user->roles->pluck('id')->toArray();
+        $isDealer = in_array(4, $roleIds);
+        $isDistributor = in_array(5, $roleIds);
+
+        if (!$isDealer && !$isDistributor) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User is not eligible for commission'
+            ], 400);
+        }
+
+        /* ----------------------------------------
+           ⭐ Month & Year Filters
+        ----------------------------------------- */
+        $month = $request->query('month');    // 1 - 12
+        $year  = $request->query('year');     // e.g., 2025
+
+        /* -------------------------------
+           Build main query
+        -------------------------------- */
+        $query = \App\Models\Commission::with([
+            'rechargeRequest.user',
+            'rechargeRequest.created_by',
+            'rechargeRequest.select_recharge'
+        ])
+            ->when($isDealer, fn($q) => $q->where('dealer_id', $user_id))
+            ->when($isDistributor, fn($q) => $q->where('distributor_id', $user_id));
+
+        /* --------------------------------------------
+           ⭐ Apply month filter (if provided)
+        --------------------------------------------- */
+        if ($month) {
+            $query->whereMonth(
+                \DB::raw('(SELECT payment_date FROM recharge_requests WHERE recharge_requests.id = commissions.recharge_request_id)'),
+                $month
+            );
+        }
+
+        /* --------------------------------------------
+           ⭐ Apply year filter (if provided)
+        --------------------------------------------- */
+        if ($year) {
+            $query->whereYear(
+                \DB::raw('(SELECT payment_date FROM recharge_requests WHERE recharge_requests.id = commissions.recharge_request_id)'),
+                $year
+            );
+        }
+
+        /* --------------------------------------------
+           ⭐ Limit default results to prevent heavy load
+        --------------------------------------------- */
+        if (!$month && !$year) {
+            $query->limit(200);   // prevents loading 10,000+ rows
+        }
+
+        $commissions = $query->orderBy('id', 'desc')->get();
+
+        $history = [];
+
+        foreach ($commissions as $c) {
+
+            $recharge = $c->rechargeRequest;
+            if (!$recharge) continue;
+
+            $plan = $recharge->select_recharge;
+
+            $earned = $isDealer ? $c->dealer_commission : $c->distributor_commission;
+            $redeemed = $recharge->redeem_amount ?? 0;
+            $customer = $recharge->user;
+            $creator = $recharge->created_by;
+
+            $history[] = [
+                'recharge_request_id'  => $recharge->id,
+                'vehicle_number'       => $recharge->vehicle_number,
+                'payment_amount'       => $recharge->payment_amount,
+                'payment_status'       => $recharge->payment_status,
+                'payment_date'         => $recharge->payment_date,
+                'plan_id'              => $recharge->select_recharge_id,
+                'plan_name'            => $plan?->plan_name,
+                'plan_type'            => $plan?->type,
+                'earned_commission'    => round($earned, 2),
+                'redeemed_commission'  => round($redeemed, 2),
+                'razorpay_payment_id'  => $recharge->razorpay_payment_id,
+                'customer_id'          => $recharge->user_id,
+                'customer_name'        => $customer?->name,
+                'creator_id'           => $recharge->created_by_id,
+                'creator_name'         => $creator?->name,
+                'creator_role'         => $creator && $creator->roles->count()
+                    ? $creator->roles->pluck('title')->implode(', ')
+                    : null,
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'user_id' => $user_id,
+            'role' => $isDealer ? 'Dealer' : 'Distributor',
+
+            // Month-Year info send back
+            'filter' => [
+                'month' => $month ?: 'all',
+                'year'  => $year ?: 'all'
+            ],
+
+            'history' => $history
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Error Occurred',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
+
+
+
+
 
 
 
