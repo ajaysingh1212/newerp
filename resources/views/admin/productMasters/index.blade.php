@@ -29,11 +29,12 @@
                     <th width="10">
 
                     </th>
-                    <th>
-                        SKU
-                    </th>
+                   
                     <th>
                         {{ trans('cruds.productMaster.fields.id') }}
+                    </th>
+                     <th>
+                        SKU
                     </th>
                     <th>
                         {{ trans('cruds.productMaster.fields.product_model') }}
