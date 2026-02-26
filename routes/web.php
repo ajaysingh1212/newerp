@@ -16,8 +16,11 @@ use App\Http\Controllers\Admin\AccountDeletionAdminController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
 use App\Http\Controllers\Admin\WithdrawalRequestsController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\WarrantyController;
 use Maatwebsite\Excel\Excel;
+use Illuminate\Support\Facades\Route;
 
+Route::get('/warranty', [WarrantyController::class, 'warrantyPage'])->name('warranty');
 Route::redirect('/', '/login');
 Route::get('/home', function () {
     if (session('status')) {
@@ -50,7 +53,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('permissions/parse-csv-import', 'PermissionsController@parseCsvImport')->name('permissions.parseCsvImport');
     Route::post('permissions/process-csv-import', 'PermissionsController@processCsvImport')->name('permissions.processCsvImport');
     Route::resource('permissions', 'PermissionsController');
-    // 
+    //
     // Registration
     Route::delete('registrations/destroy', 'RegistrationController@massDestroy')->name('registrations.massDestroy');
     Route::post('registrations/media', 'RegistrationController@storeMedia')->name('registrations.storeMedia');
@@ -66,7 +69,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('plans', 'PlanController');
 
     // Investments
-    
+
     Route::delete('investments/destroy', 'InvestmentsController@massDestroy')->name('investments.massDestroy');
     Route::post('investments/parse-csv-import', 'InvestmentsController@parseCsvImport')->name('investments.parseCsvImport');
     Route::post('investments/process-csv-import', 'InvestmentsController@processCsvImport')->name('investments.processCsvImport');
@@ -96,7 +99,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('withdrawal-requests/parse-csv-import', 'WithdrawalRequestsController@parseCsvImport')->name('withdrawal-requests.parseCsvImport');
     Route::post('withdrawal-requests/process-csv-import', 'WithdrawalRequestsController@processCsvImport')->name('withdrawal-requests.processCsvImport');
     Route::resource('withdrawal-requests', 'WithdrawalRequestsController');
-    
+
 
     // Login Logs
     Route::delete('login-logs/destroy', 'LoginLogsController@massDestroy')->name('login-logs.massDestroy');
@@ -112,7 +115,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     })->name('pending.report.download');
 
     // Investments Detailes
-   
+
     Route::get('investment-details/pdf/{id}', [InvestmentsDetailesController::class, 'downloadPdf'])
         ->name('investment.pdf');
 
@@ -273,7 +276,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     // Unbind Product
     Route::delete('unbind-products/destroy', 'UnbindProductController@massDestroy')->name('unbind-products.massDestroy');
     Route::resource('unbind-products', 'UnbindProductController');
-  
+
     Route::post('unbind-products/details', [UnbindProductController::class, 'getProductDetails'])->name('unbind.products.details');
     Route::post('unbind-products/unbind', [UnbindProductController::class, 'unbind'])->name('unbind.products.unbind');
 
@@ -296,7 +299,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('check-party-stocks', 'CheckPartyStockController');
     Route::get('/check-party-stocks/users/by-role', [CheckPartyStockController::class, 'getUsersByRole'])->name('users.byRole');
     Route::get('/check-party-stocks/get-users-by-role', [CheckPartyStockController::class, 'getUsersByRole'])->name('users.byRole');
-   
+
 
     // Check Complain
     Route::delete('check-complains/destroy', 'CheckComplainController@massDestroy')->name('check-complains.massDestroy');
@@ -469,7 +472,7 @@ Route::middleware(['auth'])->group(function(){
 
 // Admin routes (ensure admin middleware / gate)
 Route::prefix('admin')->middleware(['auth','can:admin-access'])->group(function(){
-    
+
 });
 
 
@@ -477,7 +480,7 @@ Route::get('/admin/reports/download/{id}', [CurrentStockController::class, 'down
 Route::get('/admin/reports/print/{id}', [CurrentStockController::class, 'print'])->name('admin.reports.print');
 Route::get('/alerts-fetch', [App\Http\Controllers\Admin\UserAlertsController::class, 'fetch'])->name('admin.alerts.fetch');
 
-// pdf route 
+// pdf route
 Route::get('recharge-requests/{rechargeRequest}/download-pdf', [App\Http\Controllers\Admin\RechargeRequestController::class, 'downloadPdf'])->name('admin.rechargerequests.downloadPdf');
 Route::get('admin/activationrequests/invoice/{id}', [App\Http\Controllers\Admin\ActivationRequestController::class, 'downloadInvoice'])->name('admin.activationrequests.invoice');
   Route::get('activationrequests/{id}/invoice', [App\Http\Controllers\Admin\CheckComplainController::class, 'invoice'])->name('admin.checkcomplains.invoice');
@@ -488,6 +491,5 @@ Route::post('admin/kyc-recharges', [App\Http\Controllers\Admin\KycRechargeContro
 Route::post('admin/kyc-recharges/{id}', [App\Http\Controllers\Admin\KycRechargeController::class, 'edit'])->name('admin.kyc-recharge.update');
 
 Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [App\Http\Controllers\Admin\KycRechargeController::class, 'paymentCallbackJson'])->name('admin.kyc-recharges.payment-callback-json');
-
 
 
