@@ -47,7 +47,6 @@ class DeleteDataController extends Controller
                     </form>
                 ';
             });
-
             // 🔹 OLD + NEW FIELDS
             $table->editColumn('id', fn($row) => $row->id ?? '');
             $table->editColumn('user_name', fn($row) => $row->user_name ?? '');
