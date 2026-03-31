@@ -9,11 +9,10 @@ class DeleteData extends Model
 {
     use HasFactory;
 
-    // 🧩 Table name specify (optional, Laravel auto detect kar lega if plural form used)
     protected $table = 'delete_data';
 
-    // ✅ Allow mass assignment for these columns
     protected $fillable = [
+        // OLD FIELDS
         'user_name',
         'number',
         'email',
@@ -23,10 +22,19 @@ class DeleteData extends Model
         'imei_no',
         'vts_no',
         'delete_date',
+
+        // NEW FIELDS 🔥
+        'owner_name',
+        'owner_phone',
+        'date_of_fitting',
+        'expiry_date',
+        'sim_number',
+        'reason_for_deletion',
     ];
 
-    // 🔁 If you want delete_date as Carbon (date handling)
     protected $casts = [
-        'delete_date' => 'datetime',
+        'delete_date'      => 'datetime',
+        'date_of_fitting'  => 'date',
+        'expiry_date'      => 'date',
     ];
 }

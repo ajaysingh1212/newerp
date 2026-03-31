@@ -12,22 +12,24 @@
             <i class="fa fa-file-csv"></i> Import CSV
         </button>
 
-        {{-- ✅ CSV Import Modal --}}
-        <div class="modal fade" id="csvImportModal" tabindex="-1" role="dialog" aria-labelledby="csvImportLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
+        {{-- CSV Import Modal --}}
+        <div class="modal fade" id="csvImportModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <form method="POST" action="{{ route('admin.delete-data.parseCsvImport') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="csvImportLabel">Import Delete Data via CSV</h5>
+                            <h5 class="modal-title">Import Delete Data via CSV</h5>
                             <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                         </div>
 
                         <div class="modal-body">
                             <div class="form-group">
-                                <label for="csv_file">Select CSV File</label>
+                                <label>Select CSV File</label>
                                 <input type="file" name="csv_file" class="form-control" required>
-                                <small class="text-muted">* Must include columns: user_name, number, email, product, counter_name, vehicle_no, imei_no, vts_no, delete_date</small>
+                                <small class="text-muted">
+                                    Columns: user_name, number, email, product, counter_name, vehicle_no, imei_no, vts_no, delete_date
+                                </small>
                             </div>
                         </div>
 
@@ -39,18 +41,19 @@
                 </form>
             </div>
         </div>
+
     </div>
 </div>
 @endcan
 
 <div class="card">
     <div class="card-header">
-        Deleted Data List
+        <h5>Deleted Data List</h5>
     </div>
 
     <div class="card-body">
         <div class="table-responsive">
-            <table class=" table table-bordered table-striped table-hover ajaxTable datatable datatable-DeleteData">
+            <table class="table table-bordered table-striped table-hover ajaxTable datatable datatable-DeleteData">
                 <thead>
                     <tr>
                         <th width="10"></th>
@@ -63,8 +66,16 @@
                         <th>Vehicle No</th>
                         <th>IMEI No</th>
                         <th>VTS No</th>
+
+                        {{-- NEW FIELDS 🔥 --}}
+                        <th>Owner Name</th>
+                        <th>Owner Phone</th>
+                        <th>SIM No</th>
+                        <th>Fitting Date</th>
+                        <th>Expiry Date</th>
+
                         <th>Delete Date</th>
-                        <th>&nbsp;</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
             </table>
@@ -78,6 +89,7 @@
 @parent
 <script>
 $(function () {
+
     let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
 
     @can('delete_data_delete')
@@ -86,6 +98,7 @@ $(function () {
         url: "{{ route('admin.delete-data.massDestroy') }}",
         className: 'btn-danger',
         action: function (e, dt, node, config) {
+
             var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
                 return $(entry).data('entry-id')
             });
@@ -108,6 +121,7 @@ $(function () {
     dtButtons.push(deleteButton)
     @endcan
 
+
     let dtOverrideGlobals = {
         buttons: dtButtons,
         processing: true,
@@ -115,6 +129,7 @@ $(function () {
         retrieve: true,
         aaSorting: [],
         ajax: "{{ route('admin.delete-data.index') }}",
+
         columns: [
             { data: 'placeholder', name: 'placeholder' },
             { data: 'id', name: 'id' },
@@ -126,9 +141,18 @@ $(function () {
             { data: 'vehicle_no', name: 'vehicle_no' },
             { data: 'imei_no', name: 'imei_no' },
             { data: 'vts_no', name: 'vts_no' },
+
+            // NEW FIELDS 🔥
+            { data: 'owner_name', name: 'owner_name' },
+            { data: 'owner_phone', name: 'owner_phone' },
+            { data: 'sim_number', name: 'sim_number' },
+            { data: 'date_of_fitting', name: 'date_of_fitting' },
+            { data: 'expiry_date', name: 'expiry_date' },
+
             { data: 'delete_date', name: 'delete_date' },
-            { data: 'actions', name: 'actions' }
+            { data: 'actions', name: 'actions', orderable:false, searchable:false }
         ],
+
         orderCellsTop: true,
         order: [[ 1, 'desc' ]],
         pageLength: 25,
@@ -137,9 +161,9 @@ $(function () {
     let table = $('.datatable-DeleteData').DataTable(dtOverrideGlobals)
 
     $('a[data-toggle="tab"]').on('shown.bs.tab click', function(e){
-        $($.fn.dataTable.tables(true)).DataTable()
-            .columns.adjust();
+        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
     });
+
 })
 </script>
 @endsection
