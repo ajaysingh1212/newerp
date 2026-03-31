@@ -30,13 +30,13 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.delete-data.update', $deleteData->id) }}" method="POST">
+            {{-- ✅ FIXED FORM --}}
+            <form action="{{ route('admin.delete-data.update', $deleteData) }}" method="POST">
                 @csrf
                 @method('PUT')
 
                 <div class="row">
 
-                    {{-- OLD FIELDS --}}
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">User Name *</label>
                         <input type="text" name="user_name" class="form-control"
@@ -91,19 +91,6 @@
                                value="{{ old('delete_date', $deleteData->delete_date) }}">
                     </div>
 
-                    {{-- NEW FIELDS --}}
-                    {{-- <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Owner Name</label>
-                        <input type="text" name="owner_name" class="form-control"
-                               value="{{ old('owner_name', $deleteData->owner_name) }}">
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Owner Phone</label>
-                        <input type="text" name="owner_phone" class="form-control"
-                               value="{{ old('owner_phone', $deleteData->owner_phone) }}">
-                    </div> --}}
-
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">Date of Fitting</label>
                         <input type="date" name="date_of_fitting" class="form-control"
@@ -131,11 +118,11 @@
 
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ route('admin.delete-data.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back
+                        ← Back
                     </a>
 
                     <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-edit"></i> Update Record
+                        Update Record
                     </button>
                 </div>
 
