@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Traits\CsvImportTrait;
 use App\Models\DeleteData;
 use Gate;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
@@ -165,89 +166,137 @@ class DeleteDataController extends Controller
         return response()->noContent();
     }
 
+
+
 public function parseCsvImport(Request $request)
 {
     try {
-        // ✅ Validate CSV file
+
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:5120',
         ]);
 
-        $path = $request->file('csv_file')->getRealPath();
+        $mapping = $request->mapping ?? [];
 
-        // ✅ Read file and convert to array
-        $data = array_map('str_getcsv', file($path, FILE_SKIP_EMPTY_LINES));
-
-        if (empty($data) || count($data) < 2) {
-            return back()->with('error', '⚠️ The uploaded CSV file is empty or invalid.');
+        if (empty($mapping)) {
+            return back()->with('error', '⚠️ Mapping select karo pehle');
         }
 
-        // ✅ Extract and clean header row
+        $path = $request->file('csv_file')->getRealPath();
+        $data = array_map('str_getcsv', file($path));
+
+        if (count($data) < 2) {
+            return back()->with('error', '⚠️ CSV empty hai');
+        }
+
+        // ✅ HEADER CLEAN
         $header = array_map(function ($h) {
-            $h = trim($h);
-            $h = str_replace(["\xC2\xA0", "\u{A0}", '–', '-'], '', $h); // remove non-breaking spaces or special chars
-            $h = strtolower($h);
-            $h = str_replace([' ', '.', '/'], '_', $h); // normalize spaces
-            return $h;
+            return strtolower(trim($h));
         }, array_shift($data));
 
-        // ✅ Remove any blank header cells
-        $header = array_filter($header);
-
-        // ✅ Expected header structure
-        $expected = [
-            'user_name', 'number', 'email', 'product',
-            'counter_name', 'vehicle_no', 'imei_no', 'vts_no', 'delete_date'
-        ];
-
-        // ✅ Check header mismatch
-        if ($header !== $expected) {
-            \Log::error('CSV Header Mismatch:', [
-                'received' => $header,
-                'expected' => $expected
-            ]);
-
-            return back()->with('error', '⚠️ Invalid CSV header! Please check the column names and order.');
-        }
-
-        // ✅ Import data
         $count = 0;
+        $errors = [];
+
         foreach ($data as $index => $row) {
-            if (count($row) < count($expected)) {
-                \Log::warning("Skipping incomplete row at line " . ($index + 2), ['row' => $row]);
+
+            // ❌ Skip empty row
+            if (empty(array_filter($row))) continue;
+
+            if (count($row) != count($header)) {
+                $errors[] = "Row ".($index+2)." column mismatch";
                 continue;
             }
 
-            $rowData = @array_combine($expected, $row);
-            if (!$rowData) continue;
+            $rowData = array_combine($header, $row);
 
-            \App\Models\DeleteData::create([
-                'user_name'    => $rowData['user_name'] ?? null,
-                'number'       => $rowData['number'] ?? null,
-                'email'        => $rowData['email'] ?? null,
-                'product'      => $rowData['product'] ?? null,
-                'counter_name' => $rowData['counter_name'] ?? null,
-                'vehicle_no'   => $rowData['vehicle_no'] ?? null,
-                'imei_no'      => $rowData['imei_no'] ?? null,
-                'vts_no'       => $rowData['vts_no'] ?? null,
-                'delete_date'  => !empty($rowData['delete_date']) ? $rowData['delete_date'] : now(),
-            ]);
+            $insert = [];
 
-            $count++;
+            foreach ($mapping as $dbField => $csvField) {
+
+                if (empty($csvField)) continue;
+
+                $csvField = strtolower(trim($csvField));
+
+                if (!array_key_exists($csvField, $rowData)) {
+                    $errors[] = "Row ".($index+2)." → Column '$csvField' not found";
+                    continue;
+                }
+
+                $value = $rowData[$csvField] ?? null;
+
+                // 🔥 DATE FIX LOGIC
+                if (in_array($dbField, ['delete_date','date_of_fitting','expiry_date'])) {
+
+                    try {
+
+                        if (!empty($value)) {
+
+                            // Fix invalid minutes (e.g. 17:75)
+                            if (preg_match('/(\d{2}):(\d{2})$/', $value, $matches)) {
+                                $hour = (int)$matches[1];
+                                $minute = (int)$matches[2];
+
+                                if ($minute > 59) {
+                                    $extraHour = floor($minute / 60);
+                                    $minute = $minute % 60;
+                                    $hour = $hour + $extraHour;
+
+                                    $value = preg_replace(
+                                        '/\d{2}:\d{2}$/',
+                                        sprintf('%02d:%02d', $hour, $minute),
+                                        $value
+                                    );
+                                }
+                            }
+
+                            // Try multiple formats
+                            $formats = [
+                                'd-m-Y H:i',
+                                'd-m-Y',
+                                'Y-m-d H:i:s',
+                                'Y-m-d'
+                            ];
+
+                            $parsed = null;
+
+                            foreach ($formats as $format) {
+                                try {
+                                    $parsed = Carbon::createFromFormat($format, $value);
+                                    break;
+                                } catch (\Exception $e) {}
+                            }
+
+                            if ($parsed) {
+                                $value = $parsed->format('Y-m-d H:i:s');
+                            } else {
+                                throw new \Exception("Invalid format");
+                            }
+                        }
+
+                    } catch (\Exception $e) {
+                        $errors[] = "Row ".($index+2)." Invalid date: ".$value;
+                        $value = null;
+                    }
+                }
+
+                $insert[$dbField] = $value;
+            }
+
+            try {
+                DeleteData::create($insert);
+                $count++;
+            } catch (\Exception $e) {
+                $errors[] = "Row ".($index+2)." DB Error: ".$e->getMessage();
+            }
         }
 
-        \Log::info("CSV Import completed successfully. Total inserted: {$count}");
-
-        return redirect()->route('admin.delete-data.index')
-            ->with('success', "✅ $count records imported successfully!");
-
-    } catch (\Throwable $e) {
-        \Log::error('CSV Import Failed: ' . $e->getMessage(), [
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
+        return back()->with([
+            'success' => "✅ $count records imported",
+            'import_errors' => $errors
         ]);
 
-        return back()->with('error', '🚨 Something went wrong during import. Check the log for details.');
+    } catch (\Exception $e) {
+        return back()->with('error', '🚨 '.$e->getMessage());
     }
 }
 }
