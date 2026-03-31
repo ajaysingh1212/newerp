@@ -92,7 +92,7 @@
                     </div>
 
                     {{-- NEW FIELDS --}}
-                    <div class="col-md-6 mb-3">
+                    {{-- <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">Owner Name</label>
                         <input type="text" name="owner_name" class="form-control"
                                value="{{ old('owner_name', $deleteData->owner_name) }}">
@@ -102,7 +102,7 @@
                         <label class="form-label fw-bold">Owner Phone</label>
                         <input type="text" name="owner_phone" class="form-control"
                                value="{{ old('owner_phone', $deleteData->owner_phone) }}">
-                    </div>
+                    </div> --}}
 
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">Date of Fitting</label>
