@@ -119,7 +119,7 @@ class DeleteDataController extends Controller
         abort_if(Gate::denies('delete_data_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $deleteData = DeleteData::findOrFail($id);
-        
+
         return view('admin.delete_data.show', compact('deleteData'));
     }
 
@@ -165,9 +165,89 @@ class DeleteDataController extends Controller
         return response()->noContent();
     }
 
-    public function parseCsvImport(Request $request)
-    {
-        // SAME AS YOUR ORIGINAL (NO CHANGE)
-        return parent::parseCsvImport($request);
+public function parseCsvImport(Request $request)
+{
+    try {
+        // ✅ Validate CSV file
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $path = $request->file('csv_file')->getRealPath();
+
+        // ✅ Read file and convert to array
+        $data = array_map('str_getcsv', file($path, FILE_SKIP_EMPTY_LINES));
+
+        if (empty($data) || count($data) < 2) {
+            return back()->with('error', '⚠️ The uploaded CSV file is empty or invalid.');
+        }
+
+        // ✅ Extract and clean header row
+        $header = array_map(function ($h) {
+            $h = trim($h);
+            $h = str_replace(["\xC2\xA0", "\u{A0}", '–', '-'], '', $h); // remove non-breaking spaces or special chars
+            $h = strtolower($h);
+            $h = str_replace([' ', '.', '/'], '_', $h); // normalize spaces
+            return $h;
+        }, array_shift($data));
+
+        // ✅ Remove any blank header cells
+        $header = array_filter($header);
+
+        // ✅ Expected header structure
+        $expected = [
+            'user_name', 'number', 'email', 'product',
+            'counter_name', 'vehicle_no', 'imei_no', 'vts_no', 'delete_date'
+        ];
+
+        // ✅ Check header mismatch
+        if ($header !== $expected) {
+            \Log::error('CSV Header Mismatch:', [
+                'received' => $header,
+                'expected' => $expected
+            ]);
+
+            return back()->with('error', '⚠️ Invalid CSV header! Please check the column names and order.');
+        }
+
+        // ✅ Import data
+        $count = 0;
+        foreach ($data as $index => $row) {
+            if (count($row) < count($expected)) {
+                \Log::warning("Skipping incomplete row at line " . ($index + 2), ['row' => $row]);
+                continue;
+            }
+
+            $rowData = @array_combine($expected, $row);
+            if (!$rowData) continue;
+
+            \App\Models\DeleteData::create([
+                'user_name'    => $rowData['user_name'] ?? null,
+                'number'       => $rowData['number'] ?? null,
+                'email'        => $rowData['email'] ?? null,
+                'product'      => $rowData['product'] ?? null,
+                'counter_name' => $rowData['counter_name'] ?? null,
+                'vehicle_no'   => $rowData['vehicle_no'] ?? null,
+                'imei_no'      => $rowData['imei_no'] ?? null,
+                'vts_no'       => $rowData['vts_no'] ?? null,
+                'delete_date'  => !empty($rowData['delete_date']) ? $rowData['delete_date'] : now(),
+            ]);
+
+            $count++;
+        }
+
+        \Log::info("CSV Import completed successfully. Total inserted: {$count}");
+
+        return redirect()->route('admin.delete-data.index')
+            ->with('success', "✅ $count records imported successfully!");
+
+    } catch (\Throwable $e) {
+        \Log::error('CSV Import Failed: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        return back()->with('error', '🚨 Something went wrong during import. Check the log for details.');
     }
+}
 }
