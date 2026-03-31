@@ -95,6 +95,7 @@
                     <th>Owner Name</th>
                     <th>Owner Phone</th>
                     <th>Delete Date</th>
+                    <th>Actions</th> {{-- 🔥 ADD THIS --}}
                 </tr>
             </thead>
         </table>
@@ -190,7 +191,8 @@ $('.datatable-DeleteData').DataTable({
         {data:'imei_no'},
         {data:'owner_name'},
         {data:'owner_phone'},
-        {data:'delete_date'}
+        {data:'delete_date'},
+        {data:'actions', name:'actions', orderable:false, searchable:false}
     ]
 });
 
