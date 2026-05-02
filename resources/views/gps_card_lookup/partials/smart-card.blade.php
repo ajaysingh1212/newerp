@@ -74,7 +74,7 @@
                             <div class="smart-brand-copy">
                                 <p class="smart-brand-name">EEMOT GPS Systems</p>
                                 <div class="smart-brand-tag">Track . Navigate . Protect</div>
-                                 <div class="tagline" style="font-size: 10px;">EEMOT – Reliable GPS Solutions Across India.</div>
+                                 <div class="tagline" style="font-size: 10px;color: white;">EEMOT – Reliable GPS Solutions Across India.</div>
 
                             </div>
                         </div>
