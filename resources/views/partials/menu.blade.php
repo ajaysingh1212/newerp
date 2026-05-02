@@ -55,7 +55,7 @@
     background-color:rgba(72, 66, 66, 0.45) !important;
     color: #fff !important;
     border-radius: 0.5rem !important;
-    
+
 }
 
 .sidebar-light-primary .nav-sidebar>.nav-item.menu-open>.nav-link{
@@ -117,7 +117,7 @@
         <div class="img__wrapper">
             <img src="http://www.savoy-sharm.com/media-room/images/hi-res/king-bed-room-accommodation-savoy-luxury-5-stars-accommodation-sharm-el-sheikh.jpg" alt="" />
             <a class="sold_out" href=""> ({{ Auth::user()->roles->pluck('title')->join(', ') }})</a>
-           
+
         </div>
         <span class="brand-text " style="position: absolute;top:50px;left:70px;color:black; font-weight: bold">{{ trans('panel.site_title') }}</span>
 
@@ -342,8 +342,8 @@
                     </li>
                 @endcan
                 @can('product_access')
-                    <li class="nav-item has-treeview {{ request()->is("admin/vts*") ? "menu-open" : "" }} {{ request()->is("admin/imei-models*") ? "menu-open" : "" }} {{ request()->is("admin/imei-masters*") ? "menu-open" : "" }} {{ request()->is("admin/product-models*") ? "menu-open" : "" }} {{ request()->is("admin/product-masters*") ? "menu-open" : "" }} {{ request()->is("admin/unbind-products*") ? "menu-open" : "" }}">
-                        <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/vts*") ? "active" : "" }} {{ request()->is("admin/imei-models*") ? "active" : "" }} {{ request()->is("admin/imei-masters*") ? "active" : "" }} {{ request()->is("admin/product-models*") ? "active" : "" }} {{ request()->is("admin/product-masters*") ? "active" : "" }} {{ request()->is("admin/unbind-products*") ? "active" : "" }}" href="#">
+                    <li class="nav-item has-treeview {{ request()->is("admin/vts*") ? "menu-open" : "" }} {{ request()->is("admin/imei-models*") ? "menu-open" : "" }} {{ request()->is("admin/imei-masters*") ? "menu-open" : "" }} {{ request()->is("admin/product-models*") ? "menu-open" : "" }} {{ request()->is("admin/gps-cards*") ? "menu-open" : "" }} {{ request()->is("admin/product-masters*") ? "menu-open" : "" }} {{ request()->is("admin/unbind-products*") ? "menu-open" : "" }}">
+                        <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/vts*") ? "active" : "" }} {{ request()->is("admin/imei-models*") ? "active" : "" }} {{ request()->is("admin/imei-masters*") ? "active" : "" }} {{ request()->is("admin/product-models*") ? "active" : "" }} {{ request()->is("admin/gps-cards*") ? "active" : "" }} {{ request()->is("admin/product-masters*") ? "active" : "" }} {{ request()->is("admin/unbind-products*") ? "active" : "" }}" href="#">
                             <i class="fa-fw nav-icon fab fa-product-hunt">
 
                             </i>
@@ -401,6 +401,16 @@
                                     </a>
                                 </li>
                             @endcan
+                            <li class="nav-item">
+                                <a href="{{ route("admin.gps-cards.index") }}" class="nav-link {{ request()->is("admin/gps-cards") || request()->is("admin/gps-cards/*") ? "active" : "" }}">
+                                    <i class="fa-fw nav-icon fas fa-id-card-alt">
+
+                                    </i>
+                                    <p>
+                                        GPS Smart Cards
+                                    </p>
+                                </a>
+                            </li>
                             @can('product_master_access')
                                 <li class="nav-item">
                                     <a href="{{ route("admin.product-masters.index") }}" class="nav-link {{ request()->is("admin/product-masters") || request()->is("admin/product-masters/*") ? "active" : "" }}">
@@ -557,7 +567,7 @@
                         </ul>
                     </li>
                 @endcan
-              
+
               @can('master_access')
                     <li class="nav-item has-treeview {{ request()->is("admin/*") ? "menu-open" : "" }} {{ request()->is("admin/*") ? "menu-open" : "" }} {{ request()->is("admin/app-links*") ? "menu-open" : "" }} {{ request()->is("admin/app-downloads*") ? "menu-open" : "" }}">
                         <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/*") ? "active" : "" }} {{ request()->is("admin/*") ? "active" : "" }} {{ request()->is("admin/app-links*") ? "active" : "" }} {{ request()->is("admin/app-downloads*") ? "active" : "" }}" href="#">
@@ -1025,43 +1035,52 @@
                             @endcan
 
                             @can('kyc_recharge_access')
-    <li class="nav-item">
-        <a href="{{ route('admin.kyc-recharges.index') }}" class="nav-link {{ request()->is('admin/kyc-recharges') || request()->is('admin/kyc-recharges/*') ? 'active' : '' }}">
-            <i class="fa-fw nav-icon fas fa-id-card"></i>
-            <p>
-                {{ trans('cruds.kycRecharge.title') }}
-            </p>
-        </a>
-    </li>
-@endcan
+                            <li class="nav-item">
+                                <a href="{{ route('admin.kyc-recharges.index') }}" class="nav-link {{ request()->is('admin/kyc-recharges') || request()->is('admin/kyc-recharges/*') ? 'active' : '' }}">
+                                    <i class="fa-fw nav-icon fas fa-id-card"></i>
+                                    <p>
+                                        {{ trans('cruds.kycRecharge.title') }}
+                                    </p>
+                                </a>
+                            </li>
+                        @endcan
 
                         </ul>
                     </li>
                 @endcan
 
                 @can('report_access')
-    <li class="nav-item has-treeview {{ request()->is('admin/stock-history*') ? 'menu-open' : '' }}">
-        <a class="nav-link nav-dropdown-toggle {{ request()->is('admin/stock-history*') ? 'active' : '' }}" href="#">
-            <i class="fa-fw nav-icon fas fa-chart-line"></i>
-            <p>
-                {{ trans('cruds.report.title') }}
-                <i class="right fa fa-fw fa-angle-left nav-icon"></i>
-            </p>
-        </a>
+                        <li class="nav-item has-treeview {{ request()->is('admin/stock-history*') ? 'menu-open' : '' }}">
+                        <a class="nav-link nav-dropdown-toggle {{ request()->is('admin/stock-history*') ? 'active' : '' }}" href="#">
+                            <i class="fa-fw nav-icon fas fa-chart-line"></i>
+                            <p>
+                                {{ trans('cruds.report.title') }}
+                                <i class="right fa fa-fw fa-angle-left nav-icon"></i>
+                            </p>
+                        </a>
 
-        <ul class="nav nav-treeview">
-            @can('stock_history_access')
-                <li class="nav-item">
-                    <a href="{{ route('admin.reports.stock-history') }}"
-                       class="nav-link {{ request()->is('admin/stock-history') || request()->is('admin/stock-history/*') ? 'active' : '' }}">
-                        <i class="fa-fw nav-icon fas fa-warehouse"></i>
-                        <p>{{ trans('cruds.stockHistory.title') }}</p>
-                    </a>
-                </li>
-            @endcan
-        </ul>
-    </li>
-@endcan
+                        <ul class="nav nav-treeview">
+                            @can('stock_history_access')
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.reports.stock-history') }}"
+                                    class="nav-link {{ request()->is('admin/stock-history') || request()->is('admin/stock-history/*') ? 'active' : '' }}">
+                                        <i class="fa-fw nav-icon fas fa-warehouse"></i>
+                                        <p>{{ trans('cruds.stockHistory.title') }}</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('card_diagnosis_report')
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.gps-card-lookup.index') }}"
+                                    class="nav-link {{ request()->is('admin/stock-history') || request()->is('admin/stock-history/*') ? 'active' : '' }}">
+                                        <i class="fa-fw nav-icon fas fa-warehouse"></i>
+                                        <p>Card Diagnosis</p>
+                                    </a>
+                                </li>
+                            @endcan
+                        </ul>
+                    </li>
+                @endcan
 
 
                 @can('add_vehicle_access')

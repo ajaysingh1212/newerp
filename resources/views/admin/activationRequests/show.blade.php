@@ -137,6 +137,27 @@
 </td>
 
             </tr>
+            @if($activationRequest->gpsCard)
+            <tr>
+                <th colspan="2">Smart Card Details</th>
+            </tr>
+            <tr>
+                <td>
+                    <p><strong>Card Number:</strong> {{ $activationRequest->gpsCard->formatted_card_number }}</p>
+                    <p><strong>Card Holder:</strong> {{ $activationRequest->gpsCard->card_holder_name ?: ($activationRequest->gpsCard->usedBy->name ?? '-') }}</p>
+                    <p><strong>Usage Status:</strong> {{ $activationRequest->gpsCard->usage_status }}</p>
+                </td>
+                <td>
+                    <p><strong>Print Status:</strong> {{ $activationRequest->gpsCard->print_status }}</p>
+                    <p><strong>Printed At:</strong> {{ optional($activationRequest->gpsCard->printed_at)->format('d-m-Y h:i A') ?? '-' }}</p>
+                    <p>
+                        <a href="{{ route('admin.gps-cards.show', $activationRequest->gpsCard->id) }}" target="_blank">View Smart Card</a>
+                        |
+                        <a href="{{ route('admin.gps-cards.print', $activationRequest->gpsCard->id) }}" target="_blank">Print Smart Card</a>
+                    </p>
+                </td>
+            </tr>
+            @endif
             <tr>
                
                     

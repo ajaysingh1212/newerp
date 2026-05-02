@@ -46,6 +46,7 @@ class ActivationRequest extends Model implements HasMedia
         'party_type_id',
         'select_party_id',
         'product_id',
+        'gps_card_id',
         'customer_name',
         'mobile_number',
         'whatsapp_number',
@@ -75,7 +76,8 @@ class ActivationRequest extends Model implements HasMedia
         'subscription',
         'user_id',
         'password',
-        'app_url'
+        'app_url',
+        'gps_card_id'
     ];
 
     // Status constants
@@ -215,7 +217,7 @@ class ActivationRequest extends Model implements HasMedia
     }
 
 
-  
+
 
 
 public function district() {  // fix spelling here!
@@ -236,6 +238,15 @@ public function product_master()
     return $this->belongsTo(ProductMaster::class, 'product_id');
 }
 
-    
+public function gpsCard()
+{
+    return $this->belongsTo(GpsCard::class, 'gps_card_id')->withoutGlobalScopes();
 }
 
+public function vehicle()
+{
+    return $this->belongsTo(AddCustomerVehicle::class, 'vehicle_id')->withoutGlobalScopes()->withTrashed();
+}
+
+
+}

@@ -276,6 +276,80 @@
             <span class="text-danger">{{ $errors->first('password') }}</span>
         @endif
     </div>
+
+    <div class="col-12 mt-2" id="smart-card-panel" style="{{ old('status', $activationRequest->status) === 'activated' || $activationRequest->gps_card_id ? '' : 'display:none;' }}">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #0e2238 0%, #183c5c 45%, #112235 100%); color: #fff;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                    <div>
+                        <h5 class="mb-1">Smart Card Allocation</h5>
+                        <div class="small text-white-50">Activation complete karte waqt GPS smart card select kariye. Selected card auto `used` mark ho jayega.</div>
+                    </div>
+                    @if($activationRequest->gpsCard)
+                        <a href="{{ route('admin.gps-cards.print', $activationRequest->gpsCard->id) }}" target="_blank" class="btn btn-light btn-sm mt-2 mt-md-0">
+                            <i class="fas fa-print mr-1"></i> Print Assigned Card
+                        </a>
+                    @endif
+                </div>
+
+                <div class="row">
+                    <div class="form-group col-lg-6">
+                        <label for="gps_card_id" class="text-white">Select Smart Card Number</label>
+                        <select name="gps_card_id" id="gps_card_id" class="form-control {{ $errors->has('gps_card_id') ? 'is-invalid' : '' }}">
+                            <option value="">-- Select Smart Card --</option>
+                            @foreach($availableGpsCards as $gpsCard)
+                                <option value="{{ $gpsCard->id }}"
+                                    data-holder="{{ $gpsCard->card_holder_name }}"
+                                    data-usage="{{ $gpsCard->usage_status }}"
+                                    data-print="{{ $gpsCard->print_status }}"
+                                    {{ old('gps_card_id', $activationRequest->gps_card_id) == $gpsCard->id ? 'selected' : '' }}>
+                                    {{ $gpsCard->formatted_card_number }} | {{ optional($gpsCard->productModel)->product_model ?? 'N/A' }} | {{ $gpsCard->usage_status }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @if($errors->has('gps_card_id'))
+                            <span class="text-danger">{{ $errors->first('gps_card_id') }}</span>
+                        @endif
+                        @if($availableGpsCards->isEmpty())
+                            <div class="small text-warning mt-2">Abhi koi unused smart card available nahi mila.</div>
+                        @endif
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 rounded" style="background: rgba(255,255,255,0.09); min-height: 90px;">
+                                    <div class="small text-uppercase text-white-50 mb-2">Holder</div>
+                                    <div id="gps-card-holder">{{ old('customer_name', optional($activationRequest->gpsCard)->card_holder_name ?? $activationRequest->customer_name ?? 'Not assigned') }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 rounded" style="background: rgba(255,255,255,0.09); min-height: 90px;">
+                                    <div class="small text-uppercase text-white-50 mb-2">Usage</div>
+                                    <div id="gps-card-usage">{{ optional($activationRequest->gpsCard)->usage_status ?? 'Available' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 rounded" style="background: rgba(255,255,255,0.09); min-height: 90px;">
+                                    <div class="small text-uppercase text-white-50 mb-2">Print</div>
+                                    <div id="gps-card-print">{{ optional($activationRequest->gpsCard)->print_status ?? 'Not Printed' }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($activationRequest->gpsCard)
+                            <div class="small text-white-50">
+                                Current card:
+                                <a href="{{ route('admin.gps-cards.show', $activationRequest->gpsCard->id) }}" class="text-warning" target="_blank">
+                                    {{ $activationRequest->gpsCard->formatted_card_number }}
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endif
 
 
@@ -404,6 +478,50 @@
     );
   }
 });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const statusField = document.getElementById('status');
+        const smartCardPanel = document.getElementById('smart-card-panel');
+        const smartCardSelect = document.getElementById('gps_card_id');
+        const holderField = document.getElementById('gps-card-holder');
+        const usageField = document.getElementById('gps-card-usage');
+        const printField = document.getElementById('gps-card-print');
+        const customerNameField = document.getElementById('customer_name');
+
+        if (!statusField || !smartCardPanel || !smartCardSelect) {
+            return;
+        }
+
+        function updateSmartCardSummary() {
+            const selectedOption = smartCardSelect.options[smartCardSelect.selectedIndex];
+
+            if (selectedOption && selectedOption.value) {
+                holderField.textContent = selectedOption.dataset.holder || customerNameField.value || 'Will use current customer name';
+                usageField.textContent = selectedOption.dataset.usage || 'Available';
+                printField.textContent = selectedOption.dataset.print || 'Not Printed';
+                return;
+            }
+
+            holderField.textContent = customerNameField.value || 'Not assigned';
+            usageField.textContent = 'Available';
+            printField.textContent = 'Not Printed';
+        }
+
+        function toggleSmartCardPanel() {
+            const shouldShow = statusField.value === 'activated' || '{{ $activationRequest->gps_card_id }}' !== '';
+            smartCardPanel.style.display = shouldShow ? '' : 'none';
+            smartCardSelect.disabled = statusField.value !== 'activated';
+            updateSmartCardSummary();
+        }
+
+        statusField.addEventListener('change', toggleSmartCardPanel);
+        smartCardSelect.addEventListener('change', updateSmartCardSummary);
+        customerNameField.addEventListener('input', updateSmartCardSummary);
+
+        toggleSmartCardPanel();
+    });
 </script>
 
 <script>

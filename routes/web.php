@@ -13,9 +13,11 @@ use App\Http\Controllers\Admin\VehicleSharingController;
 use App\Http\Controllers\Admin\DeleteDataController;
 use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccountDeletionAdminController;
+use App\Http\Controllers\Admin\AdminGpsCardLookupController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
 use App\Http\Controllers\Admin\WithdrawalRequestsController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\User\UserGpsCardLookupController;
 use App\Http\Controllers\WarrantyController;
 use Maatwebsite\Excel\Excel;
 use Illuminate\Support\Facades\Route;
@@ -266,6 +268,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('product-models/parse-csv-import', 'ProductModelController@parseCsvImport')->name('product-models.parseCsvImport');
     Route::post('product-models/process-csv-import', 'ProductModelController@processCsvImport')->name('product-models.processCsvImport');
     Route::resource('product-models', 'ProductModelController');
+    Route::get('gps-cards/{gps_card}/delete', 'GpsCardController@delete')->name('gps-cards.delete');
+    Route::get('gps-cards/{gps_card}/print', 'GpsCardController@print')->name('gps-cards.print');
+    Route::resource('gps-cards', 'GpsCardController')->only(['index', 'create', 'store', 'show', 'destroy']);
 
     // Product Masters
     Route::delete('product-masters/destroy', 'ProductMastersController@massDestroy')->name('product-masters.massDestroy');
@@ -454,6 +459,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::get('deletion-requests/{id}', [AccountDeletionAdminController::class, 'show'])->name('deletion.requests.show');
     Route::post('deletion-requests/{id}/approve', [AccountDeletionAdminController::class, 'approve'])->name('deletion.requests.approve');
     Route::post('deletion-requests/{id}/reject', [AccountDeletionAdminController::class, 'reject'])->name('deletion.requests.reject');
+
+    // admin searching
+    Route::get('gps-card-lookup', [AdminGpsCardLookupController::class, 'index'])
+    ->name('gps-card-lookup.index');
+    Route::post('gps-card-lookup/search', [AdminGpsCardLookupController::class, 'search'])
+    ->name('gps-card-lookup.search');
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
     // Change password
@@ -493,3 +504,15 @@ Route::post('admin/kyc-recharges/{id}', [App\Http\Controllers\Admin\KycRechargeC
 Route::post('/admin/kyc-recharges/{id}/payment-callback-json', [App\Http\Controllers\Admin\KycRechargeController::class, 'paymentCallbackJson'])->name('admin.kyc-recharges.payment-callback-json');
 
 
+// user searching
+
+Route::prefix('device')
+    ->name('user.')
+    ->group(function () {
+
+        Route::get('lookup', [UserGpsCardLookupController::class, 'index'])
+            ->name('gps-card-lookup.index');
+
+        Route::post('lookup/search', [UserGpsCardLookupController::class, 'search'])
+            ->name('gps-card-lookup.search');
+    });

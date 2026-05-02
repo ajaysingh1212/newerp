@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\VehicleType;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
@@ -28,6 +29,7 @@ use Carbon\Carbon;
 use App\Models\UserAlert;
 use App\Models\StockHistory;
 use App\Models\ProductMaster;
+use App\Models\GpsCard;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ActivationRequestController extends Controller
@@ -311,9 +313,10 @@ public function store(StoreActivationRequestRequest $request)
 
     $vehicle_types = VehicleType::pluck('vehicle_type', 'id')->prepend(trans('global.pleaseSelect'), '');
 
-    $activationRequest->load('party_type', 'select_party', 'product', 'state', 'disrict', 'vehicle_type', 'team');
+    $activationRequest->load('party_type', 'select_party', 'product', 'state', 'disrict', 'vehicle_type', 'team', 'gpsCard.usedBy', 'product_master.productModel');
 
     $appLinks = AppLink::all();
+    $availableGpsCards = $this->getAvailableGpsCardsForActivation($activationRequest);
 
     // ✅ Add status options here
     $statusOptions = [
@@ -331,6 +334,7 @@ public function store(StoreActivationRequestRequest $request)
         'states',
         'vehicle_types',
         'appLinks',
+        'availableGpsCards',
         'statusOptions' // ✅ Pass to view
     ));
 }
@@ -338,11 +342,42 @@ public function store(StoreActivationRequestRequest $request)
 
    public function update(UpdateActivationRequestRequest $request, ActivationRequest $activationRequest)
 {
-    $activationRequest->update($request->all());
+    $activationRequest->loadMissing('gpsCard', 'select_party');
+    $selectedCard = null;
+
+    if ($request->input('status') === 'activated') {
+        $request->validate([
+            'gps_card_id' => ['required', 'integer', 'exists:gps_cards,id'],
+        ], [
+            'gps_card_id.required' => 'Activated status ke liye smart card select karna zaroori hai.',
+        ]);
+
+        $selectedCard = $this->validateGpsCardSelection($activationRequest, (int) $request->input('gps_card_id'));
+    }
+
+    $payload = $request->all();
+
+    if ($request->input('status') !== 'activated') {
+        unset($payload['gps_card_id']);
+    }
+
+    $previousCardId = $activationRequest->gps_card_id;
+
+    $activationRequest->update($payload);
 
     // ✅ If the status is "activated", update status in both models
     if ($request->input('status') === 'activated') {
         $activationRequest->update(['status' => 'activated']);
+
+        if ($previousCardId && $previousCardId !== $selectedCard->id) {
+            $this->releaseGpsCard((int) $previousCardId, $activationRequest->id);
+        }
+
+        if ((int) $activationRequest->gps_card_id !== (int) $selectedCard->id) {
+            $activationRequest->update(['gps_card_id' => $selectedCard->id]);
+        }
+
+        $this->assignGpsCardToActivation($selectedCard, $activationRequest);
 
         // Update AddCustomerVehicle by activation_id
         $customerVehicle = AddCustomerVehicle::where('activation_id', $activationRequest->id)->first();
@@ -439,7 +474,10 @@ public function store(StoreActivationRequestRequest $request)
         'disrict',
         'vehicle_type',
         'team',
-        'vehicleAttachVeichles'
+        'vehicleAttachVeichles',
+        'gpsCard.productModel',
+        'gpsCard.usedBy',
+        'gpsCard.printedBy'
     );
 
     return view('admin.activationRequests.show', compact('activationRequest'));
@@ -500,6 +538,99 @@ public function getUsersByRole(Request $request)
     });
 
     return response()->json(['options' => $options]);
+}
+
+protected function getAvailableGpsCardsForActivation(ActivationRequest $activationRequest)
+{
+    return GpsCard::withoutGlobalScopes()
+        ->with(['productModel', 'usedBy'])
+        ->where(function ($query) use ($activationRequest) {
+            $query->whereNull('used_by_activation_request_id')
+                ->orWhere('used_by_activation_request_id', $activationRequest->id);
+        })
+        ->orderBy('card_number')
+        ->get();
+}
+
+protected function resolveActivationProductModelId(ActivationRequest $activationRequest): ?int
+{
+    $productMaster = $activationRequest->product_master;
+
+    if (! $productMaster && $activationRequest->product_id) {
+        $productMaster = ProductMaster::withTrashed()->find($activationRequest->product_id);
+    }
+
+    if (! $productMaster && $activationRequest->product_id) {
+        $stock = CurrentStock::withTrashed()
+            ->with(['productById', 'product'])
+            ->find($activationRequest->product_id);
+
+        $productMaster = $stock?->productById ?? $stock?->product;
+    }
+
+    return $productMaster?->product_model_id;
+}
+
+protected function validateGpsCardSelection(ActivationRequest $activationRequest, int $gpsCardId): GpsCard
+{
+    $gpsCard = GpsCard::withoutGlobalScopes()
+        ->with(['productModel'])
+        ->findOrFail($gpsCardId);
+    $productModelId = $this->resolveActivationProductModelId($activationRequest);
+
+    if ($productModelId && (int) $gpsCard->product_model_id !== (int) $productModelId) {
+        throw ValidationException::withMessages([
+            'gps_card_id' => 'Selected smart card does not belong to this product model.',
+        ]);
+    }
+
+    if ($gpsCard->status !== 'active') {
+        throw ValidationException::withMessages([
+            'gps_card_id' => 'Only active smart cards can be assigned.',
+        ]);
+    }
+
+    if ($gpsCard->isExpired()) {
+        throw ValidationException::withMessages([
+            'gps_card_id' => 'Selected smart card is expired.',
+        ]);
+    }
+
+    if ($gpsCard->used_by_activation_request_id && (int) $gpsCard->used_by_activation_request_id !== (int) $activationRequest->id) {
+        throw ValidationException::withMessages([
+            'gps_card_id' => 'Selected smart card is already used in another activation.',
+        ]);
+    }
+
+    return $gpsCard;
+}
+
+protected function assignGpsCardToActivation(GpsCard $gpsCard, ActivationRequest $activationRequest): void
+{
+    $gpsCard->update([
+        'used_by_id'                    => $activationRequest->select_party_id,
+        'used_by_activation_request_id' => $activationRequest->id,
+        'card_holder_name'              => $activationRequest->customer_name,
+        'used_at'                       => $gpsCard->used_at ?? now(),
+    ]);
+}
+
+protected function releaseGpsCard(int $gpsCardId, int $activationRequestId): void
+{
+    $gpsCard = GpsCard::withoutGlobalScopes()->find($gpsCardId);
+
+    if (! $gpsCard || (int) $gpsCard->used_by_activation_request_id !== (int) $activationRequestId) {
+        return;
+    }
+
+    $gpsCard->update([
+        'used_by_id'                    => null,
+        'used_by_activation_request_id' => null,
+        'card_holder_name'              => null,
+        'used_at'                       => null,
+        'printed_at'                    => null,
+        'printed_by_id'                 => null,
+    ]);
 }
 
 public function getPartyProducts(Request $request)

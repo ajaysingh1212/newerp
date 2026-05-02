@@ -74,6 +74,10 @@ class UpdateActivationRequestRequest extends FormRequest
             'password' => [
                 'required',
             ],
+            'gps_card_id' => [
+                'nullable',
+                'integer',
+            ],
         ];
     }
 }
