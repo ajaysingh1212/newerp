@@ -87,10 +87,10 @@
                                 <div class="smart-front-footer">
                                     <div class="smart-front-footer-left">
                                         <div class="smart-footer-label">Card Holder</div>
-                                        @php
+                                        {{-- @php
                                             dd($smartCardHolderName)
-                                        @endphp
-                                        <div class="smart-footer-name">{{ strtoupper(\App\Models\User::where('id', $smartCardHolderName)->value('name') ?? 'Not Assigned') }}</div>
+                                        @endphp --}}
+                                        <div class="smart-footer-name">{{ strtoupper(\App\Models\User::where('id', $smartCardHolderName)->value('name') ?? $smartCardHolderName) }}</div>
                                         {{-- {{ strtoupper(\App\Models\User::where('id', $smartCardHolderName)->value('name') ?? 'Not Assigned') }} --}}
                                     </div>
 
