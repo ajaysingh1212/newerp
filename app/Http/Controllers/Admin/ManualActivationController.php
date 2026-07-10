@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ManualActivation;
 use App\Models\ManualActivationDocument;
+use App\Models\ManualFitter;
 use App\Models\ManualParty;
 use App\Models\ManualProduct;
 use Carbon\Carbon;
@@ -16,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 class ManualActivationController extends Controller
 {
     /**
-     * Dashboard-style index with filters (party / product / state / district / city / this-week)
+     * Dashboard-style index with filters (party / fitter / product / state / district / city / this-week)
      */
     public function index(Request $request)
     {
@@ -24,6 +25,7 @@ class ManualActivationController extends Controller
 
         $parties = ManualParty::orderBy('name')->get(['id', 'name']);
         $products = ManualProduct::orderBy('name')->get(['id', 'name']);
+        $fitters = ManualFitter::orderBy('name')->get(['id', 'name', 'phone']);
 
         // State/District/City ab manual_parties ke plain string columns hain (koi relation nahi)
         // Cascading filter dropdowns ke liye ek nested map bana lete hain: state -> district -> [cities]
@@ -37,16 +39,20 @@ class ManualActivationController extends Controller
                     return $districtGroup->pluck('city')->filter()->unique()->values();
                 });
             });
-
+        $activations = $this->filteredQuery($request)
+            ->with(['party', 'fitter', 'product', 'user'])
+            ->latest('fitting_date')
+            ->paginate(20)
+            ->appends($request->query());
         $states = $locationMap->keys()->sort()->values();
 
         $activations = $this->filteredQuery($request)
-            ->with(['party', 'product'])
+            ->with(['party', 'fitter', 'product'])
             ->latest('fitting_date')
             ->paginate(20)
             ->appends($request->query());
 
-        return view('admin.manual-activations.index', compact('activations', 'parties', 'products', 'states', 'locationMap'));
+        return view('admin.manual-activations.index', compact('activations', 'parties', 'products', 'fitters', 'states', 'locationMap'));
     }
 
     /**
@@ -57,15 +63,16 @@ class ManualActivationController extends Controller
         abort_if(Gate::denies('manual_activation_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rows = $this->filteredQuery($request)
-            ->with(['party', 'product'])
+            ->with(['party', 'fitter', 'product'])
             ->latest('fitting_date')
             ->get();
 
-        $groupBy = $request->get('group_by', 'product'); // product | party | state | district | city
+        $groupBy = $request->get('group_by', 'product'); // product | party | fitter | state | district | city
 
         $grouped = $rows->groupBy(function ($row) use ($groupBy) {
             return match ($groupBy) {
                 'party' => $row->party->name ?? 'N/A',
+                'fitter' => $row->fitter->name ?? 'N/A',
                 'state' => $row->party->state ?? 'N/A',
                 'district' => $row->party->district ?? 'N/A',
                 'city' => $row->party->city ?? 'N/A',
@@ -79,6 +86,7 @@ class ManualActivationController extends Controller
                 'fitting_date' => optional($row->fitting_date)->format('d-m-Y'),
                 'created_at' => optional($row->created_at)->format('d-m-Y h:i A'),
                 'party' => $row->party->name ?? '-',
+                'fitter' => $row->fitter->name ?? '-',
                 'product' => $row->product->name ?? '-',
                 'customer_name' => $row->customer_name ?? '-',
                 'customer_phone' => $row->customer_phone ?? '-',
@@ -104,6 +112,10 @@ class ManualActivationController extends Controller
 
         if ($request->filled('manual_party_id')) {
             $query->where('manual_party_id', $request->manual_party_id);
+        }
+
+        if ($request->filled('manual_fitter_id')) {
+            $query->where('manual_fitter_id', $request->manual_fitter_id);
         }
 
         if ($request->filled('manual_product_id')) {
@@ -188,8 +200,9 @@ class ManualActivationController extends Controller
 
         $parties = ManualParty::orderBy('name')->get(['id', 'name']);
         $products = ManualProduct::orderBy('name')->get(['id', 'name']);
+        $fitters = ManualFitter::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('admin.manual-activations.create', compact('parties', 'products'));
+        return view('admin.manual-activations.create', compact('parties', 'products', 'fitters'));
     }
 
     public function store(Request $request)
@@ -198,6 +211,7 @@ class ManualActivationController extends Controller
 
         $validated = $request->validate([
             'manual_party_id' => 'required|exists:manual_parties,id',
+            'manual_fitter_id' => 'required|exists:manual_fitters,id',
             'manual_product_id' => 'required|exists:manual_products,id',
             'fitting_date' => 'required|date',
 
@@ -261,7 +275,7 @@ class ManualActivationController extends Controller
     {
         abort_if(Gate::denies('manual_activation_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $manualActivation->load(['party', 'product', 'documents']);
+        $manualActivation->load(['party', 'fitter', 'product', 'documents']);
 
         return view('admin.manual-activations.show', compact('manualActivation'));
     }
@@ -272,9 +286,10 @@ class ManualActivationController extends Controller
 
         $parties = ManualParty::orderBy('name')->get(['id', 'name']);
         $products = ManualProduct::orderBy('name')->get(['id', 'name']);
+        $fitters = ManualFitter::orderBy('name')->get(['id', 'name', 'phone']);
         $manualActivation->load('documents');
 
-        return view('admin.manual-activations.edit', compact('manualActivation', 'parties', 'products'));
+        return view('admin.manual-activations.edit', compact('manualActivation', 'parties', 'products', 'fitters'));
     }
 
     public function update(Request $request, ManualActivation $manualActivation)
@@ -283,6 +298,7 @@ class ManualActivationController extends Controller
 
         $validated = $request->validate([
             'manual_party_id' => 'required|exists:manual_parties,id',
+            'manual_fitter_id' => 'required|exists:manual_fitters,id',
             'manual_product_id' => 'required|exists:manual_products,id',
             'fitting_date' => 'required|date',
 

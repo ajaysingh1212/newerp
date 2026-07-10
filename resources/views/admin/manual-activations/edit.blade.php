@@ -24,25 +24,34 @@
         <form action="{{ route('admin.manual-activations.update', $manualActivation->id) }}" method="POST" enctype="multipart/form-data">
             @csrf @method('PUT')
 
-            <h6 class="text-uppercase text-muted mb-3">Party & Product</h6>
+            <h6 class="text-uppercase text-muted mb-3">Party, Fitter & Product</h6>
             <div class="row">
-                <div class="col-md-4 me-form-group mb-3">
+                <div class="col-md-3 me-form-group mb-3">
                     <label class="required">Party</label>
                     <select name="manual_party_id" class="form-control" required>
                         @foreach($parties as $party)
-                            <option value="{{ $party->id }}" {{ $manualActivation->manual_party_id == $party->id ? 'selected' : '' }}>{{ $party->name }}</option>
+                            <option value="{{ $party->id }}" {{ old('manual_party_id', $manualActivation->manual_party_id) == $party->id ? 'selected' : '' }}>{{ $party->name }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4 me-form-group mb-3">
+                <div class="col-md-3 me-form-group mb-3">
+                    <label class="required">Manual Fitter</label>
+                    <select name="manual_fitter_id" class="form-control" required>
+                        <option value="">Select Fitter</option>
+                        @foreach($fitters as $fitter)
+                            <option value="{{ $fitter->id }}" {{ old('manual_fitter_id', $manualActivation->manual_fitter_id) == $fitter->id ? 'selected' : '' }}>{{ $fitter->name }}{{ $fitter->phone ? ' - '.$fitter->phone : '' }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 me-form-group mb-3">
                     <label class="required">Product</label>
                     <select name="manual_product_id" class="form-control" required>
                         @foreach($products as $product)
-                            <option value="{{ $product->id }}" {{ $manualActivation->manual_product_id == $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
+                            <option value="{{ $product->id }}" {{ old('manual_product_id', $manualActivation->manual_product_id) == $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4 me-form-group mb-3">
+                <div class="col-md-3 me-form-group mb-3">
                     <label class="required">Fitting Date</label>
                     <input type="date" name="fitting_date" class="form-control" required value="{{ old('fitting_date', optional($manualActivation->fitting_date)->format('Y-m-d')) }}">
                 </div>

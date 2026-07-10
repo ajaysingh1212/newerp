@@ -46,28 +46,37 @@
         <form action="{{ route('admin.manual-activations.store') }}" method="POST" enctype="multipart/form-data" id="activationForm">
             @csrf
 
-            {{-- STEP 1: Party, Product, Fitting Date --}}
+            {{-- STEP 1: Party, Fitter, Product, Fitting Date --}}
             <div class="me-step-pane active" data-pane="1">
                 <div class="row">
-                    <div class="col-md-4 me-form-group mb-3">
+                    <div class="col-md-3 me-form-group mb-3">
                         <label class="required">Party</label>
-                        <select name="manual_party_id" class="form-control" required>
+                        <select name="manual_party_id" id="partySelect" class="form-control" required>
                             <option value="">Select Party</option>
                             @foreach($parties as $party)
-                                <option value="{{ $party->id }}">{{ $party->name }}</option>
+                                <option value="{{ $party->id }}" {{ old('manual_party_id') == $party->id ? 'selected' : '' }}>{{ $party->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4 me-form-group mb-3">
+                    <div class="col-md-3 me-form-group mb-3" id="fitterWrapper" style="{{ old('manual_party_id') ? '' : 'display:none;' }}">
+                        <label class="required">Manual Fitter</label>
+                        <select name="manual_fitter_id" id="fitterSelect" class="form-control" required {{ old('manual_party_id') ? '' : 'disabled' }}>
+                            <option value="">Select Fitter</option>
+                            @foreach($fitters as $fitter)
+                                <option value="{{ $fitter->id }}" {{ old('manual_fitter_id') == $fitter->id ? 'selected' : '' }}>{{ $fitter->name }}{{ $fitter->phone ? ' - '.$fitter->phone : '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3 me-form-group mb-3">
                         <label class="required">Product</label>
                         <select name="manual_product_id" class="form-control" required>
                             <option value="">Select Product</option>
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                <option value="{{ $product->id }}" {{ old('manual_product_id') == $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4 me-form-group mb-3">
+                    <div class="col-md-3 me-form-group mb-3">
                         <label class="required">Fitting Date</label>
                         <input type="date" name="fitting_date" class="form-control" required value="{{ old('fitting_date', date('Y-m-d')) }}">
                     </div>
@@ -181,6 +190,7 @@
         const pane = document.querySelector(`.me-step-pane[data-pane="${n}"]`);
         const requiredFields = pane.querySelectorAll('[required]');
         for (const field of requiredFields) {
+            if (field.disabled) continue;
             if (!field.value) { field.reportValidity(); return false; }
         }
         return true;
@@ -188,6 +198,21 @@
 
     nextBtn.addEventListener('click', () => { if (validateStep(current) && current < totalSteps) goToStep(current + 1); });
     prevBtn.addEventListener('click', () => { if (current > 1) goToStep(current - 1); });
+
+    // Reveal Manual Fitter select only after a Party has been chosen
+    const partySelect = document.getElementById('partySelect');
+    const fitterWrapper = document.getElementById('fitterWrapper');
+    const fitterSelect = document.getElementById('fitterSelect');
+    partySelect.addEventListener('change', function () {
+        if (this.value) {
+            fitterWrapper.style.display = 'block';
+            fitterSelect.disabled = false;
+        } else {
+            fitterWrapper.style.display = 'none';
+            fitterSelect.disabled = true;
+            fitterSelect.value = '';
+        }
+    });
 
     // Dynamic extra documents repeater
     let docIndex = 0;

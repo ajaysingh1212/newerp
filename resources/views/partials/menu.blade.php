@@ -447,12 +447,23 @@
                                 <i class="right fa fa-fw fa-angle-left nav-icon"></i>
                             </p>
                         </a>
+
                         <ul class="nav nav-treeview">
                             @can('manual_party_access')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.manual-parties.index') }}" class="nav-link {{ request()->is('admin/manual-parties') || request()->is('admin/manual-parties/*') ? 'active' : '' }}">
                                         <i class="fa-fw nav-icon fas fa-user-tie"></i>
                                         <p>Party</p>
+                                    </a>
+                                </li>
+                            @endcan
+
+
+                            @can('manual_fitter_access')
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.manual-fitters.index') }}" class="nav-link {{ request()->is('admin/manual-fitters') || request()->is('admin/manual-fitters/*') ? 'active' : '' }}">
+                                        <i class="fa-fw nav-icon fas fa-user-hard-hat"></i>
+                                        <p>Fitter</p>
                                     </a>
                                 </li>
                             @endcan

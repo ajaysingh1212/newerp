@@ -123,6 +123,15 @@
             </select>
         </div>
         <div class="col-lg col-md-4 col-6 mb-2">
+            <span class="me-filter-label">Fitter</span>
+            <select name="manual_fitter_id" class="form-select form-select-sm">
+                <option value="">All Fitters</option>
+                @foreach($fitters as $fitter)
+                    <option value="{{ $fitter->id }}">{{ $fitter->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-lg col-md-4 col-6 mb-2">
             <span class="me-filter-label">Product</span>
             <select name="manual_product_id" class="form-select form-select-sm">
                 <option value="">All Products</option>
@@ -201,6 +210,7 @@
                 <strong class="text-muted small d-block mb-2">GROUP BY</strong>
                 <span class="me-group-chip active" data-group="product">Product</span>
                 <span class="me-group-chip" data-group="party">Party</span>
+                <span class="me-group-chip" data-group="fitter">Fitter</span>
                 <span class="me-group-chip" data-group="state">State</span>
                 <span class="me-group-chip" data-group="district">District</span>
                 <span class="me-group-chip" data-group="city">City</span>
@@ -379,9 +389,11 @@
                         <th>Fitting Date</th>
                         <th>Created At</th>
                         <th>Party</th>
+                        <th>Fitter</th>
                         <th>Product</th>
                         <th>Customer</th>
                         <th>Vehicle No.</th>
+                        <th>Created By</th>
                         <th class="text-right">Action</th>
                     </tr>
                 </thead>
@@ -390,16 +402,20 @@
                         <tr>
                             <td>{{ $activation->id }}</td>
                             <td>
-                                <div class="me-date-main">{{ optional($activation->fitting_date)->format('d M Y') }}</div>
+                                <div class="me-date-main">{{ $activation->fitting_date }}</div>
                             </td>
                             <td>
                                 <div class="me-date-main">{{ $activation->created_at->format('d M Y') }}</div>
                                 <div class="me-date-sub">{{ $activation->created_at->format('h:i A') }}</div>
                             </td>
                             <td>{{ optional($activation->party)->name }}</td>
+                            <td>{{ optional($activation->fitter)->name ?? '-' }}</td>
                             <td>{{ optional($activation->product)->name }}</td>
                             <td>{{ $activation->customer_name ?? '-' }}</td>
                             <td>{{ $activation->vehicle_number ?? '-' }}</td>
+                            <td>
+                                {{ optional($activation->user)->name ?? '-' }}
+                            </td>
                             <td class="text-right">
                                 @can('manual_activation_show')
                                     <a href="{{ route('admin.manual-activations.show', $activation->id) }}" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i></a>
@@ -414,9 +430,10 @@
                                     </form>
                                 @endcan
                             </td>
+
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center py-4 text-muted">Koi activation nahi mila.</td></tr>
+                        <tr><td colspan="9" class="text-center py-4 text-muted">Koi activation nahi mila.</td></tr>
                     @endforelse
                 </tbody>
             </table>

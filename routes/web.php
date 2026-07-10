@@ -44,7 +44,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::get('manual-parties/get-districts/{state}', [ManualPartyController::class, 'getDistricts'])->name('manual-parties.getDistricts');
     Route::get('manual-parties/get-cities/{district}', [ManualPartyController::class, 'getCities'])->name('manual-parties.getCities');
     Route::resource('manual-parties', ManualPartyController::class);
-
+    // ---------- Manual Fitter ----------
+    Route::delete('manual-fitters/destroy', [ManualFitterController::class, 'massDestroy'])->name('manual-fitters.massDestroy');
+    Route::resource('manual-fitters', ManualFitterController::class);
     // ---------- Manual Product ----------
     Route::delete('manual-products/destroy', [ManualProductController::class, 'massDestroy'])->name('manual-products.massDestroy');
     Route::resource('manual-products', ManualProductController::class);

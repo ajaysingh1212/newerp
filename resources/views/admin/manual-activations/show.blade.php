@@ -18,8 +18,9 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-6">
-                <h6 class="text-uppercase text-muted mb-2">Party & Product</h6>
+                <h6 class="text-uppercase text-muted mb-2">Party, Fitter & Product</h6>
                 <div class="me-info-row"><span class="label">Party</span><span class="value">{{ optional($manualActivation->party)->name }}</span></div>
+                <div class="me-info-row"><span class="label">Manual Fitter</span><span class="value">{{ optional($manualActivation->fitter)->name ?? '-' }}</span></div>
                 <div class="me-info-row"><span class="label">Product</span><span class="value">{{ optional($manualActivation->product)->name }}</span></div>
 
                 <h6 class="text-uppercase text-muted mb-2 mt-4">Customer</h6>

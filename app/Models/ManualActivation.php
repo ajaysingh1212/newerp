@@ -15,6 +15,7 @@ class ManualActivation extends Model
 
     protected $fillable = [
         'manual_party_id',
+        'manual_fitter_id',
         'manual_product_id',
         'fitting_date',
         'customer_name',
@@ -49,6 +50,11 @@ class ManualActivation extends Model
         return $this->belongsTo(ManualParty::class, 'manual_party_id');
     }
 
+    public function fitter()
+    {
+        return $this->belongsTo(ManualFitter::class, 'manual_fitter_id');
+    }
+
     public function product()
     {
         return $this->belongsTo(ManualProduct::class, 'manual_product_id');
@@ -57,5 +63,9 @@ class ManualActivation extends Model
     public function documents()
     {
         return $this->hasMany(ManualActivationDocument::class, 'manual_activation_id');
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
     }
 }
