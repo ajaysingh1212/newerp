@@ -15,6 +15,9 @@ use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccountDeletionAdminController;
 use App\Http\Controllers\Admin\AdminGpsCardLookupController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
+use App\Http\Controllers\Admin\ManualActivationController;
+use App\Http\Controllers\Admin\ManualPartyController;
+use App\Http\Controllers\Admin\ManualProductController;
 use App\Http\Controllers\Admin\WithdrawalRequestsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\User\UserGpsCardLookupController;
@@ -36,6 +39,21 @@ Auth::routes();
 
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'middleware' => ['auth']], function () {
     Route::get('/', 'HomeController@index')->name('home');
+
+    Route::delete('manual-parties/destroy', [ManualPartyController::class, 'massDestroy'])->name('manual-parties.massDestroy');
+    Route::get('manual-parties/get-districts/{state}', [ManualPartyController::class, 'getDistricts'])->name('manual-parties.getDistricts');
+    Route::get('manual-parties/get-cities/{district}', [ManualPartyController::class, 'getCities'])->name('manual-parties.getCities');
+    Route::resource('manual-parties', ManualPartyController::class);
+
+    // ---------- Manual Product ----------
+    Route::delete('manual-products/destroy', [ManualProductController::class, 'massDestroy'])->name('manual-products.massDestroy');
+    Route::resource('manual-products', ManualProductController::class);
+
+    // ---------- Manual Activation (Dashboard) ----------
+    Route::delete('manual-activations/destroy', [ManualActivationController::class, 'massDestroy'])->name('manual-activations.massDestroy');
+    Route::get('manual-activations/chart-data', [ManualActivationController::class, 'chartData'])->name('manual-activations.chartData');
+    Route::delete('manual-activations/documents/{document}', [ManualActivationController::class, 'deleteDocument'])->name('manual-activations.deleteDocument');
+    Route::resource('manual-activations', ManualActivationController::class);
     // dashboard data (AJAX)
     Route::get('dashboard/data', [App\Http\Controllers\Admin\HomeController::class, 'dashboardData'])
         ->name('dashboard.data');
