@@ -8,143 +8,7 @@
 
 
 <!-- ================= NEW INVESTOR DASHBOARD ================= -->
-<div class="row mb-4" id="investor-dashboard-card">
-    <div class="col-12">
-        <div class="card p-3 shadow-sm">
 
-            <!-- FILTER HEADER -->
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <h5 class="mb-1">Investor Summary</h5>
-                    <small class="text-muted">Overview of investors, KYC & investments</small>
-                </div>
-
-                <div class="d-flex gap-2 align-items-center">
-                    <select id="dash-filter" class="form-control form-select">
-                        <option value="all">All Time</option>
-                        <option value="today">Today</option>
-                        <option value="yesterday">Yesterday</option>
-                        <option value="this_week">This Week</option>
-                        <option value="this_month">This Month</option>
-                        <option value="last_3_month">Last 3 Months</option>
-                        <option value="last_6_month">Last 6 Months</option>
-                        <option value="last_9_month">Last 9 Months</option>
-                        <option value="this_year">This Year</option>
-                        <option value="custom">Custom Range</option>
-                    </select>
-
-                    <input type="date" id="dash-from" class="form-control" style="display:none;">
-                    <input type="date" id="dash-to" class="form-control" style="display:none;">
-
-                    <button id="dash-apply" class="btn btn-primary">Apply</button>
-                    <button id="dash-reset" class="btn btn-outline-secondary">Reset</button>
-                </div>
-            </div>
-
-            <!-- SUMMARY CARDS -->
-            <div id="dash-cards" class="row gy-3">
-
-                <div class="col-md-3">
-                    <div class="card text-white bg-success shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
-                        <div class="card-body text-center">
-                            <div class="small">Verified Investors</div>
-                            <h4 id="card-verified">0</h4>
-                            <div class="small">KYC Verified</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="card text-white bg-warning shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
-                        <div class="card-body text-center">
-                            <div class="small">Not Verified</div>
-                            <h4 id="card-not-verified">0</h4>
-                            <div class="small">Pending / Submitted</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="card text-white bg-primary shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
-                        <div class="card-body text-center">
-                            <div class="small">Total Investment</div>
-                            <h4 id="card-total-investment">₹0</h4>
-                            <div class="small">Principal Sum</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="card text-white bg-info shadow-sm" style="border: 8px solid; border-style:double;border-radius:5px;">
-                        <div class="card-body text-center">
-                            <div class="small">Withdrawals (Requested)</div>
-                            <h4 id="card-withdraw-requested">₹0</h4>
-                            <div class="small">Requested Amount</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CHART + WITHDRAW LIST -->
-            <div class="row mt-4 align-items-start">
-
-                <!-- WITHDRAW LIST (LEFT) -->
-                <div class="col-md-6">
-                    <h6 class="mb-2">Withdrawal Requests</h6>
-
-                    <div id="withdraw-list-box"
-                         style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
-                        <div class="text-center text-muted py-4">Loading...</div>
-                    </div>
-                </div>
-
-                <!-- PIE CHART (RIGHT) -->
-                <div class="col-md-6 text-center">
-                    <h6 class="mb-2">Withdrawal Status Summary</h6>
-                    <canvas id="withdrawPieChart" height="220"></canvas>
-
-                    <div class="row mt-3">
-                        <div class="col-6">
-                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
-                                <div class="card-body text-center">
-                                    <small>Approved</small>
-                                    <h5 id="withdraw-approved">₹0</h5>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
-                                <div class="card-body text-center">
-                                    <small>Pending</small>
-                                    <h5 id="withdraw-pending">₹0</h5>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
-                                <div class="card-body text-center">
-                                    <small>Rejected</small>
-                                    <h5 id="withdraw-rejected">₹0</h5>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-                            <div class="card border-secondary mb-2" style="border: 2px solid; border-style:double;border-radius:5px;">
-                                <div class="card-body text-center">
-                                    <small>Total KYC</small>
-                                    <h5 id="kyc-total">0</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div> <!-- END ROW -->
-        </div>
-    </div>
-</div>
 
 <!-- ================= end of Investor Dashboard ================= -->
 
@@ -164,7 +28,7 @@
         </div>
         @if(auth()->id() == 1)
         <div class="row mt-4">
-  
+
     @foreach(['Pending', 'Failed', 'Completed'] as $index => $status)
         <div class="col-md-3">
             <a href="{{ route('admin.kyc-recharges.index', ['status' => $status]) }}" style="text-decoration: none;">
@@ -241,8 +105,8 @@
                             Total {{ $card['status'] }} Complaints
                         </h6>
                         <h3 class="m-0">
-                            {{ $card['status'] === 'Total' 
-                                ? array_sum($totalsStatusComplain) 
+                            {{ $card['status'] === 'Total'
+                                ? array_sum($totalsStatusComplain)
                                 : ($totalsStatusComplain[$card['status']] ?? 0) }}
                         </h3>
                     </div>
@@ -439,7 +303,7 @@
 <div class="col-lg-12">
     <div class="card mb-4 shadow-sm border-0 p-4">
         <div class="row align-items-center">
-            
+
             {{-- Left: Doughnut Chart --}}
             <div class="col-md-8 text-center mb-4 mb-md-0">
                 <h5 class="mb-3">Activation Count by Model & Status</h5>
@@ -462,13 +326,13 @@
                         @foreach($combinedChartData as $index => $item)
                             <li class="custom-list-item">
                                 <div>
-                                    <strong>{{ $item['model'] }}</strong> - 
+                                    <strong>{{ $item['model'] }}</strong> -
                                     <span class="text-muted">{{ $item['status'] }}</span>
                                     @if(!empty($item['creator_name']))
                                         <br><small>By: {{ $item['creator_name'] }}</small>
                                     @endif
                                 </div>
-                                <span class="custom-badge" 
+                                <span class="custom-badge"
                                       style="background-color: {{ $colors[$index % count($colors)] }}">
                                     {{ $item['count'] }}
                                 </span>
@@ -674,7 +538,7 @@
   <div class="col-lg-12">
     <div class="card mb-4 shadow-sm border-0 p-4">
         <div class="row align-items-center">
-            
+
             {{-- LEFT: Doughnut Chart --}}
             <div class="col-md-8 text-center mb-4 mb-md-0">
                 <h5 class="mb-3">Stock Transfers by User</h5>
@@ -699,7 +563,7 @@
                                 <div>
                                     <strong>{{ $label }}</strong>
                                 </div>
-                                <span class="custom-badge" 
+                                <span class="custom-badge"
                                       style="background-color: {{ $colors[$index % count($colors)] }};">
                                     {{ $transferCounts[$index] }}
                                 </span>
@@ -991,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     @else
-        document.getElementById('vehicleStatusChart').parentElement.innerHTML = 
+        document.getElementById('vehicleStatusChart').parentElement.innerHTML =
             '<p class="text-center text-muted">No data available.</p>';
     @endif
 </script>
