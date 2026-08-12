@@ -4,17 +4,24 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RedeemCode;
+use App\Models\RechargePlan;
 use Carbon\Carbon;
 
 class RedeemCodeApiController extends Controller
 {
     /**
-     * Check Redeem Code Details
+     * Check Redeem Code with Recharge Plan
      *
-     * GET /api/v1/redeem-code/{code}
+     * GET /api/v1/redeem-code/{recharge_plan_id}/{code}
      */
-    public function getRedeemCode($code)
+    public function getRedeemCode($recharge_plan_id, $code)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Find Redeem Code
+        |--------------------------------------------------------------------------
+        */
+
         $redeemCode = RedeemCode::with([
             'rechargePlan',
             'usedBy',
@@ -24,76 +31,205 @@ class RedeemCodeApiController extends Controller
         ->where('code', $code)
         ->first();
 
-        // Code not found
         if (!$redeemCode) {
             return response()->json([
                 'success' => false,
                 'valid' => false,
-                'message' => 'Redeem code not found.',
+                'message' => 'Invalid redeem code.'
             ], 404);
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | Status
+        | 2. Check Deleted Code
         |--------------------------------------------------------------------------
         */
 
-        $isActive = $redeemCode->status === 'active';
-        $isNotUsed = $redeemCode->use_status === 'not_used';
-
-        $isNotExpired = true;
-
-        if ($redeemCode->valid_up_to) {
-            $isNotExpired = Carbon::parse($redeemCode->valid_up_to)->isFuture();
+        if ($redeemCode->deleted_at !== null) {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'This redeem code has been deleted.'
+            ]);
         }
 
-        $isValid = $isActive && $isNotUsed && $isNotExpired;
 
         /*
         |--------------------------------------------------------------------------
-        | Recharge Plan
+        | 3. Check Status
         |--------------------------------------------------------------------------
         */
 
-        $plan = $redeemCode->rechargePlan;
+        if ($redeemCode->status !== 'active') {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'This redeem code is inactive.'
+            ]);
+        }
+
 
         /*
         |--------------------------------------------------------------------------
-        | Discount
+        | 4. Check Use Status
         |--------------------------------------------------------------------------
         */
 
-        $discountValue = (float) $redeemCode->discount_value;
+        if ($redeemCode->use_status !== 'not_used') {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'This redeem code has already been used.'
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Check Used By
+        |--------------------------------------------------------------------------
+        */
+
+        if ($redeemCode->used_by_id !== null) {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'This redeem code has already been used by another user.'
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Check Used At
+        |--------------------------------------------------------------------------
+        */
+
+        if ($redeemCode->used_at !== null) {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'This redeem code has already been redeemed.'
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Check Recharge Plan ID
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int) $redeemCode->recharge_plan_id !== (int) $recharge_plan_id) {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'This redeem code is not valid for the selected recharge plan.',
+                'data' => [
+                    'redeem_plan_id' => (int) $redeemCode->recharge_plan_id,
+                    'requested_plan_id' => (int) $recharge_plan_id
+                ]
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Check Recharge Plan Exists
+        |--------------------------------------------------------------------------
+        */
+
+        $rechargePlan = RechargePlan::where('id', $recharge_plan_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$rechargePlan) {
+            return response()->json([
+                'success' => true,
+                'valid' => false,
+                'message' => 'Recharge plan not found or has been deleted.'
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. Check Valid Up To
+        |--------------------------------------------------------------------------
+        |
+        | valid_up_to = 2026-08-12
+        |
+        | Means valid until:
+        | 2026-08-12 23:59:59
+        |
+        */
+
+        if ($redeemCode->valid_up_to !== null) {
+
+            $validUpTo = Carbon::parse($redeemCode->valid_up_to)
+                ->endOfDay();
+
+            if (Carbon::now()->greaterThan($validUpTo)) {
+                return response()->json([
+                    'success' => true,
+                    'valid' => false,
+                    'message' => 'This redeem code has expired.',
+                    'data' => [
+                        'valid_up_to' => $redeemCode->valid_up_to
+                    ]
+                ]);
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. Discount Amount
+        |--------------------------------------------------------------------------
+        */
+
         $discountAmount = (float) $redeemCode->discount_amount;
 
+        $planPrice = (float) $rechargePlan->price;
+
+        $payableAmount = max(
+            $planPrice - $discountAmount,
+            0
+        );
+
+
         /*
         |--------------------------------------------------------------------------
-        | Final Response
+        | VALID
         |--------------------------------------------------------------------------
         */
 
         return response()->json([
             'success' => true,
-
-            'valid' => $isValid,
-
-            'message' => $isValid
-                ? 'Redeem code is valid.'
-                : 'Redeem code is not valid.',
+            'valid' => true,
+            'message' => 'Redeem code is valid.',
 
             'data' => [
 
-                // 🎟️ Redeem Code Details
+                /*
+                |--------------------------------------------------------------------------
+                | Redeem Code
+                |--------------------------------------------------------------------------
+                */
+
                 'redeem_code' => [
                     'id' => $redeemCode->id,
                     'code' => $redeemCode->code,
+
                     'recharge_plan_id' => $redeemCode->recharge_plan_id,
 
                     'valid_up_to' => $redeemCode->valid_up_to,
 
                     'discount_type' => $redeemCode->discount_type,
-                    'discount_value' => $discountValue,
+                    'discount_value' => (float) $redeemCode->discount_value,
+
+                    // Actual amount that will be deducted
                     'discount_amount' => $discountAmount,
 
                     'status' => $redeemCode->status,
@@ -109,27 +245,53 @@ class RedeemCodeApiController extends Controller
 
                     'created_at' => $redeemCode->created_at,
                     'updated_at' => $redeemCode->updated_at,
+                    'deleted_at' => $redeemCode->deleted_at,
                 ],
 
-                // 💳 Recharge Plan Details
-                'recharge_plan' => $plan,
 
-                // 👤 Used By
-                'used_by' => $redeemCode->usedBy,
+                /*
+                |--------------------------------------------------------------------------
+                | Recharge Plan
+                |--------------------------------------------------------------------------
+                */
 
-                // 🧾 Recharge Request
-                'recharge_request' => $redeemCode->rechargeRequest,
+                'recharge_plan' => [
+                    'id' => $rechargePlan->id,
+                    'type' => $rechargePlan->type,
+                    'plan_name' => $rechargePlan->plan_name,
 
-                // 👨‍💼 Created By
-                'created_by' => $redeemCode->createdBy,
+                    'price' => (float) $rechargePlan->price,
 
-                // 🔍 Validation Details
-                'validation' => [
-                    'active' => $isActive,
-                    'not_used' => $isNotUsed,
-                    'not_expired' => $isNotExpired,
+                    'subscription_duration' =>
+                        $rechargePlan->subscription_duration,
+
+                    'amc_duration' =>
+                        $rechargePlan->amc_duration,
+
+                    'warranty_duration' =>
+                        $rechargePlan->warranty_duration,
+
+                    'discription' =>
+                        $rechargePlan->discription,
                 ],
-            ],
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Amount
+                |--------------------------------------------------------------------------
+                */
+
+                'amount' => [
+                    'plan_amount' => $planPrice,
+
+                    // Amount which will be deducted
+                    'discount_amount' => $discountAmount,
+
+                    // Final amount customer will pay
+                    'payable_amount' => $payableAmount,
+                ]
+            ]
         ]);
     }
 }
