@@ -55,7 +55,46 @@
                 @foreach($redeemCodes as $redeemCode)
                     <tr>
                         <td>{{ $redeemCode->id }}</td>
-                        <td><span class="redeem-code-pill">{{ $redeemCode->code }}</span></td>
+                        <td><span class="redeem-code-pill">{{ $redeemCode->code }} <button type="button" class="copy-redeem-code " data-code="{{ $redeemCode->code }}" title="copy code"> <i class="fas fa-copy"></i></button></span></td>
+                        <style>
+
+                            .redeem-code-pill {
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 8px;
+                                padding: 5px 10px;
+                                border-radius: 6px;
+                            }
+
+                            .copy-redeem-code {
+                                border: 0;
+                                background: transparent;
+                                padding: 0;
+                                cursor: pointer;
+                                color: #555;
+                                font-size: 14px;
+                            }
+
+                            .copy-redeem-code:hover {
+                                color: #007bff;
+                            }
+
+                        </style>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const copyButtons = document.querySelectorAll('.copy-redeem-code');
+                                copyButtons.forEach(button => {
+                                    button.addEventListener('click', function() {
+                                        const code = this.getAttribute('data-code');
+                                        navigator.clipboard.writeText(code).then(() => {
+                                            alert('Redeem code copied to clipboard: ' + code);
+                                        }).catch(err => {
+                                            console.error('Failed to copy text: ', err);
+                                        });
+                                    });
+                                });
+                            });
+                        </script>
                         <td>{{ $redeemCode->rechargePlan?->type }}<br><strong>{{ $redeemCode->rechargePlan?->plan_name }}</strong></td>
                         <td>
                             {{ $redeemCode->discount_type === 'percent' ? number_format($redeemCode->discount_value, 2) . '%' : 'Rs ' . number_format($redeemCode->discount_value, 2) }}
