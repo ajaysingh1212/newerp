@@ -4,167 +4,130 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RedeemCode;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class RedeemCodeApiController extends Controller
 {
     /**
-     * Check Redeem Code
+     * Check Redeem Code Details
+     *
+     * GET /api/v1/redeem-code/{code}
      */
-    public function checkRedeemCode(Request $request)
+    public function getRedeemCode($code)
     {
-        $request->validate([
-            'code' => 'required|string',
-            'recharge_plan_id' => 'nullable|integer',
-        ]);
-
-        $code = trim($request->code);
-
-        // Find redeem code
-        $redeemCode = RedeemCode::with('rechargePlan')
-            ->where('code', $code)
-            ->first();
+        $redeemCode = RedeemCode::with([
+            'rechargePlan',
+            'usedBy',
+            'rechargeRequest',
+            'createdBy'
+        ])
+        ->where('code', $code)
+        ->first();
 
         // Code not found
         if (!$redeemCode) {
             return response()->json([
                 'success' => false,
                 'valid' => false,
-                'message' => 'Invalid redeem code.',
+                'message' => 'Redeem code not found.',
             ], 404);
-        }
-
-        // Check status
-        if ($redeemCode->status != 1) {
-            return response()->json([
-                'success' => false,
-                'valid' => false,
-                'message' => 'This redeem code is inactive.',
-                'data' => [
-                    'code' => $redeemCode->code,
-                    'status' => $redeemCode->status,
-                    'use_status' => $redeemCode->use_status,
-                ],
-            ], 422);
-        }
-
-        // Check already used
-        if ($redeemCode->use_status == 1) {
-            return response()->json([
-                'success' => false,
-                'valid' => false,
-                'message' => 'This redeem code has already been used.',
-                'data' => [
-                    'code' => $redeemCode->code,
-                    'use_status' => $redeemCode->use_status,
-                    'used_by_id' => $redeemCode->used_by_id,
-                    'used_at' => $redeemCode->used_at,
-                ],
-            ], 422);
-        }
-
-        // Check expiry
-        if (
-            !empty($redeemCode->valid_up_to) &&
-            Carbon::parse($redeemCode->valid_up_to)->isPast()
-        ) {
-            return response()->json([
-                'success' => false,
-                'valid' => false,
-                'message' => 'This redeem code has expired.',
-                'data' => [
-                    'code' => $redeemCode->code,
-                    'valid_up_to' => $redeemCode->valid_up_to,
-                ],
-            ], 422);
-        }
-
-        // Optional plan validation
-        if (
-            $request->filled('recharge_plan_id') &&
-            $redeemCode->recharge_plan_id != $request->recharge_plan_id
-        ) {
-            return response()->json([
-                'success' => false,
-                'valid' => false,
-                'message' => 'This redeem code is not valid for the selected recharge plan.',
-                'data' => [
-                    'redeem_plan_id' => $redeemCode->recharge_plan_id,
-                    'selected_plan_id' => $request->recharge_plan_id,
-                ],
-            ], 422);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Recharge Plan Details
+        | Status
+        |--------------------------------------------------------------------------
+        */
+
+        $isActive = $redeemCode->status === 'active';
+        $isNotUsed = $redeemCode->use_status === 'not_used';
+
+        $isNotExpired = true;
+
+        if ($redeemCode->valid_up_to) {
+            $isNotExpired = Carbon::parse($redeemCode->valid_up_to)->isFuture();
+        }
+
+        $isValid = $isActive && $isNotUsed && $isNotExpired;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Recharge Plan
         |--------------------------------------------------------------------------
         */
 
         $plan = $redeemCode->rechargePlan;
 
-        $planPrice = 0;
-
-        if ($plan) {
-            // Change "price" if your recharge_plans table uses another column.
-            $planPrice = (float) ($plan->price ?? 0);
-        }
-
         /*
         |--------------------------------------------------------------------------
-        | Calculate Discount
+        | Discount
         |--------------------------------------------------------------------------
         */
 
-        $discountAmount = $redeemCode->calculateDiscount($planPrice);
-
-        $payableAmount = max($planPrice - $discountAmount, 0);
+        $discountValue = (float) $redeemCode->discount_value;
+        $discountAmount = (float) $redeemCode->discount_amount;
 
         /*
         |--------------------------------------------------------------------------
-        | Response
+        | Final Response
         |--------------------------------------------------------------------------
         */
 
         return response()->json([
             'success' => true,
-            'valid' => true,
-            'message' => 'Redeem code is valid.',
+
+            'valid' => $isValid,
+
+            'message' => $isValid
+                ? 'Redeem code is valid.'
+                : 'Redeem code is not valid.',
 
             'data' => [
 
-                // Redeem Code
+                // 🎟️ Redeem Code Details
                 'redeem_code' => [
                     'id' => $redeemCode->id,
                     'code' => $redeemCode->code,
+                    'recharge_plan_id' => $redeemCode->recharge_plan_id,
+
+                    'valid_up_to' => $redeemCode->valid_up_to,
+
+                    'discount_type' => $redeemCode->discount_type,
+                    'discount_value' => $discountValue,
+                    'discount_amount' => $discountAmount,
+
                     'status' => $redeemCode->status,
                     'use_status' => $redeemCode->use_status,
-                    'valid_up_to' => $redeemCode->valid_up_to,
+
                     'used_by_id' => $redeemCode->used_by_id,
+                    'recharge_request_id' => $redeemCode->recharge_request_id,
                     'used_at' => $redeemCode->used_at,
+
+                    'created_by_id' => $redeemCode->created_by_id,
+                    'creator_name' => $redeemCode->creator_name,
+                    'creator_role' => $redeemCode->creator_role,
+
+                    'created_at' => $redeemCode->created_at,
+                    'updated_at' => $redeemCode->updated_at,
                 ],
 
-                // Discount
-                'discount' => [
-                    'type' => $redeemCode->discount_type,
-                    'value' => (float) $redeemCode->discount_value,
-                    'amount' => $discountAmount,
-                ],
+                // 💳 Recharge Plan Details
+                'recharge_plan' => $plan,
 
-                // Recharge Plan
-                'recharge_plan' => $plan ? [
-                    'id' => $plan->id,
-                    'name' => $plan->name ?? null,
-                    'price' => $planPrice,
-                    'details' => $plan,
-                ] : null,
+                // 👤 Used By
+                'used_by' => $redeemCode->usedBy,
 
-                // Final Amount
-                'amount' => [
-                    'plan_price' => $planPrice,
-                    'discount_amount' => $discountAmount,
-                    'payable_amount' => $payableAmount,
+                // 🧾 Recharge Request
+                'recharge_request' => $redeemCode->rechargeRequest,
+
+                // 👨‍💼 Created By
+                'created_by' => $redeemCode->createdBy,
+
+                // 🔍 Validation Details
+                'validation' => [
+                    'active' => $isActive,
+                    'not_used' => $isNotUsed,
+                    'not_expired' => $isNotExpired,
                 ],
             ],
         ]);
