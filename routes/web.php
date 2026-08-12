@@ -5,6 +5,7 @@ Use App\Http\Controllers\Admin\ActivationRequestController;
 Use App\Http\Controllers\Admin\RechargeRequestController;
 Use App\Http\Controllers\Admin\CheckPartyStockController;
 Use App\Http\Controllers\Admin\UnbindProductController;
+Use App\Http\Controllers\Admin\RedeemCodeController;
 
 use App\Http\Controllers\Admin\CurrentStockController;
 use App\Http\Controllers\Admin\UserAlertsControlle;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\AccountDeletionAdminController;
 use App\Http\Controllers\Admin\AdminGpsCardLookupController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
 use App\Http\Controllers\Admin\ManualActivationController;
+use App\Http\Controllers\Admin\ManualFitterController;
 use App\Http\Controllers\Admin\ManualPartyController;
 use App\Http\Controllers\Admin\ManualProductController;
 use App\Http\Controllers\Admin\WithdrawalRequestsController;
@@ -396,6 +398,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('recharge-requests/parse-csv-import', 'RechargeRequestController@parseCsvImport')->name('recharge-requests.parseCsvImport');
     Route::post('recharge-requests/process-csv-import', 'RechargeRequestController@processCsvImport')->name('recharge-requests.processCsvImport');
     Route::resource('recharge-requests', 'RechargeRequestController');
+
+    // Redeem Code
+    Route::get('redeem-codes/validate-code', [RedeemCodeController::class, 'validateCode'])->name('redeem-codes.validate');
+    Route::resource('redeem-codes', RedeemCodeController::class)->except(['edit', 'update']);
 
     Route::get('messenger', 'MessengerController@index')->name('messenger.index');
     Route::get('messenger/create', 'MessengerController@createTopic')->name('messenger.createTopic');

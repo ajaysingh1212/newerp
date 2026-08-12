@@ -1082,6 +1082,15 @@
                                 </li>
                             @endcan
 
+                            @can('redeem_code_access')
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.redeem-codes.index') }}" class="nav-link {{ request()->is('admin/redeem-codes') || request()->is('admin/redeem-codes/*') ? 'active' : '' }}">
+                                        <i class="fa-fw nav-icon fas fa-ticket-alt"></i>
+                                        <p>Redeem Codes</p>
+                                    </a>
+                                </li>
+                            @endcan
+
                             @can('kyc_recharge_access')
                             <li class="nav-item">
                                 <a href="{{ route('admin.kyc-recharges.index') }}" class="nav-link {{ request()->is('admin/kyc-recharges') || request()->is('admin/kyc-recharges/*') ? 'active' : '' }}">

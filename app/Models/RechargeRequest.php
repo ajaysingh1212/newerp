@@ -42,6 +42,9 @@ class RechargeRequest extends Model implements HasMedia
         'razorpay_payment_id',
         'payment_amount',
         'redeem_amount',
+        'redeem_code_id',
+        'redeem_code',
+        'redeem_code_discount',
         'payment_date',
         'payment_id',
         'created_by_id',
@@ -72,6 +75,11 @@ class RechargeRequest extends Model implements HasMedia
     public function select_recharge()
     {
         return $this->belongsTo(RechargePlan::class, 'select_recharge_id');
+    }
+
+    public function redeemCode()
+    {
+        return $this->belongsTo(RedeemCode::class, 'redeem_code_id');
     }
 
     public function getAttechmentAttribute()

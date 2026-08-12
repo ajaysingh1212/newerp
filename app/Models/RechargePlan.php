@@ -44,6 +44,11 @@ class RechargePlan extends Model
         return $this->hasMany(RechargeRequest::class, 'select_recharge_id', 'id');
     }
 
+    public function redeemCodes()
+    {
+        return $this->hasMany(RedeemCode::class, 'recharge_plan_id', 'id');
+    }
+
     public function team()
     {
         return $this->belongsTo(Team::class, 'team_id');

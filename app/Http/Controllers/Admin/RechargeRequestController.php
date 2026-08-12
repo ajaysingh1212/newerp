@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use App\Models\AddCustomerVehicle;
 use App\Models\Commission;
 use App\Models\Recharge;
+use App\Models\RedeemCode;
 use App\Models\ProductMaster;
 use Gate;
 use Illuminate\Http\Request;
@@ -207,6 +208,7 @@ public function store(Request $request)
         'razorpay_payment_id'   => 'nullable|string|max:255',
         'payment_amount'        => 'nullable|numeric',
         'redeem_amount'         => 'nullable|numeric',
+        'redeem_code'           => 'nullable|string',
         'amc_duration'          => 'nullable|numeric',
         'warranty_duration'     => 'nullable|numeric',
         'subscription_duration' => 'nullable|numeric',
@@ -216,9 +218,10 @@ public function store(Request $request)
     $customer = User::findOrFail($request->user_id);
     $rechargePlan = $request->recharge_plan_id ? RechargePlan::findOrFail($request->recharge_plan_id) : null;
 
-    $price = $request->price ?? ($rechargePlan->price ?? 0);
-    $redeem = $request->redeem_amount ?? 0;
-    $finalAmount = $price - $redeem;
+    $price = (float) ($request->price ?? ($rechargePlan->price ?? 0));
+    $redeem = (float) ($request->redeem_amount ?? 0);
+    $redeemCodeDiscount = 0;
+    $redeemCodeModel = null;
 
     $loggedInUser = auth()->user();
     $loggedInUserRole = strtolower(trim(optional($loggedInUser->roles()->first())->title ?? ''));
@@ -238,20 +241,51 @@ public function store(Request $request)
         }
     }
 
-    // Admin auto-payment vs regular user
-    if ($loggedInUserRole === 'admin') {
-        $paymentMethod = 'admin';
-        $razorpayPaymentId = 'ADMIN_' . strtoupper(Str::random(10));
-        $paymentStatus = 'success';
-    } else {
-        $paymentMethod = $finalAmount <= 0 ? 'wallet' : ($request->payment_method ?? 'razorpay');
-        $razorpayPaymentId = $finalAmount <= 0 ? 'WALLET_' . strtoupper(Str::random(10)) : $request->razorpay_payment_id;
-        $paymentStatus = $finalAmount <= 0 ? 'success' : ($request->payment_status ?? 'pending');
-    }
-
     DB::beginTransaction();
 
     try {
+        if ($request->filled('redeem_code')) {
+            if (! $rechargePlan) {
+                DB::rollBack();
+                return back()->withInput()->with('error', 'Please select recharge plan before applying redeem code.');
+            }
+
+            $redeemCodeModel = RedeemCode::where('code', strtoupper(trim($request->redeem_code)))
+                ->where('recharge_plan_id', $rechargePlan->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $redeemCodeModel) {
+                DB::rollBack();
+                return back()->withInput()->with('error', 'Invalid redeem code for selected plan.');
+            }
+
+            if ($redeemCodeModel->status !== 'active' || $redeemCodeModel->use_status !== 'not_used') {
+                DB::rollBack();
+                return back()->withInput()->with('error', 'This redeem code is already used or inactive.');
+            }
+
+            if (\Carbon\Carbon::parse($redeemCodeModel->valid_up_to)->lt(now()->startOfDay())) {
+                DB::rollBack();
+                return back()->withInput()->with('error', 'This redeem code has expired.');
+            }
+
+            $redeemCodeDiscount = $redeemCodeModel->calculateDiscount($price);
+        }
+
+        $finalAmount = max(0, $price - $redeem - $redeemCodeDiscount);
+
+        // Admin auto-payment vs regular user
+        if ($loggedInUserRole === 'admin') {
+            $paymentMethod = 'admin';
+            $razorpayPaymentId = 'ADMIN_' . strtoupper(Str::random(10));
+            $paymentStatus = 'success';
+        } else {
+            $paymentMethod = $finalAmount <= 0 ? 'wallet' : ($request->payment_method ?? 'razorpay');
+            $razorpayPaymentId = $finalAmount <= 0 ? 'WALLET_' . strtoupper(Str::random(10)) : $request->razorpay_payment_id;
+            $paymentStatus = $finalAmount <= 0 ? 'success' : ($request->payment_status ?? 'pending');
+        }
+
         $vehicle = AddCustomerVehicle::findOrFail($request->vehicle_id);
         $now = Carbon::now();
 
@@ -320,6 +354,9 @@ public function store(Request $request)
             'razorpay_payment_id'   => $razorpayPaymentId,
             'payment_amount'        => $finalAmount,
             'redeem_amount'         => $redeem,
+            'redeem_code_id'        => $redeemCodeModel?->id,
+            'redeem_code'           => $redeemCodeModel?->code,
+            'redeem_code_discount'  => $redeemCodeDiscount,
             'payment_date'          => now(),
             'payment_id'            => $paymentId,
             'created_by_id'         => $loggedInUser->id,
@@ -328,6 +365,15 @@ public function store(Request $request)
             'subscription_duration' => $vehicle->subscription,
             'vehicle_status'                => 'processing',
         ]);
+
+        if ($redeemCodeModel) {
+            $redeemCodeModel->update([
+                'use_status'         => 'used',
+                'used_by_id'         => $customer->id,
+                'recharge_request_id'=> $rechargeRequest->id,
+                'used_at'            => now(),
+            ]);
+        }
 
         // Create commission
         Commission::create([

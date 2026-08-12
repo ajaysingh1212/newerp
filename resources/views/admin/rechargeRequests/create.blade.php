@@ -140,8 +140,22 @@
                             <input type="hidden" name="redeem_amount" value="0">
                         @endif
 
+                        <div class="form-group mt-3">
+                            <label for="redeem_code">Redeem Code</label>
+                            <div class="input-group">
+                                <input type="text" name="redeem_code" id="redeem_code" class="form-control" value="{{ old('redeem_code') }}" placeholder="ET-12345ABCDE" style="text-transform: uppercase;">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-dark" id="applyRedeemCode">Apply</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="clearRedeemCode">Clear</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="redeem_code_discount" name="redeem_code_discount" value="0">
+                            <div id="redeem-code-message" class="mt-1 small"></div>
+                        </div>
+
                         <div class="form-group alert alert-info mt-2">
                             <h5>Final Amount to Pay: ₹<span id="final_amount_display">0.00</span></h5>
+                            <div id="discount_breakup" class="small text-muted"></div>
                             <input type="hidden" id="amount_in_paise" name="amount_in_paise" value="0">
                         </div>
                     </div>
@@ -199,6 +213,7 @@ $(document).ready(function () {
     let vehiclesData = {}, vehicleImages = {};
     const role = "{{ $loggedInUserRole }}";
     const uid = "{{ $loggedInUser->id }}";
+    let appliedRedeemCodeDiscount = 0;
 
     // Load vehicles for Customers on page load
     if (role.toLowerCase() === 'customer') loadCustomerVehicles(uid);
@@ -287,6 +302,7 @@ $(document).ready(function () {
             $('#plan_subscription_duration').val(data.subscription_duration || '');
             $('#plan_price').val(data.price || '');
             $('#plan_description').val(data.description || '');
+            clearRedeemCode(false);
 
             updateFinalAmount();
         });
@@ -294,27 +310,84 @@ $(document).ready(function () {
 
     // Redeem amount input
     $('#redeem_amount').on('input', updateFinalAmount);
+    $('#redeem_code').on('input', function () {
+        $(this).val($(this).val().toUpperCase());
+        appliedRedeemCodeDiscount = 0;
+        $('#redeem_code_discount').val(0);
+        $('#redeem-code-message').removeClass('text-success text-danger').text('');
+        updateFinalAmount();
+    });
+
+    $('#applyRedeemCode').on('click', function () {
+        const code = $('#redeem_code').val().trim().toUpperCase();
+        const planId = $('#recharge_plan_id').val();
+
+        if (!code) {
+            $('#redeem-code-message').removeClass('text-success').addClass('text-danger').text('Please enter redeem code.');
+            return;
+        }
+
+        if (!planId) {
+            $('#redeem-code-message').removeClass('text-success').addClass('text-danger').text('Please select recharge plan first.');
+            return;
+        }
+
+        $.get("{{ route('admin.redeem-codes.validate') }}", { code: code, recharge_plan_id: planId })
+            .done(function (res) {
+                appliedRedeemCodeDiscount = parseFloat(res.discount || 0);
+                $('#redeem_code').val(code);
+                $('#redeem_code_discount').val(appliedRedeemCodeDiscount.toFixed(2));
+                $('#redeem-code-message')
+                    .removeClass('text-danger')
+                    .addClass('text-success')
+                    .text(`${res.message} Discount: ₹${appliedRedeemCodeDiscount.toFixed(2)}`);
+                updateFinalAmount();
+            })
+            .fail(function (xhr) {
+                appliedRedeemCodeDiscount = 0;
+                $('#redeem_code_discount').val(0);
+                $('#redeem-code-message')
+                    .removeClass('text-success')
+                    .addClass('text-danger')
+                    .text(xhr.responseJSON?.message || 'Invalid redeem code.');
+                updateFinalAmount();
+            });
+    });
+
+    $('#clearRedeemCode').on('click', function () {
+        clearRedeemCode(true);
+    });
+
+    function clearRedeemCode(clearInput) {
+        appliedRedeemCodeDiscount = 0;
+        $('#redeem_code_discount').val(0);
+        if (clearInput) $('#redeem_code').val('');
+        $('#redeem-code-message').removeClass('text-success text-danger').text('');
+        updateFinalAmount();
+    }
 
     // Update final amount dynamically
     function updateFinalAmount() {
         const planPrice = parseFloat($('#plan_price').val() || 0);
         let redeemAmount = parseFloat($('#redeem_amount').val() || 0);
         const totalCommission = parseFloat($('#total_commission').text().replace(/,/g, '') || 0);
+        const maxCommissionRedeem = Math.max(0, planPrice - appliedRedeemCodeDiscount);
 
         if (redeemAmount > totalCommission) {
             redeemAmount = totalCommission;
             $('#redeem_amount').val(redeemAmount.toFixed(2));
             $('#redeem-error').text('Redeem amount cannot exceed your total commission');
-        } else if (redeemAmount > planPrice) {
-            redeemAmount = planPrice;
+        } else if (redeemAmount > maxCommissionRedeem) {
+            redeemAmount = maxCommissionRedeem;
             $('#redeem_amount').val(redeemAmount.toFixed(2));
-            $('#redeem-error').text('Redeem amount cannot exceed the plan price');
+            $('#redeem-error').text('Redeem amount cannot exceed the payable plan amount');
         } else {
             $('#redeem-error').text('');
         }
 
-        const finalAmount = planPrice - redeemAmount;
+        const finalAmount = Math.max(0, planPrice - redeemAmount - appliedRedeemCodeDiscount);
         $('#final_amount_display').text(finalAmount.toFixed(2));
+        $('#discount_breakup').text(`Commission redeem: ₹${redeemAmount.toFixed(2)} | Code discount: ₹${appliedRedeemCodeDiscount.toFixed(2)}`);
         $('#amount_in_paise').val(Math.round(finalAmount * 100));
     }
 

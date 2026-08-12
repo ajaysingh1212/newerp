@@ -68,6 +68,7 @@
                     <th>{{ trans('cruds.rechargeRequest.fields.select_recharge') }}</th>
                     <th>{{ trans('cruds.rechargePlan.fields.plan_name') }}</th>
                     <th>Plan Amount</th>
+                    <th>Redeem Code</th>
                     <th>{{ trans('cruds.rechargeRequest.fields.vehicle_status') }}</th>
                     <th>{{ trans('cruds.rechargeRequest.fields.payment_status') }}</th>
                     <th>{{ trans('cruds.rechargeRequest.fields.attechment') }}</th>
@@ -85,6 +86,12 @@
                     <td>{{ $request->select_recharge?->type ?? '' }}</td>
                     <td>{{ $request->select_recharge?->plan_name ?? '' }}</td>
                     <td>₹{{ $request->payment_amount ?? 0 }}</td>
+                    <td>
+                        {{ $request->redeem_code ?? 'N/A' }}
+                        @if(($request->redeem_code_discount ?? 0) > 0)
+                            <br><small>Discount: Rs {{ number_format($request->redeem_code_discount, 2) }}</small>
+                        @endif
+                    </td>
                     <td>{{ $request->vehicle_status }}</td>
                     <td>{{ ucfirst($request->payment_status) }}</td>
                     <td>

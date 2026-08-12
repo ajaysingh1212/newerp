@@ -923,6 +923,22 @@ class PermissionsTableSeeder extends Seeder
                 'title' => 'recharge_request_access',
             ],
             [
+                'id'    => 230,
+                'title' => 'redeem_code_create',
+            ],
+            [
+                'id'    => 231,
+                'title' => 'redeem_code_show',
+            ],
+            [
+                'id'    => 232,
+                'title' => 'redeem_code_delete',
+            ],
+            [
+                'id'    => 233,
+                'title' => 'redeem_code_access',
+            ],
+            [
                 'id'    => 229,
                 'title' => 'profile_password_edit',
             ],
