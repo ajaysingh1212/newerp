@@ -18,6 +18,9 @@ use App\Models\ProductMaster;
 
 use App\Models\RechargePlan;
 
+use App\Models\RedeemCode;
+use Illuminate\Support\Facades\DB;
+
 class RechargeRequestApiController extends Controller
 {
     use MediaUploadingTrait;
@@ -82,150 +85,515 @@ class RechargeRequestApiController extends Controller
     
     
     public function UserRecharge(Request $request)
-{
-    try {
+    {
+        try {
 
-        $request->validate([
-            'user_id'            => 'required|integer',
-            'vehicle_number'     => 'required|string',
-            'select_recharge_id' => 'required|integer',
-            'payment_status'     => 'required|string',
-            'payment_amount'     => 'required|numeric',
-            'created_by_id'      => 'required|integer',
-            'razorpay_payment_id'=> 'nullable|string',
-        ]);
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDATION
+            |--------------------------------------------------------------------------
+            | redeem_code is OPTIONAL.
+            | Old app does not send it -> old flow works normally.
+            */
 
+            $request->validate([
+                'user_id'             => 'required|integer',
+                'vehicle_number'      => 'required|string',
+                'select_recharge_id'  => 'required|integer',
+                'payment_status'      => 'required|string',
+                'payment_amount'      => 'required|numeric',
+                'created_by_id'       => 'required|integer',
+                'razorpay_payment_id' => 'nullable|string',
 
-        $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
-            ->where('vehicle_number',$request->vehicle_number)
-            ->first();
-
-        if(!$vehicle){
-            return response()->json([
-                'status'=>false,
-                'message'=>"Vehicle not found"
+                // NEW - Optional Coupon / Redeem Code
+                'redeem_code'         => 'nullable|string',
             ]);
-        }
 
-        $plan = RechargePlan::find($request->select_recharge_id);
 
-        if(!$plan){
-            return response()->json([
-                'status'=>false,
-                'message'=>"Recharge plan not found"
+            /*
+            |--------------------------------------------------------------------------
+            | VEHICLE CHECK
+            |--------------------------------------------------------------------------
+            */
+
+            $vehicle = AddCustomerVehicle::with(['product_master.product_model'])
+                ->where('vehicle_number', $request->vehicle_number)
+                ->first();
+
+            if (!$vehicle) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Vehicle not found'
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | RECHARGE PLAN CHECK
+            |--------------------------------------------------------------------------
+            */
+
+            $plan = RechargePlan::find($request->select_recharge_id);
+
+            if (!$plan) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Recharge plan not found'
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | REDEEM CODE
+            |--------------------------------------------------------------------------
+            |
+            | Only execute this block when redeem_code is provided.
+            |
+            */
+
+            $redeemCode = null;
+            $redeemAmount = 0;
+
+            if ($request->filled('redeem_code')) {
+
+                $redeemCode = RedeemCode::where('code', trim($request->redeem_code))
+                    ->first();
+
+                /*
+                |--------------------------------------------------------------------------
+                | CODE NOT FOUND
+                |--------------------------------------------------------------------------
+                */
+
+                if (!$redeemCode) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Invalid redeem code.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | DELETED CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemCode->deleted_at !== null) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This redeem code has been deleted.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | STATUS CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemCode->status !== 'active') {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This redeem code is inactive.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | USE STATUS CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemCode->use_status !== 'not_used') {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This redeem code has already been used.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | USED BY CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemCode->used_by_id !== null) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This redeem code has already been used.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | USED AT CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemCode->used_at !== null) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This redeem code has already been redeemed.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | RECHARGE PLAN MATCH CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if ((int) $redeemCode->recharge_plan_id !== (int) $request->select_recharge_id) {
+
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This redeem code is not valid for the selected recharge plan.'
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | EXPIRY CHECK
+                |--------------------------------------------------------------------------
+                | valid_up_to = 2026-08-12
+                | Means valid until 11:59:59 PM.
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemCode->valid_up_to !== null) {
+
+                    $validUpTo = Carbon::parse($redeemCode->valid_up_to)
+                        ->endOfDay();
+
+                    if (Carbon::now()->greaterThan($validUpTo)) {
+
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'This redeem code has expired.'
+                        ]);
+                    }
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | DISCOUNT AMOUNT
+                |--------------------------------------------------------------------------
+                |
+                | Always use discount_amount from redeem_codes table.
+                |
+                */
+
+                $redeemAmount = (float) $redeemCode->discount_amount;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Safety: Discount cannot be greater than plan price
+                |--------------------------------------------------------------------------
+                */
+
+                if ($redeemAmount > (float) $plan->price) {
+                    $redeemAmount = (float) $plan->price;
+                }
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT STATUS
+            |--------------------------------------------------------------------------
+            */
+
+            $paymentStatus = strtolower($request->payment_status);
+
+            $isPaymentSuccess = in_array(
+                $paymentStatus,
+                ['success', 'completed', 'paid']
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | ALWAYS SAVE RECHARGE ENTRY
+            |--------------------------------------------------------------------------
+            */
+
+            $recharge = RechargeRequest::create([
+
+                'user_id'             => $request->user_id,
+
+                'vehicle_number'      => $request->vehicle_number,
+
+                'select_recharge_id'  => $request->select_recharge_id,
+
+                'notes'               =>
+                    strtoupper($request->vehicle_number)
+                    . ', '
+                    . $plan->plan_name
+                    . ' From Mobile',
+
+                'payment_method'      => 'online',
+
+                'payment_status'      => $paymentStatus,
+
+                'payment_amount'      => $request->payment_amount,
+
+                /*
+                * If coupon is not provided => 0
+                * If coupon is valid => discount_amount
+                */
+                'redeem_amount'       => $isPaymentSuccess
+                    ? $redeemAmount
+                    : 0,
+
+                'payment_date'        => now(),
+
+                'payment_id'          =>
+                    'TXN' . rand(1000000000, 9999999999),
+
+                'razorpay_payment_id' =>
+                    $request->razorpay_payment_id,
+
+                'created_by_id'       =>
+                    $request->created_by_id,
             ]);
-        }
 
 
-        /** ALWAYS save recharge entry */
-        RechargeRequest::create([
-            'user_id'            => $request->user_id,
-            'vehicle_number'     => $request->vehicle_number,
-            'select_recharge_id' => $request->select_recharge_id,
-            'notes'              => strtoupper($request->vehicle_number).', '.$plan->plan_name.' From Mobile',
-            'payment_method'     => 'online',
-            'payment_status'     => strtolower($request->payment_status),
-            'payment_amount'     => $request->payment_amount,
-            'payment_date'       => now(),
-            'payment_id'         => 'TXN'.rand(1000000000,9999999999),
-            'razorpay_payment_id'=> $request->razorpay_payment_id,
-            'created_by_id'      => $request->created_by_id,
-        ]);
+            /*
+            |--------------------------------------------------------------------------
+            | FAILED / PENDING PAYMENT
+            |--------------------------------------------------------------------------
+            |
+            | IMPORTANT:
+            | Coupon is NOT consumed when payment fails.
+            |
+            */
+
+            if (!$isPaymentSuccess) {
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Recharge saved but payment failed.'
+                ]);
+            }
 
 
-        /** failed payment => STOP */
-        if(!in_array(strtolower($request->payment_status),['success','completed','paid'])){
-            return response()->json([
-                'status'=>true,  // ⭐ IMPORTANT
-                'message'=>'Recharge saved but payment failed.'
+            /*
+            |--------------------------------------------------------------------------
+            | MARK REDEEM CODE AS USED
+            |--------------------------------------------------------------------------
+            |
+            | Only after successful payment.
+            |
+            */
+
+            if ($redeemCode) {
+
+                $redeemCode->update([
+                    'use_status'          => 'used',
+                    'used_by_id'          => $request->user_id,
+                    'recharge_request_id' => $recharge->id,
+                    'used_at'             => now(),
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS LOGIC FROM HERE
+            |--------------------------------------------------------------------------
+            */
+
+            $today = Carbon::now();
+
+            $model = $vehicle->product_master?->product_model;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CHECK RECHARGE HISTORY
+            |--------------------------------------------------------------------------
+            */
+
+            $hasRechargeBefore = RechargeRequest::where(
+                    'vehicle_number',
+                    $vehicle->vehicle_number
+                )
+                ->whereIn(
+                    'payment_status',
+                    ['success', 'completed', 'paid']
+                )
+                ->count() > 1;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BASE CALCULATION
+            |--------------------------------------------------------------------------
+            */
+
+            if (!$hasRechargeBefore) {
+
+                /*
+                * FIRST RECHARGE
+                */
+
+                $reqDate = $vehicle->request_date
+                    ? Carbon::createFromFormat(
+                        'd-m-Y',
+                        $vehicle->request_date
+                    )
+                    : $today;
+
+                $baseWarranty = $model?->warranty
+                    ? $reqDate->copy()->addMonths($model->warranty)
+                    : null;
+
+                $baseSubscription = $model?->subscription
+                    ? $reqDate->copy()->addMonths($model->subscription)
+                    : null;
+
+                $baseAmc = $model?->amc
+                    ? $reqDate->copy()->addMonths($model->amc)
+                    : null;
+
+            } else {
+
+                /*
+                * NEXT RECHARGE
+                */
+
+                $baseWarranty = $vehicle->warranty
+                    ? Carbon::parse($vehicle->warranty)
+                    : null;
+
+                $baseSubscription = $vehicle->subscription
+                    ? Carbon::parse($vehicle->subscription)
+                    : null;
+
+                $baseAmc = $vehicle->amc
+                    ? Carbon::parse($vehicle->amc)
+                    : null;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | APPLY PLAN
+            |--------------------------------------------------------------------------
+            */
+
+            if ($plan->warranty_duration > 0) {
+
+                $baseWarranty =
+                    ($baseWarranty && $baseWarranty->gt($today))
+                        ? $baseWarranty
+                        : $today;
+
+                $baseWarranty =
+                    $baseWarranty->copy()
+                        ->addMonths($plan->warranty_duration);
+            }
+
+
+            if ($plan->subscription_duration > 0) {
+
+                $baseSubscription =
+                    ($baseSubscription && $baseSubscription->gt($today))
+                        ? $baseSubscription
+                        : $today;
+
+                $baseSubscription =
+                    $baseSubscription->copy()
+                        ->addMonths($plan->subscription_duration);
+            }
+
+
+            if ($plan->amc_duration > 0) {
+
+                $baseAmc =
+                    ($baseAmc && $baseAmc->gt($today))
+                        ? $baseAmc
+                        : $today;
+
+                $baseAmc =
+                    $baseAmc->copy()
+                        ->addMonths($plan->amc_duration);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE VEHICLE
+            |--------------------------------------------------------------------------
+            */
+
+            $vehicle->update([
+                'warranty'     => $baseWarranty,
+                'subscription' => $baseSubscription,
+                'amc'          => $baseAmc,
             ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS RESPONSE
+            |--------------------------------------------------------------------------
+            |
+            | Existing response remains same.
+            | Only when coupon is used, redeem_amount is additionally returned.
+            |
+            */
+
+            $response = [
+                'status' => true,
+                'message' => 'Recharge Successful',
+
+                'expiry' => [
+                    'warranty' =>
+                        $baseWarranty?->toDateString(),
+
+                    'subscription' =>
+                        $baseSubscription?->toDateString(),
+
+                    'amc' =>
+                        $baseAmc?->toDateString(),
+                ]
+            ];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | ADD REDEEM AMOUNT ONLY WHEN COUPON WAS USED
+            |--------------------------------------------------------------------------
+            */
+
+            if ($redeemCode) {
+                $response['redeem_amount'] = $redeemAmount;
+            }
+
+
+            return response()->json($response);
+
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Error Occurred',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-
-
-
-        /* SUCCESS LOGIC FROM HERE */
-
-        $today = Carbon::now();
-        $model = $vehicle->product_master?->product_model;
-
-
-        /** CHECK recharge history */
-        $hasRechargeBefore = RechargeRequest::where('vehicle_number',$vehicle->vehicle_number)
-            ->whereIn('payment_status',['success','completed','paid'])
-            ->count() > 1; // 1 is current request, means before existed also
-
-
-        /** ------ BASE CALC ------ */
-
-        if(!$hasRechargeBefore)
-        {
-            /** FIRST RECHARGE = activation + model duration */
-
-            $reqDate = $vehicle->request_date
-                ? Carbon::createFromFormat('d-m-Y',$vehicle->request_date)
-                : $today;
-
-            $baseWarranty     = $model?->warranty     ? $reqDate->copy()->addMonths($model->warranty)     : null;
-            $baseSubscription = $model?->subscription ? $reqDate->copy()->addMonths($model->subscription) : null;
-            $baseAmc          = $model?->amc          ? $reqDate->copy()->addMonths($model->amc)          : null;
-        }
-        else
-        {
-            /** NEXT RECHARGE = current expiry from vehicle table */
-
-            $baseWarranty     = $vehicle->warranty     ? Carbon::parse($vehicle->warranty)     : null;
-            $baseSubscription = $vehicle->subscription ? Carbon::parse($vehicle->subscription) : null;
-            $baseAmc          = $vehicle->amc          ? Carbon::parse($vehicle->amc)          : null;
-        }
-
-
-        /** ----- APPLY PLAN ONLY ON THE FIELD ENABLED IN PLAN ----- */
-
-        if($plan->warranty_duration > 0){
-            $baseWarranty = ($baseWarranty && $baseWarranty->gt($today)) ? $baseWarranty : $today;
-            $baseWarranty = $baseWarranty->copy()->addMonths($plan->warranty_duration);
-        }
-
-        if($plan->subscription_duration > 0){
-            $baseSubscription = ($baseSubscription && $baseSubscription->gt($today)) ? $baseSubscription : $today;
-            $baseSubscription = $baseSubscription->copy()->addMonths($plan->subscription_duration);
-        }
-
-        if($plan->amc_duration > 0){
-            $baseAmc = ($baseAmc && $baseAmc->gt($today)) ? $baseAmc : $today;
-            $baseAmc = $baseAmc->copy()->addMonths($plan->amc_duration);
-        }
-
-
-        /** UPDATE VEHICLE */
-        $vehicle->update([
-            'warranty'     => $baseWarranty,
-            'subscription' => $baseSubscription,
-            'amc'          => $baseAmc,
-        ]);
-
-
-        return response()->json([
-            'status'=>true,
-            'message'=>'Recharge Successful',
-            'expiry'=>[
-                'warranty'=>$baseWarranty?->toDateString(),
-                'subscription'=>$baseSubscription?->toDateString(),
-                'amc'=>$baseAmc?->toDateString(),
-            ]
-        ]);
-
-
-    } catch (\Exception $e){
-
-        return response()->json([
-            'status'=>false,
-            'message'=>'Error Occurred',
-            'error'=>$e->getMessage()
-        ],500);
     }
-}
 
 
 
