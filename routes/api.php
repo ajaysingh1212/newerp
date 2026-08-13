@@ -171,7 +171,11 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], 
     // 🔎 Get user by email OR mobile number
     Route::post('find-user', 'UsersApiController@getUserByEmailOrMobile')->name('user.find');
 
-
+    // 🎟️ Check Redeem Code with Recharge Plan
+Route::get(
+    'redeem-code/{recharge_plan_id}/{code}',
+    'RedeemCodeApiController@getRedeemCode'
+)->name('redeem-code.details');
    
     
     
