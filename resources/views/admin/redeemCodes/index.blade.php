@@ -19,6 +19,10 @@
     .chip-active { background:#dcfce7; color:#166534; }
     .chip-used { background:#fee2e2; color:#991b1b; }
     .chip-wait { background:#e0f2fe; color:#075985; }
+    .chip-expired {
+    background: #ffedd5;
+    color: #c2410c;
+    }
 </style>
 
 @php
@@ -102,8 +106,21 @@
                         </td>
                         <td>{{ $redeemCode->valid_up_to ? \Carbon\Carbon::parse($redeemCode->valid_up_to)->format('d-m-Y') : 'N/A' }}</td>
                         <td>
-                            <span class="status-chip {{ $redeemCode->status === 'active' ? 'chip-active' : 'chip-used' }}">{{ ucfirst($redeemCode->status) }}</span>
-                            <span class="status-chip {{ $redeemCode->use_status === 'used' ? 'chip-used' : 'chip-wait' }}">{{ str_replace('_', ' ', ucfirst($redeemCode->use_status)) }}</span>
+                            @php
+                                $isExpired=$redeemCode->valid_up_to && \Carbon\Carbon::parse($redeemCode->valid_up_to)->isPast();
+                                $displayStatus=$isExpired ? 'expired' : $redeemCode->status;
+                            @endphp
+                            <span class="status-chip">
+                                {{ $displayStatus==='active' ? 'chip-active' : 'chip-used' }}
+                                {{ $displayStatus==='expired' ? 'chip-expired' : '' }}
+                                {{ ucfirst($displayStatus) }}
+                            </span>
+                            @if(!$isExpired)
+                                <span class="status-chip {{ $redeemCode->use_status==='used' ? 'chip-used' : 'chip-wait' }}">
+                                    {{ str_replace('_',' ',ucfirst($redeemCode->use_status)) }}
+                                </span>
+                            @endif
+
                         </td>
                         <td>
                             {{ $redeemCode->usedBy?->name ?? 'Not used' }}
