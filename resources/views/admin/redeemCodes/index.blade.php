@@ -107,21 +107,28 @@
                         <td>{{ $redeemCode->valid_up_to ? \Carbon\Carbon::parse($redeemCode->valid_up_to)->format('d-m-Y') : 'N/A' }}</td>
                         <td>
                             @php
-                                $isExpired = $redeemCode->valid_up_to &&
-                                    \Carbon\Carbon::parse($redeemCode->valid_up_to)->isPast();
+                                $isUsed = $redeemCode->use_status === 'used';
 
-                                $displayStatus = $isExpired ? 'expired' : $redeemCode->status;
+                                $isExpired = !$isUsed
+                                    && $redeemCode->valid_up_to
+                                    && \Carbon\Carbon::parse($redeemCode->valid_up_to)->isPast();
                             @endphp
 
-                            <span class="status-chip
-                                {{ $displayStatus === 'active' ? 'chip-active' : 'chip-used' }}
-                                {{ $displayStatus === 'expired' ? 'chip-expired' : '' }}">
-                                {{ ucfirst($displayStatus) }}
-                            </span>
+                            @if($isUsed)
+                                <span class="status-chip chip-used">
+                                    Used
+                                </span>
+                            @elseif($isExpired)
+                                <span class="status-chip chip-expired">
+                                    Expired
+                                </span>
+                            @else
+                                <span class="status-chip chip-active">
+                                    Active
+                                </span>
 
-                            @if(!$isExpired)
-                                <span class="status-chip {{ $redeemCode->use_status === 'used' ? 'chip-used' : 'chip-wait' }}">
-                                    {{ str_replace('_', ' ', ucfirst($redeemCode->use_status)) }}
+                                <span class="status-chip chip-wait">
+                                    Not Used
                                 </span>
                             @endif
                         </td>
