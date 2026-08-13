@@ -107,20 +107,23 @@
                         <td>{{ $redeemCode->valid_up_to ? \Carbon\Carbon::parse($redeemCode->valid_up_to)->format('d-m-Y') : 'N/A' }}</td>
                         <td>
                             @php
-                                $isExpired=$redeemCode->valid_up_to && \Carbon\Carbon::parse($redeemCode->valid_up_to)->isPast();
-                                $displayStatus=$isExpired ? 'expired' : $redeemCode->status;
+                                $isExpired = $redeemCode->valid_up_to &&
+                                    \Carbon\Carbon::parse($redeemCode->valid_up_to)->isPast();
+
+                                $displayStatus = $isExpired ? 'expired' : $redeemCode->status;
                             @endphp
-                            <span class="status-chip">
-                                {{ $displayStatus==='active' ? 'chip-active' : 'chip-used' }}
-                                {{ $displayStatus==='expired' ? 'chip-expired' : '' }}
+
+                            <span class="status-chip
+                                {{ $displayStatus === 'active' ? 'chip-active' : 'chip-used' }}
+                                {{ $displayStatus === 'expired' ? 'chip-expired' : '' }}">
                                 {{ ucfirst($displayStatus) }}
                             </span>
+
                             @if(!$isExpired)
-                                <span class="status-chip {{ $redeemCode->use_status==='used' ? 'chip-used' : 'chip-wait' }}">
-                                    {{ str_replace('_',' ',ucfirst($redeemCode->use_status)) }}
+                                <span class="status-chip {{ $redeemCode->use_status === 'used' ? 'chip-used' : 'chip-wait' }}">
+                                    {{ str_replace('_', ' ', ucfirst($redeemCode->use_status)) }}
                                 </span>
                             @endif
-
                         </td>
                         <td>
                             {{ $redeemCode->usedBy?->name ?? 'Not used' }}
