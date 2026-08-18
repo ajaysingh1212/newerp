@@ -538,36 +538,146 @@ public function store(Request $request)
 public function getUsersByRole(Request $request)
 {
     $roleId = $request->input('role_id');
+
     $loggedInUser = auth()->user();
+
+    if (!$loggedInUser) {
+        return response()->json([
+            'error' => 'Unauthenticated'
+        ], 401);
+    }
 
     $userRole = $loggedInUser->roles->first()->title ?? null;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Get selected role
+    |--------------------------------------------------------------------------
+    */
+
+    $selectedRole = Role::find($roleId);
+
+    if (!$selectedRole) {
+        return response()->json([
+            'error' => 'Role not found'
+        ], 404);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Users of selected role
+    |--------------------------------------------------------------------------
+    */
+
     $usersQuery = User::whereHas('roles', function ($q) use ($roleId) {
         $q->where('id', $roleId);
-    })->select('id', 'name', 'mobile_number');
+    })
+    ->select(
+        'id',
+        'name',
+        'mobile_number'
+    );
 
-    // ❌ Non-admin users see only created users
-    // ✔ BUT Dealer must see Admin users also
-    if ($userRole !== 'Admin') {
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN
+    |--------------------------------------------------------------------------
+    |
+    | Admin can see all users.
+    |
+    */
 
-        // Dealer wants Admin → show all Admins
-        $selectedRole = Role::find($roleId);
-        if ($userRole === 'Dealer' && $selectedRole && $selectedRole->title === 'Admin') {
-            // Skip filtering → show all Admin users
+    if ($userRole === 'Admin') {
+
+        // No restriction
+        // Admin can see all users
+
+    } else {
+
+        /*
+        |--------------------------------------------------------------------------
+        | CNF -> ADMIN
+        |--------------------------------------------------------------------------
+        |
+        | CNF is allowed to transfer stock to Admin.
+        | Therefore when selected role is Admin,
+        | show all Admin users.
+        |
+        */
+
+        if (
+            $userRole === 'CNF' &&
+            $selectedRole->title === 'Admin'
+        ) {
+
+            // Do NOT apply created_by_id filter.
+            // Show all Admin users.
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEALER -> ADMIN
+        |--------------------------------------------------------------------------
+        |
+        | Dealer can also transfer stock to Admin.
+        |
+        */
+
+        } elseif (
+            $userRole === 'Dealer' &&
+            $selectedRole->title === 'Admin'
+        ) {
+
+            // Do NOT apply created_by_id filter.
+            // Show all Admin users.
+
+        /*
+        |--------------------------------------------------------------------------
+        | NORMAL USERS
+        |--------------------------------------------------------------------------
+        |
+        | CNF -> Distributer / Dealer / Customer
+        | Distributer -> Dealer / Customer
+        | Dealer -> Customer
+        |
+        | Only users created by logged-in user.
+        |
+        */
+
         } else {
-            // Normal logic: show only users created by logged-in user
-            $usersQuery->where('created_by_id', $loggedInUser->id);
+
+            $usersQuery->where(
+                'created_by_id',
+                $loggedInUser->id
+            );
         }
     }
 
-    $users = $usersQuery->get();
+    /*
+    |--------------------------------------------------------------------------
+    | Get users
+    |--------------------------------------------------------------------------
+    */
+
+    $users = $usersQuery
+        ->orderBy('name')
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Return JSON
+    |--------------------------------------------------------------------------
+    */
 
     return response()->json(
         $users->mapWithKeys(function ($user) {
-            return [$user->id => [
-                'name' => $user->name,
-                'mobile_number' => $user->mobile_number
-            ]];
+
+            return [
+                $user->id => [
+                    'name' => $user->name,
+                    'mobile_number' => $user->mobile_number
+                ]
+            ];
+
         })
     );
 }
