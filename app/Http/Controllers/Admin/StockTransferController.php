@@ -103,7 +103,7 @@ public function create()
     } else {
         // Other users see specific roles and only their created users
         if ($userRole === 'CNF') {
-            $party_types = Role::whereIn('title', ['Distributer', 'Dealer', 'Customer'])
+            $party_types = Role::whereIn('title', ['Distributer', 'Dealer', 'Customer','Admin'])
                 ->pluck('title', 'id')
                 ->prepend(trans('global.pleaseSelect'), '');
         } elseif ($userRole === 'Distributer') {
@@ -175,7 +175,7 @@ public function create()
 
 public function store(Request $request)
 {
-    
+
     // Validate the incoming data
     $request->validate([
         'transfer_date' => 'required|date',
