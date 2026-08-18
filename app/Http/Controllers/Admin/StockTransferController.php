@@ -82,90 +82,327 @@ public function index(Request $request)
 
 public function create()
 {
-    abort_if(Gate::denies('activation_request_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+    abort_if(
+        Gate::denies('activation_request_create'),
+        Response::HTTP_FORBIDDEN,
+        '403 Forbidden'
+    );
 
     $user = auth()->user();
+
     $userRole = $user->roles->first()->title ?? null;
 
     $party_types = collect();
     $select_parties = collect();
 
+    /*
+    |--------------------------------------------------------------------------
+    | PARTY TYPES & USERS
+    |--------------------------------------------------------------------------
+    */
+
     if ($userRole === 'Admin') {
-        // Admin sees all roles
-        $party_types = Role::pluck('title', 'id')->prepend(trans('global.pleaseSelect'), '');
+
+        // Admin can transfer stock to all roles
+        $party_types = Role::pluck('title', 'id')
+            ->prepend(trans('global.pleaseSelect'), '');
 
         // Admin can see all users
-        $select_parties = User::all()
-            ->mapWithKeys(function ($user) {
-                return [$user->id => $user->name . ' (' . $user->mobile_number . ')'];
+        $select_parties = User::with('roles')
+            ->get()
+            ->mapWithKeys(function ($party) {
+
+                $role = $party->roles->first()->title ?? '';
+
+                $label = $party->name;
+
+                if (!empty($party->mobile_number)) {
+                    $label .= ' (' . $party->mobile_number . ')';
+                }
+
+                if (!empty($role)) {
+                    $label .= ' - ' . $role;
+                }
+
+                return [
+                    $party->id => $label
+                ];
             })
             ->prepend(trans('global.pleaseSelect'), '');
+
     } else {
-        // Other users see specific roles and only their created users
+
+        /*
+        |--------------------------------------------------------------------------
+        | CNF
+        |--------------------------------------------------------------------------
+        */
+
         if ($userRole === 'CNF') {
-            $party_types = Role::whereIn('title', ['Distributer', 'Dealer', 'Customer','Admin'])
-                ->pluck('title', 'id')
+
+            // CNF can transfer stock to:
+            // Distributer, Dealer, Customer and Admin
+            $party_types = Role::whereIn('title', [
+                'Distributer',
+                'Dealer',
+                'Customer',
+                'Admin'
+            ])
+            ->pluck('title', 'id')
+            ->prepend(trans('global.pleaseSelect'), '');
+
+            /*
+            |--------------------------------------------------------------------------
+            | CNF can select:
+            | 1. Users created by CNF
+            | 2. Admin users
+            |--------------------------------------------------------------------------
+            */
+
+            $select_parties = User::with('roles')
+                ->where(function ($query) use ($user) {
+
+                    // Users created by this CNF
+                    $query->where('created_by_id', $user->id)
+
+                        // Admin users
+                        ->orWhereHas('roles', function ($roleQuery) {
+                            $roleQuery->where('title', 'Admin');
+                        });
+                })
+                ->get()
+                ->mapWithKeys(function ($party) {
+
+                    $role = $party->roles->first()->title ?? '';
+
+                    $label = $party->name;
+
+                    if (!empty($party->mobile_number)) {
+                        $label .= ' (' . $party->mobile_number . ')';
+                    }
+
+                    if (!empty($role)) {
+                        $label .= ' - ' . $role;
+                    }
+
+                    return [
+                        $party->id => $label
+                    ];
+                })
                 ->prepend(trans('global.pleaseSelect'), '');
+
+        /*
+        |--------------------------------------------------------------------------
+        | DISTRIBUTER
+        |--------------------------------------------------------------------------
+        */
+
         } elseif ($userRole === 'Distributer') {
-            $party_types = Role::whereIn('title', ['Dealer', 'Customer'])
-                ->pluck('title', 'id')
+
+            $party_types = Role::whereIn('title', [
+                'Dealer',
+                'Customer'
+            ])
+            ->pluck('title', 'id')
+            ->prepend(trans('global.pleaseSelect'), '');
+
+            $select_parties = User::where('created_by_id', $user->id)
+                ->get()
+                ->mapWithKeys(function ($party) {
+
+                    return [
+                        $party->id =>
+                            $party->name .
+                            ' (' . $party->mobile_number . ')'
+                    ];
+                })
                 ->prepend(trans('global.pleaseSelect'), '');
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEALER
+        |--------------------------------------------------------------------------
+        */
+
         } elseif ($userRole === 'Dealer') {
-            $party_types = Role::whereIn('title', ['Customer', 'Admin'])
-                ->pluck('title', 'id')
+
+            // Dealer can transfer to Customer and Admin
+            $party_types = Role::whereIn('title', [
+                'Customer',
+                'Admin'
+            ])
+            ->pluck('title', 'id')
+            ->prepend(trans('global.pleaseSelect'), '');
+
+            $select_parties = User::with('roles')
+                ->where(function ($query) use ($user) {
+
+                    // Users created by Dealer
+                    $query->where('created_by_id', $user->id)
+
+                        // Admin users
+                        ->orWhereHas('roles', function ($roleQuery) {
+                            $roleQuery->where('title', 'Admin');
+                        });
+                })
+                ->get()
+                ->mapWithKeys(function ($party) {
+
+                    $role = $party->roles->first()->title ?? '';
+
+                    $label = $party->name;
+
+                    if (!empty($party->mobile_number)) {
+                        $label .= ' (' . $party->mobile_number . ')';
+                    }
+
+                    if (!empty($role)) {
+                        $label .= ' - ' . $role;
+                    }
+
+                    return [
+                        $party->id => $label
+                    ];
+                })
                 ->prepend(trans('global.pleaseSelect'), '');
         }
-
-        $select_parties = User::where('created_by_id', $user->id)
-            ->get()
-            ->mapWithKeys(function ($user) {
-                return [$user->id => $user->name . ' (' . $user->mobile_number . ')'];
-            })
-            ->prepend(trans('global.pleaseSelect'), '');
     }
 
-    // Filter CurrentStock based on role and transfer_user_id
+    /*
+    |--------------------------------------------------------------------------
+    | CURRENT STOCK
+    |--------------------------------------------------------------------------
+    */
+
     if ($userRole === 'Admin') {
-    $select_products = CurrentStock::where(function ($q) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN STOCK
+        |--------------------------------------------------------------------------
+        |
+        | Admin sees:
+        | - Unassigned stock
+        | - Stock currently transferred to Admin
+        |
+        */
+
+        $select_products = CurrentStock::where(function ($q) {
+
             $q->whereNull('transfer_user_id')
               ->orWhere('transfer_user_id', auth()->id());
+
         })
-        ->with(['product.product_model', 'product.imei'])
+        ->with([
+            'product.product_model',
+            'product.imei'
+        ])
         ->get()
         ->mapWithKeys(function ($stock) {
+
             $imei = $stock->product->imei->imei_number ?? 'N/A';
+
             $model = $stock->product->product_model;
-            $modelDetails = $model ? " Model: {$model->product_model}" : '';
 
-            return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
+            $modelDetails = $model
+                ? " Model: {$model->product_model}"
+                : '';
+
+            return [
+                $stock->id =>
+                    $stock->sku .
+                    " (IMEI: {$imei})" .
+                    $modelDetails
+            ];
         });
-    } else {
-        $select_products = CurrentStock::where('transfer_user_id', $user->id)
-            ->with(['product.product_model', 'product.imei'])
-            ->get()
-            ->mapWithKeys(function ($stock) {
-                $imei = $stock->product->imei->imei_number ?? 'N/A';
-                $model = $stock->product->product_model;
-                $modelDetails = $model ? " Model: {$model->product_model}" : '';
 
-                return [$stock->id => $stock->sku . " (IMEI: $imei)$modelDetails"];
-            });
+    } else {
+
+        /*
+        |--------------------------------------------------------------------------
+        | OTHER USERS STOCK
+        |--------------------------------------------------------------------------
+        |
+        | CNF / Distributer / Dealer etc.
+        | only see stock transferred to them.
+        |
+        */
+
+        $select_products = CurrentStock::where(
+            'transfer_user_id',
+            $user->id
+        )
+        ->with([
+            'product.product_model',
+            'product.imei'
+        ])
+        ->get()
+        ->mapWithKeys(function ($stock) {
+
+            $imei = $stock->product->imei->imei_number ?? 'N/A';
+
+            $model = $stock->product->product_model;
+
+            $modelDetails = $model
+                ? " Model: {$model->product_model}"
+                : '';
+
+            return [
+                $stock->id =>
+                    $stock->sku .
+                    " (IMEI: {$imei})" .
+                    $modelDetails
+            ];
+        });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | DROPDOWNS
+    |--------------------------------------------------------------------------
+    */
 
-    // Dropdowns for form
-    $states = State::pluck('state_name', 'id')->prepend(trans('global.pleaseSelect'), '');
-    $districts = District::pluck('districts', 'id')->prepend(trans('global.pleaseSelect'), '');
-    $vehicle_types = VehicleType::pluck('vehicle_type', 'id')->prepend(trans('global.pleaseSelect'), '');
+    $states = State::pluck(
+        'state_name',
+        'id'
+    )->prepend(
+        trans('global.pleaseSelect'),
+        ''
+    );
 
-    return view('admin.stockTransfers.create', compact(
+    $districts = District::pluck(
         'districts',
-        'party_types',
-        'select_parties',
-        'states',
-        'vehicle_types',
-        'select_products'
-    ));
+        'id'
+    )->prepend(
+        trans('global.pleaseSelect'),
+        ''
+    );
+
+    $vehicle_types = VehicleType::pluck(
+        'vehicle_type',
+        'id'
+    )->prepend(
+        trans('global.pleaseSelect'),
+        ''
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN VIEW
+    |--------------------------------------------------------------------------
+    */
+
+    return view(
+        'admin.stockTransfers.create',
+        compact(
+            'districts',
+            'party_types',
+            'select_parties',
+            'states',
+            'vehicle_types',
+            'select_products'
+        )
+    );
 }
 
 
