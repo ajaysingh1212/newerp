@@ -1755,7 +1755,7 @@
 
         activationTable
             .clear()
-            .rows.add(rows.map(buildActivationTableRow))
+            .rows.add(rows)
             .search(searchValue)
             .page.len(pageLength)
             .draw();
@@ -1774,8 +1774,11 @@
 
         }
 
+        $('#allActivationsTable tbody').empty();
 
         activationTable = $('#allActivationsTable').DataTable({
+
+            data: [],
 
             processing: true,
 
@@ -1783,11 +1786,124 @@
 
             autoWidth: false,
 
+            select: false,
+
             pageLength: 10,
 
             lengthMenu: [
                 [10, 25, 50, 100, 250, -1],
                 [10, 25, 50, 100, 250, "All"]
+            ],
+
+            columns: [
+                {
+                    data: 'id',
+                    render: function (data, type, row) {
+                        if (type === 'filter') {
+                            return buildSearchText(row);
+                        }
+
+                        return '<span class="font-weight-bold text-muted">#' + escapeHtml(data) + '</span>';
+                    }
+                },
+                {
+                    data: 'fitting_date',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return '<div class="me-date-main">' + escapeHtml(data || '-') + '</div>';
+                    }
+                },
+                {
+                    data: 'created_at',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return '<div class="me-date-main">' + escapeHtml(data || '-') + '</div>';
+                    }
+                },
+                {
+                    data: 'party',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return '<div class="me-party"><span class="me-party-icon"><i class="fas fa-landmark"></i></span><span>' + escapeHtml(data || '-') + '</span></div>';
+                    }
+                },
+                {
+                    data: 'fitter',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return data && data !== '-'
+                            ? '<span class="me-location-badge"><i class="fas fa-user-hard-hat text-primary"></i> ' + escapeHtml(data) + '</span>'
+                            : '<span class="text-muted">-</span>';
+                    }
+                },
+                {
+                    data: 'product',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return data && data !== '-'
+                            ? '<span class="badge badge-light" style="padding:6px 9px;border-radius:8px;color:#5B21B6;background:#F5F3FF;"><i class="fas fa-box mr-1"></i>' + escapeHtml(data) + '</span>'
+                            : '-';
+                    }
+                },
+                {
+                    data: 'customer_name',
+                    render: function (data, type, row) {
+                        if (type !== 'display') {
+                            return [data, row.customer_phone].filter(Boolean).join(' ');
+                        }
+
+                        return '<div style="font-weight:600;color:#374151;"><i class="fas fa-user mr-1 text-muted"></i>' + escapeHtml(data || '-') + '</div><div class="me-date-sub">' + escapeHtml(row.customer_phone || '-') + '</div>';
+                    }
+                },
+                {
+                    data: 'vehicle_number',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return data && data !== '-'
+                            ? '<span class="badge badge-dark" style="font-size:.72rem;padding:6px 9px;border-radius:7px;"><i class="fas fa-car mr-1"></i>' + escapeHtml(data) + '</span>'
+                            : '-';
+                    }
+                },
+                {
+                    data: 'created_by',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return data && data !== '-'
+                            ? '<span class="text-muted font-weight-600"><i class="fas fa-user-circle mr-1"></i>' + escapeHtml(data) + '</span>'
+                            : '-';
+                    }
+                },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        if (type !== 'display') {
+                            return '';
+                        }
+
+                        return buildActionButtons(row);
+                    }
+                }
             ],
 
             order: [
