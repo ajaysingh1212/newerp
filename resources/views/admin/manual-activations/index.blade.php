@@ -1667,6 +1667,7 @@
     function buildSearchText(row) {
         return [
             row.id,
+            row.fitting_date_display,
             row.fitting_date,
             row.created_at,
             row.party,
@@ -1712,7 +1713,7 @@
 
     function buildActivationTableRow(row) {
         const id = escapeHtml(row.id);
-        const fittingDate = escapeHtml(row.fitting_date || '-');
+        const fittingDate = escapeHtml(row.fitting_date_display || row.fitting_date || '-');
         const createdAt = escapeHtml(row.created_at || '-');
         const party = escapeHtml(row.party || '-');
         const fitter = escapeHtml(row.fitter || '-');
@@ -1808,12 +1809,12 @@
                 },
                 {
                     data: 'fitting_date',
-                    render: function (data, type) {
+                    render: function (data, type, row) {
                         if (type !== 'display') {
                             return data || '';
                         }
 
-                        return '<div class="me-date-main">' + escapeHtml(data || '-') + '</div>';
+                        return '<div class="me-date-main">' + escapeHtml(row.fitting_date_display || data || '-') + '</div>';
                     }
                 },
                 {

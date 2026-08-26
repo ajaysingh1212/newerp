@@ -75,9 +75,12 @@ class ManualActivationController extends Controller
         })->map(fn ($group) => $group->count());
 
         $table = $rows->map(function ($row) {
+            $fittingDate = $row->fitting_date ? Carbon::parse($row->fitting_date) : null;
+
             return [
                 'id' => $row->id,
-                'fitting_date' => optional($row->fitting_date)->format('d-m-Y'),
+                'fitting_date' => $fittingDate?->format('Y-m-d'),
+                'fitting_date_display' => $fittingDate?->format('d-m-Y'),
                 'created_at' => optional($row->created_at)->format('d-m-Y h:i A'),
                 'party' => $row->party->name ?? '-',
                 'fitter' => $row->fitter->name ?? '-',
