@@ -1641,6 +1641,128 @@
 
     let activationTable = null;
 
+    const activationActions = {
+        canShow: @json(auth()->user()->can('manual_activation_show')),
+        canEdit: @json(auth()->user()->can('manual_activation_edit')),
+        canDelete: @json(auth()->user()->can('manual_activation_delete')),
+        showUrl: @json(route('admin.manual-activations.show', ['manual_activation' => '__ID__'])),
+        editUrl: @json(route('admin.manual-activations.edit', ['manual_activation' => '__ID__'])),
+        deleteUrl: @json(route('admin.manual-activations.destroy', ['manual_activation' => '__ID__'])),
+        csrf: @json(csrf_token())
+    };
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function activationUrl(template, id) {
+        return template.replace('__ID__', encodeURIComponent(id));
+    }
+
+    function buildSearchText(row) {
+        return [
+            row.id,
+            row.fitting_date,
+            row.created_at,
+            row.party,
+            row.fitter,
+            row.product,
+            row.customer_name,
+            row.customer_phone,
+            row.vehicle_number,
+            row.created_by,
+            row.state,
+            row.district,
+            row.city,
+            row.status
+        ].filter(Boolean).join(' ');
+    }
+
+    function hiddenSearchText(row) {
+        return '<span class="d-none">' + escapeHtml(buildSearchText(row)) + '</span>';
+    }
+
+    function buildActionButtons(row) {
+        const id = row.id;
+        let html = '<div class="me-action-wrap">';
+
+        if (activationActions.canShow) {
+            html += '<a href="' + activationUrl(activationActions.showUrl, id) + '" class="btn btn-sm btn-outline-info me-action-btn" title="View Activation" data-toggle="tooltip"><i class="fas fa-eye"></i></a>';
+        }
+
+        if (activationActions.canEdit) {
+            html += '<a href="' + activationUrl(activationActions.editUrl, id) + '" class="btn btn-sm btn-outline-primary me-action-btn" title="Edit Activation" data-toggle="tooltip"><i class="fas fa-edit"></i></a>';
+        }
+
+        if (activationActions.canDelete) {
+            html += '<form action="' + activationUrl(activationActions.deleteUrl, id) + '" method="POST" class="d-inline" onsubmit="return confirm(\'Pakka delete karna hai?\')">' +
+                '<input type="hidden" name="_token" value="' + escapeHtml(activationActions.csrf) + '">' +
+                '<input type="hidden" name="_method" value="DELETE">' +
+                '<button type="submit" class="btn btn-sm btn-outline-danger me-action-btn" title="Delete Activation" data-toggle="tooltip"><i class="fas fa-trash"></i></button>' +
+                '</form>';
+        }
+
+        return html + '</div>';
+    }
+
+    function buildActivationTableRow(row) {
+        const id = escapeHtml(row.id);
+        const fittingDate = escapeHtml(row.fitting_date || '-');
+        const createdAt = escapeHtml(row.created_at || '-');
+        const party = escapeHtml(row.party || '-');
+        const fitter = escapeHtml(row.fitter || '-');
+        const product = escapeHtml(row.product || '-');
+        const customerName = escapeHtml(row.customer_name || '-');
+        const customerPhone = escapeHtml(row.customer_phone || '-');
+        const vehicleNumber = escapeHtml(row.vehicle_number || '-');
+        const createdBy = escapeHtml(row.created_by || '-');
+        const searchText = hiddenSearchText(row);
+
+        return [
+            '<span class="font-weight-bold text-muted">#' + id + '</span>' + searchText,
+            '<div class="me-date-main">' + fittingDate + '</div>',
+            '<div class="me-date-main">' + createdAt + '</div>',
+            '<div class="me-party"><span class="me-party-icon"><i class="fas fa-landmark"></i></span><span>' + party + '</span></div>',
+            fitter !== '-'
+                ? '<span class="me-location-badge"><i class="fas fa-user-hard-hat text-primary"></i> ' + fitter + '</span>'
+                : '<span class="text-muted">-</span>',
+            product !== '-'
+                ? '<span class="badge badge-light" style="padding:6px 9px;border-radius:8px;color:#5B21B6;background:#F5F3FF;"><i class="fas fa-box mr-1"></i>' + product + '</span>'
+                : '-',
+            '<div style="font-weight:600;color:#374151;"><i class="fas fa-user mr-1 text-muted"></i>' + customerName + '</div><div class="me-date-sub">' + customerPhone + '</div>',
+            vehicleNumber !== '-'
+                ? '<span class="badge badge-dark" style="font-size:.72rem;padding:6px 9px;border-radius:7px;"><i class="fas fa-car mr-1"></i>' + vehicleNumber + '</span>'
+                : '-',
+            createdBy !== '-'
+                ? '<span class="text-muted font-weight-600"><i class="fas fa-user-circle mr-1"></i>' + createdBy + '</span>'
+                : '-',
+            buildActionButtons(row)
+        ];
+    }
+
+    function refreshActivationTable(rows) {
+        if (!activationTable) {
+            return;
+        }
+
+        const searchValue = activationTable.search();
+        const pageLength = activationTable.page.len();
+
+        activationTable
+            .clear()
+            .rows.add(rows.map(buildActivationTableRow))
+            .search(searchValue)
+            .page.len(pageLength)
+            .draw();
+
+        activationTable.columns.adjust();
+    }
+
 
     function initializeActivationTable() {
 
@@ -2407,6 +2529,9 @@
                 Array.isArray(data.table)
                     ? data.table
                     : [];
+
+
+            refreshActivationTable(table);
 
 
             document.getElementById(

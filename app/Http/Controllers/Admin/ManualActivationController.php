@@ -46,12 +46,6 @@ class ManualActivationController extends Controller
             ->appends($request->query());
         $states = $locationMap->keys()->sort()->values();
 
-        $activations = $this->filteredQuery($request)
-            ->with(['party', 'fitter', 'product'])
-            ->latest('fitting_date')
-            ->paginate(20)
-            ->appends($request->query());
-
         return view('admin.manual-activations.index', compact('activations', 'parties', 'products', 'fitters', 'states', 'locationMap'));
     }
 
@@ -63,7 +57,7 @@ class ManualActivationController extends Controller
         abort_if(Gate::denies('manual_activation_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rows = $this->filteredQuery($request)
-            ->with(['party', 'fitter', 'product'])
+            ->with(['party', 'fitter', 'product', 'user'])
             ->latest('fitting_date')
             ->get();
 
@@ -94,6 +88,7 @@ class ManualActivationController extends Controller
                 'district' => $row->party->district ?? '-',
                 'city' => $row->party->city ?? '-',
                 'vehicle_number' => $row->vehicle_number ?? '-',
+                'created_by' => $row->user->name ?? '-',
                 'status' => $row->status,
             ];
         });
