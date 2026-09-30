@@ -9,7 +9,7 @@
         @endif
         <form action="{{ route('admin.manual-apps.update', $manualApp) }}" method="POST">
             @csrf @method('PUT')
-            @include('admin.manual-apps.form', ['app' => $manualApp])
+            @include('admin.manual-apps.form')
             <button class="btn btn-primary" type="submit"><i class="fas fa-save mr-1"></i>Update App</button>
             <a href="{{ route('admin.manual-apps.index') }}" class="btn btn-light">Cancel</a>
         </form>
