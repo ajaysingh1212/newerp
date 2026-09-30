@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ManualActivation;
 use App\Models\ManualActivationDocument;
+use App\Models\ManualApp;
 use App\Models\ManualFitter;
 use App\Models\ManualParty;
 use App\Models\ManualProduct;
@@ -26,6 +27,7 @@ class ManualActivationController extends Controller
         $parties = ManualParty::orderBy('name')->get(['id', 'name']);
         $products = ManualProduct::orderBy('name')->get(['id', 'name']);
         $fitters = ManualFitter::orderBy('name')->get(['id', 'name', 'phone']);
+        $apps = ManualApp::orderBy('name')->get(['id', 'name']);
 
         // State/District/City ab manual_parties ke plain string columns hain (koi relation nahi)
         // Cascading filter dropdowns ke liye ek nested map bana lete hain: state -> district -> [cities]
@@ -40,13 +42,13 @@ class ManualActivationController extends Controller
                 });
             });
         $activations = $this->filteredQuery($request)
-            ->with(['party', 'fitter', 'product', 'user'])
+            ->with(['party', 'fitter', 'product', 'app', 'user'])
             ->latest('fitting_date')
             ->paginate(20)
             ->appends($request->query());
         $states = $locationMap->keys()->sort()->values();
 
-        return view('admin.manual-activations.index', compact('activations', 'parties', 'products', 'fitters', 'states', 'locationMap'));
+        return view('admin.manual-activations.index', compact('activations', 'parties', 'products', 'fitters', 'apps', 'states', 'locationMap'));
     }
 
     /**
@@ -57,7 +59,7 @@ class ManualActivationController extends Controller
         abort_if(Gate::denies('manual_activation_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rows = $this->filteredQuery($request)
-            ->with(['party', 'fitter', 'product', 'user'])
+            ->with(['party', 'fitter', 'product', 'app', 'user'])
             ->latest('fitting_date')
             ->get();
 
@@ -85,12 +87,16 @@ class ManualActivationController extends Controller
                 'party' => $row->party->name ?? '-',
                 'fitter' => $row->fitter->name ?? '-',
                 'product' => $row->product->name ?? '-',
+                'app' => $row->app->name ?? '-',
                 'customer_name' => $row->customer_name ?? '-',
                 'customer_phone' => $row->customer_phone ?? '-',
                 'state' => $row->party->state ?? '-',
                 'district' => $row->party->district ?? '-',
                 'city' => $row->party->city ?? '-',
                 'vehicle_number' => $row->vehicle_number ?? '-',
+                'vts_number' => $row->vts_number ?? '-',
+                'sim_number' => $row->sim_number ?? '-',
+                'sim_company' => $row->sim_company ? strtoupper($row->sim_company) : '-',
                 'created_by' => $row->user->name ?? '-',
                 'status' => $row->status,
             ];
@@ -118,6 +124,14 @@ class ManualActivationController extends Controller
 
         if ($request->filled('manual_product_id')) {
             $query->where('manual_product_id', $request->manual_product_id);
+        }
+
+        if ($request->filled('manual_app_id')) {
+            $query->where('manual_app_id', $request->manual_app_id);
+        }
+
+        if ($request->filled('sim_company')) {
+            $query->where('sim_company', $request->sim_company);
         }
 
         if ($request->filled('state') || $request->filled('district') || $request->filled('city')) {
@@ -203,8 +217,9 @@ class ManualActivationController extends Controller
         $parties = ManualParty::orderBy('name')->get(['id', 'name']);
         $products = ManualProduct::orderBy('name')->get(['id', 'name']);
         $fitters = ManualFitter::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
+        $apps = ManualApp::where('status', 'active')->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.manual-activations.create', compact('parties', 'products', 'fitters'));
+        return view('admin.manual-activations.create', compact('parties', 'products', 'fitters', 'apps'));
     }
 
     public function store(Request $request)
@@ -215,6 +230,7 @@ class ManualActivationController extends Controller
             'manual_party_id' => 'required|exists:manual_parties,id',
             'manual_fitter_id' => 'required|exists:manual_fitters,id',
             'manual_product_id' => 'required|exists:manual_products,id',
+            'manual_app_id' => 'required|exists:manual_apps,id',
             'fitting_date' => 'required|date',
 
             'customer_name' => 'nullable|string|max:255',
@@ -227,6 +243,9 @@ class ManualActivationController extends Controller
             'vehicle_chassis_number' => 'nullable|string|max:100',
             'vehicle_engine_number' => 'nullable|string|max:100',
             'vehicle_color' => 'nullable|string|max:50',
+            'vts_number' => 'nullable|string|max:100',
+            'sim_number' => 'nullable|string|max:25',
+            'sim_company' => 'nullable|in:airtel,jio,vi',
 
             'aadhar_front' => 'nullable|image|mimes:jpg,jpeg,png,pdf|max:5120',
             'aadhar_back' => 'nullable|image|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -277,7 +296,7 @@ class ManualActivationController extends Controller
     {
         abort_if(Gate::denies('manual_activation_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $manualActivation->load(['party', 'fitter', 'product', 'documents']);
+        $manualActivation->load(['party', 'fitter', 'product', 'app', 'documents']);
 
         return view('admin.manual-activations.show', compact('manualActivation'));
     }
@@ -289,9 +308,13 @@ class ManualActivationController extends Controller
         $parties = ManualParty::orderBy('name')->get(['id', 'name']);
         $products = ManualProduct::orderBy('name')->get(['id', 'name']);
         $fitters = ManualFitter::orderBy('name')->get(['id', 'name', 'phone']);
+        $apps = ManualApp::where('status', 'active')
+            ->orWhere('id', $manualActivation->manual_app_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
         $manualActivation->load('documents');
 
-        return view('admin.manual-activations.edit', compact('manualActivation', 'parties', 'products', 'fitters'));
+        return view('admin.manual-activations.edit', compact('manualActivation', 'parties', 'products', 'fitters', 'apps'));
     }
 
     public function update(Request $request, ManualActivation $manualActivation)
@@ -302,6 +325,7 @@ class ManualActivationController extends Controller
             'manual_party_id' => 'required|exists:manual_parties,id',
             'manual_fitter_id' => 'required|exists:manual_fitters,id',
             'manual_product_id' => 'required|exists:manual_products,id',
+            'manual_app_id' => 'required|exists:manual_apps,id',
             'fitting_date' => 'required|date',
 
             'customer_name' => 'nullable|string|max:255',
@@ -314,6 +338,9 @@ class ManualActivationController extends Controller
             'vehicle_chassis_number' => 'nullable|string|max:100',
             'vehicle_engine_number' => 'nullable|string|max:100',
             'vehicle_color' => 'nullable|string|max:50',
+            'vts_number' => 'nullable|string|max:100',
+            'sim_number' => 'nullable|string|max:25',
+            'sim_company' => 'nullable|in:airtel,jio,vi',
 
             'aadhar_front' => 'nullable|image|mimes:jpg,jpeg,png,pdf|max:5120',
             'aadhar_back' => 'nullable|image|mimes:jpg,jpeg,png,pdf|max:5120',

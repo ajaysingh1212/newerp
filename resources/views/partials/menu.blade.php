@@ -439,8 +439,8 @@
                     </li>
                 @endcan
                 @can('manual_entry_access')
-                    <li class="nav-item has-treeview {{ request()->is("admin/manual-parties*") ? "menu-open" : "" }} {{ request()->is("admin/manual-products*") ? "menu-open" : "" }} {{ request()->is("admin/manual-activations*") ? "menu-open" : "" }}">
-                        <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/manual-parties*") ? "active" : "" }} {{ request()->is("admin/manual-products*") ? "active" : "" }} {{ request()->is("admin/manual-activations*") ? "active" : "" }}" href="#">
+                    <li class="nav-item has-treeview {{ request()->is("admin/manual-parties*") ? "menu-open" : "" }} {{ request()->is("admin/manual-products*") ? "menu-open" : "" }} {{ request()->is("admin/manual-apps*") ? "menu-open" : "" }} {{ request()->is("admin/manual-activations*") ? "menu-open" : "" }}">
+                        <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/manual-parties*") ? "active" : "" }} {{ request()->is("admin/manual-products*") ? "active" : "" }} {{ request()->is("admin/manual-apps*") ? "active" : "" }} {{ request()->is("admin/manual-activations*") ? "active" : "" }}" href="#">
                             <i class="fa-fw nav-icon fas fa-edit"></i>
                             <p>
                                 Manual Entry
@@ -472,6 +472,14 @@
                                     <a href="{{ route('admin.manual-products.index') }}" class="nav-link {{ request()->is('admin/manual-products') || request()->is('admin/manual-products/*') ? 'active' : '' }}">
                                         <i class="fa-fw nav-icon fas fa-box"></i>
                                         <p>Product</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manual_app_access')
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.manual-apps.index') }}" class="nav-link {{ request()->is('admin/manual-apps') || request()->is('admin/manual-apps/*') ? 'active' : '' }}">
+                                        <i class="fa-fw nav-icon fas fa-mobile-alt"></i>
+                                        <p>App</p>
                                     </a>
                                 </li>
                             @endcan

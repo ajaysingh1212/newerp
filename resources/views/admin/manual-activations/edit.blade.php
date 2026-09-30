@@ -26,7 +26,7 @@
 
             <h6 class="text-uppercase text-muted mb-3">Party, Fitter & Product</h6>
             <div class="row">
-                <div class="col-md-3 me-form-group mb-3">
+                <div class="col-md-2 me-form-group mb-3">
                     <label class="required">Party</label>
                     <select name="manual_party_id" class="form-control" required>
                         @foreach($parties as $party)
@@ -34,7 +34,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 me-form-group mb-3">
+                <div class="col-md-2 me-form-group mb-3">
                     <label class="required">Manual Fitter</label>
                     <select name="manual_fitter_id" class="form-control" required>
                         <option value="">Select Fitter</option>
@@ -43,11 +43,20 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 me-form-group mb-3">
+                <div class="col-md-2 me-form-group mb-3">
                     <label class="required">Product</label>
                     <select name="manual_product_id" class="form-control" required>
                         @foreach($products as $product)
                             <option value="{{ $product->id }}" {{ old('manual_product_id', $manualActivation->manual_product_id) == $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 me-form-group mb-3">
+                    <label class="required">App Name</label>
+                    <select name="manual_app_id" class="form-control" required>
+                        <option value="">Select App</option>
+                        @foreach($apps as $app)
+                            <option value="{{ $app->id }}" {{ old('manual_app_id', $manualActivation->manual_app_id) == $app->id ? 'selected' : '' }}>{{ $app->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -98,6 +107,23 @@
                 <div class="col-md-6 me-form-group mb-3">
                     <label>Engine Number</label>
                     <input type="text" name="vehicle_engine_number" class="form-control" value="{{ old('vehicle_engine_number', $manualActivation->vehicle_engine_number) }}">
+                </div>
+                <div class="col-md-4 me-form-group mb-3">
+                    <label>VTS Number</label>
+                    <input type="text" name="vts_number" class="form-control" value="{{ old('vts_number', $manualActivation->vts_number) }}">
+                </div>
+                <div class="col-md-4 me-form-group mb-3">
+                    <label>SIM Number</label>
+                    <input type="text" name="sim_number" class="form-control" value="{{ old('sim_number', $manualActivation->sim_number) }}">
+                </div>
+                <div class="col-md-4 me-form-group mb-3">
+                    <label>SIM Company</label>
+                    <select name="sim_company" class="form-control">
+                        <option value="">Select Company</option>
+                        <option value="airtel" {{ old('sim_company', $manualActivation->sim_company) === 'airtel' ? 'selected' : '' }}>Airtel</option>
+                        <option value="jio" {{ old('sim_company', $manualActivation->sim_company) === 'jio' ? 'selected' : '' }}>Jio</option>
+                        <option value="vi" {{ old('sim_company', $manualActivation->sim_company) === 'vi' ? 'selected' : '' }}>Vi</option>
+                    </select>
                 </div>
             </div>
 

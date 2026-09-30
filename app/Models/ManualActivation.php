@@ -17,6 +17,7 @@ class ManualActivation extends Model
         'manual_party_id',
         'manual_fitter_id',
         'manual_product_id',
+        'manual_app_id',
         'fitting_date',
         'customer_name',
         'customer_email',
@@ -27,6 +28,9 @@ class ManualActivation extends Model
         'vehicle_chassis_number',
         'vehicle_engine_number',
         'vehicle_color',
+        'vts_number',
+        'sim_number',
+        'sim_company',
         'aadhar_front_path',
         'aadhar_back_path',
         'status',
@@ -58,6 +62,11 @@ class ManualActivation extends Model
     public function product()
     {
         return $this->belongsTo(ManualProduct::class, 'manual_product_id');
+    }
+
+    public function app()
+    {
+        return $this->belongsTo(ManualApp::class, 'manual_app_id');
     }
 
     public function documents()

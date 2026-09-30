@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\AccountDeletionAdminController;
 use App\Http\Controllers\Admin\AdminGpsCardLookupController;
 use App\Http\Controllers\Admin\InvestmentsDetailesController;
 use App\Http\Controllers\Admin\ManualActivationController;
+use App\Http\Controllers\Admin\ManualAppController;
 use App\Http\Controllers\Admin\ManualFitterController;
 use App\Http\Controllers\Admin\ManualPartyController;
 use App\Http\Controllers\Admin\ManualProductController;
@@ -52,6 +53,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     // ---------- Manual Product ----------
     Route::delete('manual-products/destroy', [ManualProductController::class, 'massDestroy'])->name('manual-products.massDestroy');
     Route::resource('manual-products', ManualProductController::class);
+    // ---------- Manual App ----------
+    Route::delete('manual-apps/destroy', [ManualAppController::class, 'massDestroy'])->name('manual-apps.massDestroy');
+    Route::resource('manual-apps', ManualAppController::class);
 
     // ---------- Manual Activation (Dashboard) ----------
     Route::delete('manual-activations/destroy', [ManualActivationController::class, 'massDestroy'])->name('manual-activations.massDestroy');

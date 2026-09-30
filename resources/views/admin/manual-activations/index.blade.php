@@ -881,6 +881,28 @@
 
         </div>
 
+        {{-- APP --}}
+        <div class="col-lg col-md-4 col-6 mb-2">
+            <span class="me-filter-label">App</span>
+            <select name="manual_app_id" class="form-select form-select-sm">
+                <option value="">All Apps</option>
+                @foreach($apps as $app)
+                    <option value="{{ $app->id }}">{{ $app->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- SIM COMPANY --}}
+        <div class="col-lg col-md-4 col-6 mb-2">
+            <span class="me-filter-label">SIM Company</span>
+            <select name="sim_company" class="form-select form-select-sm">
+                <option value="">All Companies</option>
+                <option value="airtel">Airtel</option>
+                <option value="jio">Jio</option>
+                <option value="vi">Vi</option>
+            </select>
+        </div>
+
 
         {{-- STATE --}}
         <div class="col-lg col-md-4 col-6 mb-2">
@@ -1298,11 +1320,19 @@
                         </th>
 
                         <th>
+                            App
+                        </th>
+
+                        <th>
                             Customer
                         </th>
 
                         <th>
                             Vehicle No.
+                        </th>
+
+                        <th>
+                            SIM Details
                         </th>
 
                         <th>
@@ -1442,6 +1472,9 @@
 
                             </td>
 
+                            {{-- APP --}}
+                            <td>{{ optional($activation->app)->name ?: '-' }}</td>
+
 
                             {{-- CUSTOMER --}}
                             <td>
@@ -1477,6 +1510,16 @@
 
                                 @endif
 
+                                @if($activation->vts_number)
+                                    <div class="me-date-sub mt-1">VTS: {{ $activation->vts_number }}</div>
+                                @endif
+
+                            </td>
+
+                            {{-- SIM DETAILS --}}
+                            <td>
+                                <div>{{ $activation->sim_number ?: '-' }}</div>
+                                <small class="text-muted">{{ $activation->sim_company ? strtoupper($activation->sim_company) : '-' }}</small>
                             </td>
 
 
@@ -1677,9 +1720,13 @@
             row.party,
             row.fitter,
             row.product,
+            row.app,
             row.customer_name,
             row.customer_phone,
             row.vehicle_number,
+            row.vts_number,
+            row.sim_number,
+            row.sim_company,
             row.created_by,
             row.state,
             row.district,
@@ -1722,9 +1769,12 @@
         const party = escapeHtml(row.party || '-');
         const fitter = escapeHtml(row.fitter || '-');
         const product = escapeHtml(row.product || '-');
+        const app = escapeHtml(row.app || '-');
         const customerName = escapeHtml(row.customer_name || '-');
         const customerPhone = escapeHtml(row.customer_phone || '-');
         const vehicleNumber = escapeHtml(row.vehicle_number || '-');
+        const simNumber = escapeHtml(row.sim_number || '-');
+        const simCompany = escapeHtml(row.sim_company || '-');
         const createdBy = escapeHtml(row.created_by || '-');
         const searchText = hiddenSearchText(row);
 
@@ -1739,10 +1789,12 @@
             product !== '-'
                 ? '<span class="badge badge-light" style="padding:6px 9px;border-radius:8px;color:#5B21B6;background:#F5F3FF;"><i class="fas fa-box mr-1"></i>' + product + '</span>'
                 : '-',
+            app !== '-' ? '<span class="badge badge-info">' + app + '</span>' : '-',
             '<div style="font-weight:600;color:#374151;"><i class="fas fa-user mr-1 text-muted"></i>' + customerName + '</div><div class="me-date-sub">' + customerPhone + '</div>',
-            vehicleNumber !== '-'
+            (vehicleNumber !== '-'
                 ? '<span class="badge badge-dark" style="font-size:.72rem;padding:6px 9px;border-radius:7px;"><i class="fas fa-car mr-1"></i>' + vehicleNumber + '</span>'
-                : '-',
+                : '-') + (row.vts_number && row.vts_number !== '-' ? '<div class="me-date-sub mt-1">VTS: ' + escapeHtml(row.vts_number) + '</div>' : ''),
+            '<div>' + simNumber + '</div><small class="text-muted">' + simCompany + '</small>',
             createdBy !== '-'
                 ? '<span class="text-muted font-weight-600"><i class="fas fa-user-circle mr-1"></i>' + createdBy + '</span>'
                 : '-',
@@ -1866,6 +1918,18 @@
                     }
                 },
                 {
+                    data: 'app',
+                    render: function (data, type) {
+                        if (type !== 'display') {
+                            return data || '';
+                        }
+
+                        return data && data !== '-'
+                            ? '<span class="badge badge-info">' + escapeHtml(data) + '</span>'
+                            : '-';
+                    }
+                },
+                {
                     data: 'customer_name',
                     render: function (data, type, row) {
                         if (type !== 'display') {
@@ -1877,14 +1941,28 @@
                 },
                 {
                     data: 'vehicle_number',
-                    render: function (data, type) {
+                    render: function (data, type, row) {
                         if (type !== 'display') {
-                            return data || '';
+                            return [data, row.vts_number].filter(Boolean).join(' ');
                         }
 
-                        return data && data !== '-'
+                        const vehicle = data && data !== '-'
                             ? '<span class="badge badge-dark" style="font-size:.72rem;padding:6px 9px;border-radius:7px;"><i class="fas fa-car mr-1"></i>' + escapeHtml(data) + '</span>'
                             : '-';
+
+                        return vehicle + (row.vts_number && row.vts_number !== '-'
+                            ? '<div class="me-date-sub mt-1">VTS: ' + escapeHtml(row.vts_number) + '</div>'
+                            : '');
+                    }
+                },
+                {
+                    data: 'sim_number',
+                    render: function (data, type, row) {
+                        if (type !== 'display') {
+                            return [data, row.sim_company, row.vts_number].filter(Boolean).join(' ');
+                        }
+
+                        return '<div>' + escapeHtml(data || '-') + '</div><small class="text-muted">' + escapeHtml(row.sim_company || '-') + '</small>';
                     }
                 },
                 {

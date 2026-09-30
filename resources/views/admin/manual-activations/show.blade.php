@@ -22,6 +22,7 @@
                 <div class="me-info-row"><span class="label">Party</span><span class="value">{{ optional($manualActivation->party)->name }}</span></div>
                 <div class="me-info-row"><span class="label">Manual Fitter</span><span class="value">{{ optional($manualActivation->fitter)->name ?? '-' }}</span></div>
                 <div class="me-info-row"><span class="label">Product</span><span class="value">{{ optional($manualActivation->product)->name }}</span></div>
+                <div class="me-info-row"><span class="label">App</span><span class="value">{{ optional($manualActivation->app)->name ?? '-' }}</span></div>
 
                 <h6 class="text-uppercase text-muted mb-2 mt-4">Customer</h6>
                 <div class="me-info-row"><span class="label">Name</span><span class="value">{{ $manualActivation->customer_name ?? '-' }}</span></div>
@@ -36,6 +37,9 @@
                 <div class="me-info-row"><span class="label">Color</span><span class="value">{{ $manualActivation->vehicle_color ?? '-' }}</span></div>
                 <div class="me-info-row"><span class="label">Chassis No.</span><span class="value">{{ $manualActivation->vehicle_chassis_number ?? '-' }}</span></div>
                 <div class="me-info-row"><span class="label">Engine No.</span><span class="value">{{ $manualActivation->vehicle_engine_number ?? '-' }}</span></div>
+                <div class="me-info-row"><span class="label">VTS No.</span><span class="value">{{ $manualActivation->vts_number ?? '-' }}</span></div>
+                <div class="me-info-row"><span class="label">SIM No.</span><span class="value">{{ $manualActivation->sim_number ?? '-' }}</span></div>
+                <div class="me-info-row"><span class="label">SIM Company</span><span class="value">{{ $manualActivation->sim_company ? strtoupper($manualActivation->sim_company) : '-' }}</span></div>
 
                 <h6 class="text-uppercase text-muted mb-2 mt-4">Documents</h6>
                 @if($manualActivation->aadhar_front_path)
