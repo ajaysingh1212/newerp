@@ -963,35 +963,39 @@
                     class="form-select form-select-sm"
                     id="rangeSelect">
 
-                <option value="all" selected>
+                <option value="all" {{ request('range', 'all') === 'all' ? 'selected' : '' }}>
                     All Time
                 </option>
 
-                <option value="today">
+                <option value="today" {{ request('range') === 'today' ? 'selected' : '' }}>
                     Today
                 </option>
 
-                <option value="this_week">
+                <option value="yesterday" {{ request('range') === 'yesterday' ? 'selected' : '' }}>
+                    Yesterday
+                </option>
+
+                <option value="this_week" {{ request('range') === 'this_week' ? 'selected' : '' }}>
                     This Week
                 </option>
 
-                <option value="this_month">
+                <option value="this_month" {{ request('range') === 'this_month' ? 'selected' : '' }}>
                     This Month
                 </option>
 
-                <option value="3_month">
+                <option value="3_month" {{ request('range') === '3_month' ? 'selected' : '' }}>
                     Last 3 Months
                 </option>
 
-                <option value="6_month">
+                <option value="6_month" {{ request('range') === '6_month' ? 'selected' : '' }}>
                     Last 6 Months
                 </option>
 
-                <option value="this_year">
+                <option value="this_year" {{ request('range') === 'this_year' ? 'selected' : '' }}>
                     This Year
                 </option>
 
-                <option value="custom">
+                <option value="custom" {{ request('range') === 'custom' ? 'selected' : '' }}>
                     Custom Date
                 </option>
 

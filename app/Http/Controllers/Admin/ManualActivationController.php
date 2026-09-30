@@ -139,6 +139,10 @@ class ManualActivationController extends Controller
                 $query->whereDate('fitting_date', Carbon::today());
                 break;
 
+            case 'yesterday':
+                $query->whereDate('fitting_date', Carbon::yesterday());
+                break;
+
             case 'this_week':
                 $query->whereBetween('fitting_date', [
                     Carbon::now()->startOfWeek(),
