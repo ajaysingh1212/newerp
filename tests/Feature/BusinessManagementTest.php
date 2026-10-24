@@ -39,6 +39,9 @@ class BusinessManagementTest extends TestCase
         Schema::create('manual_parties', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('phone');
+            $table->text('address')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->string('state')->nullable();
             $table->string('district')->nullable();
             $table->string('city')->nullable();
@@ -75,6 +78,7 @@ class BusinessManagementTest extends TestCase
             $table->timestamps();
         });
         (require database_path('migrations/2026_10_24_000001_create_business_devices_table.php'))->up();
+        (require database_path('migrations/2026_10_24_000002_add_business_import_ledger.php'))->up();
         DB::table('users')->insert(['id' => 1, 'name' => 'Operator']);
         $this->actingAs(User::find(1));
         $this->withoutMiddleware(AuthGates::class);
@@ -272,6 +276,82 @@ class BusinessManagementTest extends TestCase
         $large = "Device,VTS,SIM,Price\n".str_repeat("Tracker,test,123,10\n", 1001);
         $this->postJson(route('admin.business-management.importPreview'), ['file' => UploadedFile::fake()->createWithContent('large.csv', $large)])->assertUnprocessable()->assertJsonValidationErrors('file');
         $this->assertDatabaseCount('business_devices', 0);
+    }
+
+    public function test_multi_party_csv_import_assigns_each_row_and_previews_party_mapping(): void
+    {
+        $otherParty = ManualParty::create(['name' => 'Party B']);
+        $content = "Customer,Device,VTS,SIM,Price\nParty A,Tracker,000111,000222,100.50\n".$otherParty->id.",Tracker,000333,000444,200.25\nparty a,Tracker,000555,000666,50\n";
+        $this->postJson(route('admin.business-management.importPreview'), ['file' => UploadedFile::fake()->createWithContent('parties.csv', $content)])
+            ->assertOk()->assertJsonPath('count', 3)->assertJsonPath('mapping.manual_party_id', 0)->assertJsonPath('rows.1.0', (string) $otherParty->id);
+        $this->postJson(route('admin.business-management.import'), [
+            'party_source' => 'file', 'assigned_at' => '2026-10-24',
+            'file' => UploadedFile::fake()->createWithContent('parties.csv', $content),
+            'mapping' => ['manual_party_id' => 0, 'manual_product_id' => 1, 'vts_number' => 2, 'sim_number' => 3, 'sales_price' => 4],
+        ])->assertOk()->assertJsonPath('devices', 3)->assertJsonPath('parties', 2);
+        $this->assertDatabaseHas('business_devices', ['vts_number' => '000111', 'manual_party_id' => $this->party->id, 'sim_number' => '000222', 'status' => 'pending']);
+        $this->assertDatabaseHas('business_devices', ['vts_number' => '000333', 'manual_party_id' => $otherParty->id]);
+        $this->assertDatabaseHas('business_devices', ['vts_number' => '000555', 'manual_party_id' => $this->party->id]);
+        $this->assertSame(2, BusinessDevice::where('manual_party_id', $this->party->id)->count());
+    }
+
+    public function test_unknown_ambiguous_deleted_or_empty_party_rejects_the_whole_file(): void
+    {
+        ManualParty::create(['name' => 'Same name']);
+        ManualParty::create(['name' => 'Same name']);
+        $deleted = ManualParty::create(['name' => 'Deleted party']);
+        $deleted->delete();
+        foreach (['Unknown party', 'Same name', '999999', (string) $deleted->id, ''] as $invalidParty) {
+            $content = "Party,Device,VTS,SIM,Price\nParty A,Tracker,valid,001,10\n".$invalidParty.",Tracker,invalid,002,20\n";
+            $this->postJson(route('admin.business-management.import'), [
+                'party_source' => 'file', 'assigned_at' => '2026-10-24',
+                'file' => UploadedFile::fake()->createWithContent('invalid-parties.csv', $content),
+            ])->assertUnprocessable()->assertJsonValidationErrors('devices.1.manual_party_id');
+            $this->assertDatabaseCount('business_devices', 0);
+        }
+    }
+
+    public function test_multi_party_requires_party_mapping_and_still_validates_every_device(): void
+    {
+        $otherParty = ManualParty::create(['name' => 'Party B']);
+        $content = "Party,Device,VTS,SIM,Price\nParty A,Tracker,repeated,001,10\nParty B,Tracker,repeated,002,20\n";
+        $this->postJson(route('admin.business-management.import'), [
+            'party_source' => 'file', 'assigned_at' => '2026-10-24',
+            'file' => UploadedFile::fake()->createWithContent('duplicates.csv', $content),
+        ])->assertUnprocessable()->assertJsonValidationErrors('devices.0.vts_number');
+        $content = "Device,VTS,SIM,Price\nTracker,test,001,10\n";
+        $this->postJson(route('admin.business-management.import'), [
+            'party_source' => 'file', 'manual_party_id' => $otherParty->id, 'assigned_at' => '2026-10-24',
+            'file' => UploadedFile::fake()->createWithContent('missing-party.csv', $content),
+        ])->assertUnprocessable()->assertJsonValidationErrors('mapping.manual_party_id');
+        $this->assertDatabaseCount('business_devices', 0);
+        $this->postJson(route('admin.business-management.import'), [
+            'party_source' => 'single', 'manual_party_id' => $otherParty->id, 'assigned_at' => '2026-10-24',
+            'file' => UploadedFile::fake()->createWithContent('single-party.csv', $content),
+        ])->assertOk()->assertJsonPath('parties', 1);
+        $this->assertDatabaseHas('business_devices', ['vts_number' => 'test', 'manual_party_id' => $otherParty->id]);
+    }
+
+    public function test_multi_party_excel_import_and_updated_template(): void
+    {
+        $otherParty = ManualParty::create(['name' => 'Party B']);
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['manual_party_id', 'manual_product_id', 'vts_number', 'sim_number', 'sales_price'],
+            [$this->party->id, $this->product->id, 'excel-first', 'first-sim', 100],
+            [$otherParty->id, $this->product->id, 'excel-second', 'second-sim', 200],
+        ]);
+        ob_start();
+        (new Xlsx($sheet))->save('php://output');
+        $content = ob_get_clean();
+        $this->postJson(route('admin.business-management.import'), [
+            'party_source' => 'file', 'assigned_at' => '2026-10-24',
+            'file' => UploadedFile::fake()->createWithContent('parties.xlsx', $content),
+        ])->assertOk()->assertJsonPath('parties', 2);
+        $this->assertDatabaseHas('business_devices', ['vts_number' => 'excel-first', 'manual_party_id' => $this->party->id]);
+        $this->assertDatabaseHas('business_devices', ['vts_number' => 'excel-second', 'manual_party_id' => $otherParty->id]);
+        $template = $this->get(route('admin.business-management.template'))->assertOk();
+        $this->assertStringContainsString('manual_party_id,manual_product_id,vts_number,sim_number,sales_price', $template->streamedContent());
     }
 
     public function test_device_datatables_paginate_search_and_sort_all_records(): void

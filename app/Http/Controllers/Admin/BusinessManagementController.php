@@ -50,14 +50,14 @@ class BusinessManagementController extends Controller
             ->makeHidden(['party', 'product', 'activator'])
             ->addColumn('model_name', fn ($device) => $device->product?->name ?? '')
             ->addColumn('party_name', fn ($device) => $device->party?->name ?? '')
-            ->editColumn('assigned_at', fn ($device) => $device->assigned_at->format('Y-m-d'))
+            ->editColumn('assigned_at', fn ($device) => $device->assigned_at?->format('Y-m-d'))
             ->addColumn('location', fn ($device) => implode(' / ', array_filter([$device->party?->state, $device->party?->district, $device->party?->city])))
             ->addColumn('activation', fn ($device) => trim(($device->activator?->name ?? '').' '.($device->activated_at?->format('Y-m-d H:i:s') ?? '')));
         if ($actions) {
             $table->addColumn('actions', fn ($device) => view('admin.business-management.actions', compact('device'))->render())->rawColumns(['actions']);
         }
 
-        return $table->only(['id', 'model_name', 'party_name', 'vts_number', 'sim_number', 'sales_price', 'assigned_at', 'status', 'location', 'activation', 'actions'])->escapeColumns([])->toJson();
+        return $table->only(['id', 'model_name', 'party_name', 'vts_number', 'imei_number', 'sim_number', 'sales_price', 'assigned_at', 'status', 'location', 'activation', 'actions'])->escapeColumns([])->toJson();
     }
 
     public function create()
@@ -153,7 +153,7 @@ class BusinessManagementController extends Controller
 
         return response()->streamDownload(function () {
             $stream = fopen('php://output', 'w');
-            fputcsv($stream, ['manual_product_id', 'vts_number', 'sim_number', 'sales_price']);
+            fputcsv($stream, ['manual_party_id', 'manual_product_id', 'vts_number', 'sim_number', 'sales_price']);
             fclose($stream);
         }, 'business-devices-template.csv', ['Content-Type' => 'text/csv']);
     }
@@ -161,22 +161,27 @@ class BusinessManagementController extends Controller
     public function import(Request $request, BusinessDeviceService $service)
     {
         $this->authorizeAction('import');
-        $request->validate(['mapping' => ['sometimes', 'required', 'array']]);
+        $request->validate(['mapping' => ['sometimes', 'required', 'array'], 'party_source' => ['sometimes', 'required', Rule::in(['file', 'single'])]]);
         $import = $this->readImport($request);
-        $devices = $import->devices($request->input('mapping'));
+        $mapping = $request->input('mapping');
+        $perRowParty = $request->input('party_source', isset(($mapping ?? $import->suggestedMapping())['manual_party_id']) ? 'file' : 'single') === 'file';
+        $devices = $import->devices($mapping, $perRowParty);
         $data = Validator::make([
             'manual_party_id' => $request->input('manual_party_id'), 'assigned_at' => $request->input('assigned_at'),
             'quantity' => count($devices), 'devices' => $devices,
-        ], $service->rules(count($devices)))->validate();
+        ], $service->importRules(count($devices), $perRowParty))->validate();
         $service->store($data, auth()->id());
+        $partyIds = $perRowParty ? array_unique(array_column($devices, 'manual_party_id')) : [$data['manual_party_id']];
+        $message = count($devices).' devices imported successfully across '.count($partyIds).' parties.';
+        $redirect = route('admin.business-management.index', ['party_id' => reset($partyIds)]);
 
         if ($request->expectsJson()) {
-            $request->session()->flash('status', count($devices).' devices imported successfully.');
+            $request->session()->flash('status', $message);
 
-            return response()->json(['redirect' => route('admin.business-management.index', ['party_id' => $data['manual_party_id']])]);
+            return response()->json(['redirect' => $redirect, 'devices' => count($devices), 'parties' => count($partyIds)]);
         }
 
-        return redirect()->route('admin.business-management.index', ['party_id' => $data['manual_party_id']])->with('status', count($devices).' devices imported successfully.');
+        return redirect($redirect)->with('status', $message);
     }
 
     public function importPreview(Request $request)
@@ -251,7 +256,7 @@ class BusinessManagementController extends Controller
         };
         $summaryQuery = DB::table('business_devices')
             ->join('manual_parties', 'manual_parties.id', '=', 'business_devices.manual_party_id')
-            ->join('manual_products', 'manual_products.id', '=', 'business_devices.manual_product_id')
+            ->leftJoin('manual_products', 'manual_products.id', '=', 'business_devices.manual_product_id')
             ->whereIn('business_devices.id', (clone $query)->select('business_devices.id'));
         $labelColumns = array_values(array_filter($columns, fn ($column) => ! str_ends_with($column, '.id')));
         foreach ($labelColumns as $index => $column) {

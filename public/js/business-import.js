@@ -9,6 +9,8 @@
         const submit = document.getElementById('import-submit');
         const errorBox = document.getElementById('import-error');
         const meta = document.getElementById('file-meta');
+        const partySource = document.getElementById('party_source');
+        const singleParty = document.getElementById('manual_party_id');
         let spreadsheet = null;
         let previewRequest = null;
         let generation = 0;
@@ -37,26 +39,50 @@
             const matches = config.products.filter(product => product.name.toLocaleLowerCase() === String(value).toLocaleLowerCase());
             return matches.length === 1 ? matches[0].name : value;
         }
+        function partyRecord(value) {
+            if (/^\d+$/.test(String(value))) return config.parties.find(party => String(party.id) === String(value)) || null;
+            const matches = config.parties.filter(party => party.name.toLocaleLowerCase() === String(value).toLocaleLowerCase());
+            return matches.length === 1 ? matches[0] : null;
+        }
+        function requiredSelects() {
+            return selects.filter(select => partySource.value === 'file' || select.dataset.field !== 'manual_party_id');
+        }
+        function updateMode() {
+            const fromFile = partySource.value === 'file';
+            document.getElementById('single-party-field').hidden = fromFile;
+            singleParty.disabled = fromFile;
+            singleParty.required = !fromFile;
+            document.getElementById('mapping-row-manual_party_id').hidden = !fromFile;
+            const partyMapping = document.getElementById('map-manual_party_id');
+            partyMapping.disabled = !fromFile || !spreadsheet;
+            partyMapping.required = fromFile;
+            mappingChanged();
+        }
         function mappingChanged() {
             if (!spreadsheet) return;
             const mapping = {};
-            selects.forEach(select => {
+            const activeSelects = requiredSelects();
+            activeSelects.forEach(select => {
                 mapping[select.dataset.field] = select.value === '' ? null : Number(select.value);
                 document.getElementById('sample-' + select.dataset.field).textContent = select.value === '' ? '—' : (spreadsheet.rows[0]?.[Number(select.value)] || '(empty)');
             });
             const columns = Object.values(mapping);
             const complete = columns.every(value => value !== null);
-            const unique = new Set(columns).size === selects.length;
+            const unique = new Set(columns).size === activeSelects.length;
             submit.disabled = !complete || !unique || busy;
             const state = document.getElementById('mapping-state');
-            state.textContent = !complete ? 'Match all 4 fields' : !unique ? 'Duplicate column selected' : '4 of 4 fields matched';
+            state.textContent = !complete ? 'Match all ' + activeSelects.length + ' fields' : !unique ? 'Duplicate column selected' : activeSelects.length + ' of ' + activeSelects.length + ' fields matched';
             state.className = 'bm-status ' + (complete && unique ? 'activated' : 'pending');
             let total = 0;
+            const parties = new Set();
             const rows = spreadsheet.rows.map((row, index) => {
-                const value = field => mapping[field] === null ? '' : String(row[mapping[field]] ?? '');
+                const value = field => mapping[field] == null ? '' : String(row[mapping[field]] ?? '');
+                const partyValue = partySource.value === 'file' ? value('manual_party_id') : singleParty.value;
+                const party = partyRecord(partyValue);
+                if (partyValue !== '') parties.add(party ? String(party.id) : partyValue.toLocaleLowerCase());
                 const price = value('sales_price');
                 total += Number.isFinite(Number(price)) ? Math.round(Number(price) * 100) : 0;
-                return [index + 1, productName(value('manual_product_id')), value('vts_number'), value('sim_number'), price, 'Pending'];
+                return [index + 1, party?.name || partyValue || '(select party)', productName(value('manual_product_id')), value('vts_number'), value('sim_number'), price, 'Pending'];
             });
             if (mappedTable) {
                 mappedTable.clear().rows.add(rows).draw(false);
@@ -66,7 +92,7 @@
                 });
             }
             const summary = document.getElementById('import-summary');
-            summary.textContent = !complete ? 'Match all four required fields to continue.' : !unique ? 'Choose a different file column for each system field.' : spreadsheet.count + ' devices · Total sales: ' + (total / 100).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' · Ready for validation';
+            summary.textContent = !complete ? 'Match all ' + activeSelects.length + ' required fields to continue.' : !unique ? 'Choose a different file column for each system field.' : spreadsheet.count + ' devices · ' + parties.size + ' parties · Total sales: ' + (total / 100).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' · Ready for validation';
         }
 
         fileInput.addEventListener('change', async () => {
@@ -128,7 +154,7 @@
                     data: result.rows.map(row => result.headers.map((_, index) => row[index] ?? '')),
                     columns: result.headers.map(() => ({render: (value, type) => type === 'display' ? tables.escape(value) : value})),
                 });
-                mappingChanged();
+                updateMode();
                 if (mappedTable) mappedTable.columns.adjust();
             } catch (error) {
                 if (error.name !== 'AbortError' && currentGeneration === generation) {
@@ -138,6 +164,9 @@
             }
         });
         selects.forEach(select => select.addEventListener('change', mappingChanged));
+        partySource.addEventListener('change', updateMode);
+        jQuery(singleParty).on('change', mappingChanged);
+        updateMode();
         ['mapped', 'original'].forEach(view => {
             document.getElementById(view + '-tab').addEventListener('click', () => {
                 ['mapped', 'original'].forEach(name => {

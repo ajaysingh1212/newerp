@@ -9,13 +9,17 @@
         <tr><td>Location</td><td>{{ $businessDevice->party?->state }} / {{ $businessDevice->party?->district }} / {{ $businessDevice->party?->city }}</td></tr>
         <tr><td>Device / model</td><td>{{ $businessDevice->product?->name }}</td></tr>
         <tr><td>VTS number</td><td class="bm-mono">{{ $businessDevice->vts_number }}</td></tr>
-        <tr><td>SIM number</td><td class="bm-mono">{{ $businessDevice->sim_number }}</td></tr>
-        <tr><td>Sales price</td><td>{{ number_format($businessDevice->sales_price, 2) }}</td></tr>
-        <tr><td>Assigned date</td><td>{{ $businessDevice->assigned_at->format('Y-m-d') }}</td></tr>
+        <tr><td>IMEI number</td><td class="bm-mono">{{ $businessDevice->imei_number ?? 'Not supplied' }}</td></tr>
+        <tr><td>SIM number</td><td class="bm-mono">{{ $businessDevice->sim_number ?? 'Not supplied' }}</td></tr>
+        <tr><td>Sales price</td><td>{{ $businessDevice->sales_price !== null ? number_format($businessDevice->sales_price, 2) : 'Not supplied in source' }}</td></tr>
+        <tr><td>Assigned date</td><td>{{ $businessDevice->assigned_at?->format('Y-m-d') ?? 'Not supplied in source' }}</td></tr>
         <tr><td>Status</td><td>{{ ucfirst($businessDevice->status) }}</td></tr>
-        <tr><td>Activated by</td><td>{{ $businessDevice->activator?->name ?? 'Awaiting activation' }}</td></tr>
+        <tr><td>Activated by</td><td>{{ $businessDevice->activator?->name ?? ($businessDevice->status === 'activated' ? 'Not supplied in source' : 'Awaiting activation') }}</td></tr>
         <tr><td>Activated at</td><td>{{ $businessDevice->activated_at?->format('Y-m-d H:i:s') ?? '—' }}</td></tr>
     </tbody></table>
+    @if($businessDevice->business_import_id)
+        <div class="bm-note mt-3"><i class="fas fa-book"></i><span>Imported historical record. Unknown values remain blank. <a href="{{ route('admin.business-imports.index', ['batch_id' => $businessDevice->business_import_id]) }}">Open the complete source ledger</a> for original fields, payment history and review notes.</span></div>
+    @endif
     <div class="bm-form-footer"><a class="btn btn-light" href="{{ route('admin.business-management.index', ['party_id' => $businessDevice->manual_party_id]) }}"><i class="fas fa-arrow-left mr-1"></i> Back to inventory</a>@include('admin.business-management.actions', ['device' => $businessDevice])</div>
 </div></div>
 @endsection

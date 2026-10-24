@@ -19,7 +19,7 @@
     @can('business_management_import')<a class="btn btn-light" href="{{ route('admin.business-management.importForm', ['party_id' => $partyId]) }}"><i class="fas fa-file-import mr-1"></i> Import</a>@endcan
     @can('business_management_create')<a class="btn btn-primary" href="{{ route('admin.business-management.create', ['party_id' => $partyId]) }}"><i class="fas fa-plus mr-1"></i> Add devices</a>@endcan
 </div></div><div class="card-body">
-    <table id="inventory-table" class="table table-striped"><thead><tr><th>Model</th><th>VTS number</th><th>SIM number</th><th>Sales price</th><th>Assigned date</th><th>Status</th><th>Activated by / at</th><th>Actions</th></tr></thead><tbody></tbody></table>
+    <table id="inventory-table" class="table table-striped"><thead><tr><th>Model</th><th>VTS number</th><th>IMEI number</th><th>SIM number</th><th>Sales price</th><th>Assigned date</th><th>Status</th><th>Activated by / at</th><th>Actions</th></tr></thead><tbody></tbody></table>
 </div></div>
 @endsection
 @section('business-scripts')
@@ -30,7 +30,7 @@ jQuery(function () {
     url.searchParams.set('party_id', @json((string)$partyId));
     url.searchParams.set('status', @json(request('status', '')));
     table.init('#inventory-table', {processing: true, serverSide: true, ajax: url.toString(), columns: [
-        table.textColumn('model_name', 'product.name'), table.textColumn('vts_number'), table.textColumn('sim_number'), table.moneyColumn(), table.textColumn('assigned_at'), table.statusColumn(),
+        table.textColumn('model_name', 'product.name'), table.textColumn('vts_number'), table.textColumn('imei_number'), table.textColumn('sim_number'), table.moneyColumn(), table.textColumn('assigned_at'), table.statusColumn(),
         table.textColumn('activation', 'activator.name', {orderable: false}),
         {data: 'actions', name: 'actions', orderable: false, searchable: false}
     ]});

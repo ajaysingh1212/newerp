@@ -44,9 +44,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::get('/', 'HomeController@index')->name('home');
 
     Route::get('business-management/report', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'report'])->name('business-management.report');
+    Route::get('business-imports', [\App\Http\Controllers\Admin\BusinessImportController::class, 'index'])->name('business-imports.index');
+    Route::get('business-imports/batches/{business_import}/download', [\App\Http\Controllers\Admin\BusinessImportController::class, 'download'])->name('business-imports.download');
+    Route::get('business-imports/rows/{business_import_row}', [\App\Http\Controllers\Admin\BusinessImportController::class, 'show'])->name('business-imports.show');
     Route::get('business-management/import', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'importForm'])->name('business-management.importForm');
     Route::post('business-management/import', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'import'])->name('business-management.import');
     Route::post('business-management/import/preview', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'importPreview'])->name('business-management.importPreview');
+    Route::post('business-management/import-ready/preview', [\App\Http\Controllers\Admin\PreparedBusinessImportController::class, 'preview'])->name('business-management.readyPreview');
+    Route::post('business-management/import-ready', [\App\Http\Controllers\Admin\PreparedBusinessImportController::class, 'store'])->name('business-management.readyImport');
     Route::get('business-management/template', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'template'])->name('business-management.template');
     Route::post('business-management/{business_device}/activate', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'activate'])->name('business-management.activate');
     Route::resource('business-management', \App\Http\Controllers\Admin\BusinessManagementController::class)->parameters(['business-management' => 'business_device']);

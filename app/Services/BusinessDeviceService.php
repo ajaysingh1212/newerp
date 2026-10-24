@@ -28,11 +28,23 @@ class BusinessDeviceService
         DB::transaction(function () use ($data, $userId) {
             foreach ($data['devices'] as $row) {
                 BusinessDevice::create(array_merge($row, [
-                    'manual_party_id' => $data['manual_party_id'],
+                    'manual_party_id' => $row['manual_party_id'] ?? $data['manual_party_id'],
                     'assigned_at' => $data['assigned_at'],
                     'created_by' => $userId,
                 ]));
             }
         });
+    }
+
+    public function importRules(int $quantity, bool $perRowParty): array
+    {
+        $rules = $this->rules($quantity);
+        if ($perRowParty) {
+            unset($rules['manual_party_id']);
+            $rules['devices.*'] = ['required', 'array:manual_party_id,manual_product_id,vts_number,sim_number,sales_price'];
+            $rules['devices.*.manual_party_id'] = ['required', 'integer', Rule::exists('manual_parties', 'id')->whereNull('deleted_at')];
+        }
+
+        return $rules;
     }
 }

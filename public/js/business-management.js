@@ -25,7 +25,7 @@
             return {data: 'status', name: 'business_devices.status', render: (value, type) => type === 'display' ? '<span class="bm-status ' + (value === 'activated' ? 'activated' : 'pending') + '">' + escape(value === 'activated' ? 'Activated' : 'Pending') + '</span>' : value};
         },
         moneyColumn() {
-            return {data: 'sales_price', name: 'business_devices.sales_price', render: (value, type) => type === 'display' ? Number(value).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : value};
+            return {data: 'sales_price', name: 'business_devices.sales_price', render: (value, type) => type === 'display' ? (value === null || value === '' ? 'Not supplied' : Number(value).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})) : value};
         },
     };
     jQuery(function () {

@@ -27,7 +27,7 @@
     <table class="table table-striped" data-business-table="standard"><thead><tr><th>{{ ucfirst($groupBy) }}</th><th>Devices</th><th>Activated</th><th>Pending</th><th>Sales value</th></tr></thead><tbody>@foreach($summaries as $summary)<tr><td>@foreach($labelColumns as $index => $column){{ $index ? ' / ' : '' }}{{ $summary->{'label_'.$index} }}@endforeach</td><td>{{ $summary->devices }}</td><td>{{ $summary->activated }}</td><td>{{ $summary->devices - $summary->activated }}</td><td data-order="{{ $summary->sales }}">{{ number_format($summary->sales, 2) }}</td></tr>@endforeach</tbody></table>
 </div></div>
 <div class="card"><div class="card-header"><div><h4><i class="fas fa-list bm-section-icon"></i>Device details</h4><p>Search all matching devices. Exports include the complete report filters.</p></div></div><div class="card-body">
-    <table id="report-devices-table" class="table table-striped"><thead><tr><th>Party</th><th>State / district / city</th><th>Model</th><th>VTS number</th><th>SIM number</th><th>Sales price</th><th>Assigned date</th><th>Status</th><th>Activated by / at</th></tr></thead><tbody></tbody></table>
+    <table id="report-devices-table" class="table table-striped"><thead><tr><th>Party</th><th>State / district / city</th><th>Model</th><th>VTS number</th><th>IMEI number</th><th>SIM number</th><th>Sales price</th><th>Assigned date</th><th>Status</th><th>Activated by / at</th></tr></thead><tbody></tbody></table>
 </div></div>
 @endsection
 @section('business-scripts')
@@ -38,7 +38,7 @@ jQuery(function () {
     new FormData(document.getElementById('report-filters')).forEach((value, key) => url.searchParams.set(key, value));
     table.init('#report-devices-table', {processing: true, serverSide: true, ajax: url.toString(), columns: [
         table.textColumn('party_name', 'party.name'), table.textColumn('location', 'location', {searchable: false, orderable: false}), table.textColumn('model_name', 'product.name'),
-        table.textColumn('vts_number'), table.textColumn('sim_number'), table.moneyColumn(), table.textColumn('assigned_at'), table.statusColumn(), table.textColumn('activation', 'activator.name', {orderable: false})
+        table.textColumn('vts_number'), table.textColumn('imei_number'), table.textColumn('sim_number'), table.moneyColumn(), table.textColumn('assigned_at'), table.statusColumn(), table.textColumn('activation', 'activator.name', {orderable: false})
     ]});
 });
 </script>

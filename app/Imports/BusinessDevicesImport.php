@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Models\ManualParty;
 use App\Models\ManualProduct;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
@@ -48,6 +49,7 @@ class BusinessDevicesImport extends StringValueBinder implements ToCollection, W
     public function suggestedMapping(): array
     {
         $aliases = [
+            'manual_party_id' => ['manual_party_id', 'party_id', 'party', 'party_name', 'customer', 'customer_name'],
             'manual_product_id' => ['manual_product_id', 'product_id', 'device', 'model', 'product', 'device_model', 'product_name'],
             'vts_number' => ['vts_number', 'vts', 'imei', 'imei_number', 'device_imei'],
             'sim_number' => ['sim_number', 'sim', 'sim_no', 'sim_card', 'iccid'],
@@ -66,23 +68,38 @@ class BusinessDevicesImport extends StringValueBinder implements ToCollection, W
         return $mapping;
     }
 
-    public function devices(?array $mapping = null): array
+    public function devices(?array $mapping = null, bool $perRowParty = false): array
     {
-        $mapping ??= $this->suggestedMapping();
-        $rules = ['mapping' => ['required', 'array:'.implode(',', self::FIELDS)]];
-        foreach (self::FIELDS as $field) {
+        $fields = $perRowParty ? array_merge(['manual_party_id'], self::FIELDS) : self::FIELDS;
+        $mapping ??= array_intersect_key($this->suggestedMapping(), array_flip($fields));
+        $rules = ['mapping' => ['required', 'array:'.implode(',', $fields)]];
+        foreach ($fields as $field) {
             $rules['mapping.'.$field] = ['required', 'integer', 'min:0', 'max:'.(count($this->headers) - 1), 'distinct'];
         }
         $mapping = Validator::make(['mapping' => $mapping], $rules)->validate()['mapping'];
-        if (count(array_unique(array_map('intval', $mapping))) !== count(self::FIELDS)) {
+        if (count(array_unique(array_map('intval', $mapping))) !== count($fields)) {
             throw ValidationException::withMessages(['mapping' => 'Select a different file column for each system field.']);
         }
         $products = ManualProduct::all(['id', 'name']);
+        $parties = $perRowParty ? ManualParty::all(['id', 'name']) : collect();
+        $errors = [];
 
-        return array_map(function ($row) use ($mapping, $products) {
+        $devices = [];
+        foreach ($this->rows as $index => $row) {
             $device = [];
-            foreach (self::FIELDS as $field) {
+            foreach ($fields as $field) {
                 $device[$field] = $row[(int) $mapping[$field]] ?? '';
+            }
+            if ($perRowParty && $device['manual_party_id'] !== '' && ! ctype_digit($device['manual_party_id'])) {
+                $partyName = $device['manual_party_id'];
+                $matches = $parties->filter(fn ($party) => mb_strtolower($party->name) === mb_strtolower($partyName));
+                if ($matches->count() === 1) {
+                    $device['manual_party_id'] = (string) $matches->first()->id;
+                } else {
+                    $errors['devices.'.$index.'.manual_party_id'] = $matches->isEmpty()
+                        ? 'Party "'.$partyName.'" was not found. Use an existing Manual Party ID or name.'
+                        : 'More than one party is named "'.$partyName.'". Use its Party ID instead.';
+                }
             }
             if (! ctype_digit($device['manual_product_id'])) {
                 $matches = $products->filter(fn ($product) => mb_strtolower($product->name) === mb_strtolower($device['manual_product_id']));
@@ -91,7 +108,12 @@ class BusinessDevicesImport extends StringValueBinder implements ToCollection, W
                 }
             }
 
-            return $device;
-        }, $this->rows);
+            $devices[] = $device;
+        }
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $devices;
     }
 }

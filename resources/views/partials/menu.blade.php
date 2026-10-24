@@ -140,7 +140,7 @@
                     </a>
                 </li>
                 @canany(['business_management_access', 'business_management_report', 'business_management_create', 'business_management_import'])
-                    <li class="nav-item has-treeview {{ request()->is('admin/business-management*') ? 'menu-open' : '' }}">
+                    <li class="nav-item has-treeview {{ request()->is('admin/business-management*', 'admin/business-imports*') ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link"><i class="fas fa-briefcase nav-icon"></i><p>Business Management<i class="right fas fa-angle-left"></i></p></a>
                         <ul class="nav nav-treeview">
                             @can('business_management_access')
@@ -154,6 +154,7 @@
                             @endcan
                             @can('business_management_report')
                                 <li class="nav-item"><a href="{{ route('admin.business-management.report') }}" class="nav-link {{ request()->routeIs('admin.business-management.report') ? 'active' : '' }}"><i class="fas fa-chart-bar nav-icon"></i><p>Reports</p></a></li>
+                                <li class="nav-item"><a href="{{ route('admin.business-imports.index') }}" class="nav-link"><i class="fas fa-book nav-icon"></i><p>Imported Source Ledger</p></a></li>
                             @endcan
                         </ul>
                     </li>

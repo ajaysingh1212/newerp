@@ -14,6 +14,7 @@
         @can('business_management_create')<a class="{{ request()->routeIs('admin.business-management.create', 'admin.business-management.edit') ? 'is-active' : '' }}" href="{{ route('admin.business-management.create') }}"><i class="fas fa-plus-circle"></i> Add devices</a>@endcan
         @can('business_management_import')<a class="{{ request()->routeIs('admin.business-management.import*') ? 'is-active' : '' }}" href="{{ route('admin.business-management.importForm') }}"><i class="fas fa-file-import"></i> Import workspace</a>@endcan
         @can('business_management_report')<a class="{{ request()->routeIs('admin.business-management.report') ? 'is-active' : '' }}" href="{{ route('admin.business-management.report') }}"><i class="fas fa-chart-pie"></i> Reports & insights</a>@endcan
+        @can('business_management_report')<a class="{{ request()->routeIs('admin.business-imports.*') ? 'is-active' : '' }}" href="{{ route('admin.business-imports.index') }}"><i class="fas fa-book"></i> Imported source ledger</a>@endcan
     </nav>
     @include('admin.business-management.alerts')
     @yield('business-content')
