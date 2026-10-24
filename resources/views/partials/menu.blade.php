@@ -139,6 +139,25 @@
                         </p>
                     </a>
                 </li>
+                @canany(['business_management_access', 'business_management_report', 'business_management_create', 'business_management_import'])
+                    <li class="nav-item has-treeview {{ request()->is('admin/business-management*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link"><i class="fas fa-briefcase nav-icon"></i><p>Business Management<i class="right fas fa-angle-left"></i></p></a>
+                        <ul class="nav nav-treeview">
+                            @can('business_management_access')
+                                <li class="nav-item"><a href="{{ route('admin.business-management.index') }}" class="nav-link {{ request()->routeIs('admin.business-management.index') ? 'active' : '' }}"><i class="fas fa-list nav-icon"></i><p>Business Management</p></a></li>
+                            @endcan
+                            @can('business_management_create')
+                                <li class="nav-item"><a href="{{ route('admin.business-management.create') }}" class="nav-link"><i class="fas fa-plus nav-icon"></i><p>Add Devices</p></a></li>
+                            @endcan
+                            @can('business_management_import')
+                                <li class="nav-item"><a href="{{ route('admin.business-management.importForm') }}" class="nav-link"><i class="fas fa-file-import nav-icon"></i><p>Import Devices</p></a></li>
+                            @endcan
+                            @can('business_management_report')
+                                <li class="nav-item"><a href="{{ route('admin.business-management.report') }}" class="nav-link {{ request()->routeIs('admin.business-management.report') ? 'active' : '' }}"><i class="fas fa-chart-bar nav-icon"></i><p>Reports</p></a></li>
+                            @endcan
+                        </ul>
+                    </li>
+                @endcanany
                 @can('user_management_access')
                     <li class="nav-item has-treeview {{ request()->is("admin/permissions*") ? "menu-open" : "" }} {{ request()->is("admin/roles*") ? "menu-open" : "" }} {{ request()->is("admin/users*") ? "menu-open" : "" }} {{ request()->is("admin/teams*") ? "menu-open" : "" }}">
                         <a class="nav-link nav-dropdown-toggle {{ request()->is("admin/permissions*") ? "active" : "" }} {{ request()->is("admin/roles*") ? "active" : "" }} {{ request()->is("admin/users*") ? "active" : "" }} {{ request()->is("admin/teams*") ? "active" : "" }}" href="#">

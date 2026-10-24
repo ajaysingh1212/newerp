@@ -43,6 +43,14 @@ Auth::routes();
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'middleware' => ['auth']], function () {
     Route::get('/', 'HomeController@index')->name('home');
 
+    Route::get('business-management/report', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'report'])->name('business-management.report');
+    Route::get('business-management/import', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'importForm'])->name('business-management.importForm');
+    Route::post('business-management/import', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'import'])->name('business-management.import');
+    Route::post('business-management/import/preview', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'importPreview'])->name('business-management.importPreview');
+    Route::get('business-management/template', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'template'])->name('business-management.template');
+    Route::post('business-management/{business_device}/activate', [\App\Http\Controllers\Admin\BusinessManagementController::class, 'activate'])->name('business-management.activate');
+    Route::resource('business-management', \App\Http\Controllers\Admin\BusinessManagementController::class)->parameters(['business-management' => 'business_device']);
+
     Route::delete('manual-parties/destroy', [ManualPartyController::class, 'massDestroy'])->name('manual-parties.massDestroy');
     Route::get('manual-parties/get-districts/{state}', [ManualPartyController::class, 'getDistricts'])->name('manual-parties.getDistricts');
     Route::get('manual-parties/get-cities/{district}', [ManualPartyController::class, 'getCities'])->name('manual-parties.getCities');
