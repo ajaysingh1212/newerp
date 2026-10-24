@@ -354,6 +354,43 @@ class BusinessManagementTest extends TestCase
         $this->assertStringContainsString('manual_party_id,manual_product_id,vts_number,sim_number,sales_price', $template->streamedContent());
     }
 
+    public function test_report_charts_reconcile_filtered_totals_monthly_gaps_and_price_candles(): void
+    {
+        foreach ([['2026-01-01', '100.10', 'jan-first'], ['2026-01-20', '20.00', 'jan-last'], ['2026-03-01', '50.25', 'march']] as [$date, $price, $vts]) {
+            $data = $this->payload();
+            $data['assigned_at'] = $date;
+            $data['devices'][0]['sales_price'] = $price;
+            $data['devices'][0]['vts_number'] = $vts;
+            $this->post(route('admin.business-management.store'), $data)->assertSessionHasNoErrors();
+        }
+        BusinessDevice::create(['manual_party_id' => $this->party->id, 'manual_product_id' => $this->product->id, 'vts_number' => 'undated', 'sales_price' => null, 'assigned_at' => null]);
+        $this->post(route('admin.business-management.activate', BusinessDevice::where('vts_number', 'jan-first')->firstOrFail()));
+        $response = $this->get(route('admin.business-management.report'))->assertOk()
+            ->assertSee('business-reports.js')->assertSee('data-chart-type="candle"', false)
+            ->assertSee('id="content-panel" role="tabpanel" aria-labelledby="content-tab" hidden', false);
+        $chart = $response->viewData('reportChartData');
+        $this->assertSame(4, $chart['groups']->sum('devices'));
+        $this->assertSame(1, $chart['groups']->sum('activated'));
+        $this->assertEqualsWithDelta(170.35, $chart['groups']->sum('sales'), .001);
+        $this->assertSame(1, $chart['undated']);
+        $this->assertSame(1, $chart['missingPrices']);
+        $this->assertSame(['2026-01', '2026-02', '2026-03'], array_column($chart['months'], 'month'));
+        $this->assertSame(0, $chart['months'][1]['devices']);
+        $this->assertNull($chart['months'][1]['open']);
+        $this->assertSame(100.1, $chart['months'][0]['open']);
+        $this->assertSame(20.0, $chart['months'][0]['close']);
+        $this->assertSame(20.0, $chart['months'][0]['low']);
+        $this->assertSame(100.1, $chart['months'][0]['high']);
+        $this->assertSame(120.1, $chart['months'][0]['sales']);
+        $filtered = $this->get(route('admin.business-management.report', ['status' => 'activated']))->assertOk()->viewData('reportChartData');
+        $this->assertSame(1, $filtered['groups']->sum('devices'));
+        $this->assertSame(1, count($filtered['months']));
+        $this->assertSame(0, $filtered['undated']);
+        $empty = $this->get(route('admin.business-management.report', ['from' => '2027-01-01']))->assertOk()->viewData('reportChartData');
+        $this->assertSame([], $empty['months']);
+        $this->assertTrue($empty['groups']->isEmpty());
+    }
+
     public function test_device_datatables_paginate_search_and_sort_all_records(): void
     {
         $rows = [];

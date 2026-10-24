@@ -9,6 +9,7 @@ use App\Models\BusinessDevice;
 use App\Models\ManualParty;
 use App\Models\ManualProduct;
 use App\Services\BusinessDeviceService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -267,6 +268,57 @@ class BusinessManagementController extends Controller
         $parties = ManualParty::orderBy('name')->get();
         $products = ManualProduct::orderBy('name')->get();
 
-        return view('admin.business-management.report', compact('totals', 'summaries', 'parties', 'products', 'groupBy', 'labelColumns'));
+        $months = [];
+        $undated = 0;
+        $missingPrices = 0;
+        foreach ((clone $query)->select(['business_devices.id', 'assigned_at', 'status', 'sales_price'])->orderBy('assigned_at')->orderBy('business_devices.id')->cursor() as $device) {
+            if ($device->sales_price === null) {
+                $missingPrices++;
+            }
+            if ($device->assigned_at === null) {
+                $undated++;
+
+                continue;
+            }
+            $month = $device->assigned_at->format('Y-m');
+            $months[$month] ??= ['month' => $month, 'devices' => 0, 'activated' => 0, 'pending' => 0, 'sales_cents' => 0, 'open' => null, 'close' => null, 'low' => null, 'high' => null];
+            $months[$month]['devices']++;
+            $months[$month][$device->status === 'activated' ? 'activated' : 'pending']++;
+            if ($device->sales_price !== null) {
+                $price = (float) $device->sales_price;
+                $months[$month]['sales_cents'] += (int) round($price * 100);
+                $months[$month]['open'] ??= $price;
+                $months[$month]['close'] = $price;
+                $months[$month]['low'] = $months[$month]['low'] === null ? $price : min($price, $months[$month]['low']);
+                $months[$month]['high'] = $months[$month]['high'] === null ? $price : max($price, $months[$month]['high']);
+            }
+        }
+        if ($months) {
+            $cursor = Carbon::parse(array_key_first($months).'-01')->startOfMonth();
+            $last = Carbon::parse(array_key_last($months).'-01')->startOfMonth();
+            $continuous = [];
+            while ($cursor->lte($last)) {
+                $month = $cursor->format('Y-m');
+                $continuous[$month] = $months[$month] ?? ['month' => $month, 'devices' => 0, 'activated' => 0, 'pending' => 0, 'sales_cents' => 0, 'open' => null, 'close' => null, 'low' => null, 'high' => null];
+                $cursor->addMonth();
+            }
+            $months = $continuous;
+        }
+        $reportChartData = [
+            'groups' => $summaries->map(fn ($row) => [
+                'label' => implode(' / ', array_map(fn ($index) => trim((string) $row->{'label_'.$index}) ?: 'Not supplied', array_keys($labelColumns))),
+                'devices' => (int) $row->devices, 'activated' => (int) $row->activated,
+                'pending' => (int) $row->devices - (int) $row->activated, 'sales' => (float) ($row->sales ?? 0),
+            ])->values(),
+            'months' => array_values(array_map(function ($month) {
+                $month['sales'] = $month['sales_cents'] / 100;
+                unset($month['sales_cents']);
+
+                return $month;
+            }, $months)),
+            'undated' => $undated, 'missingPrices' => $missingPrices, 'groupBy' => $groupBy,
+        ];
+
+        return view('admin.business-management.report', compact('totals', 'summaries', 'parties', 'products', 'groupBy', 'labelColumns', 'reportChartData'));
     }
 }
