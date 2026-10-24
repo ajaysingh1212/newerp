@@ -1,6 +1,6 @@
 (function (root) {
     'use strict';
-    const palette = ['#15949b', '#6f73ce', '#e8ab50', '#4385ba', '#d27ba2', '#5aaf8e', '#9173aa', '#75accc', '#d38862', '#7895a7', '#b9c8d6'];
+    const palette = ['#7c3aed', '#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#fb923c', '#22d3ee', '#a78bfa', '#ec4899', '#84cc16', '#94a3b8'];
     const metrics = {devices: 'Total devices', activated: 'Activated devices', pending: 'Pending devices', sales: 'Sales value'};
     function compactGroups(groups, metric, limit = 10) {
         const sorted = groups.map(group => ({label: group.label, value: Number(group[metric]) || 0})).sort((a, b) => b.value - a.value);
@@ -42,7 +42,7 @@
         const chartButtons = Array.from(document.querySelectorAll('[data-chart-type]'));
         const viewButtons = Array.from(document.querySelectorAll('[data-report-view]'));
         const reducedMotion = root.matchMedia('(prefers-reduced-motion: reduce)');
-        const types = ['pie', 'circle', 'bar', 'wave', 'candle'];
+        const types = ['pie', 'circle', 'bar', 'wave', 'radar', 'candle'];
         let type = types.includes(config.chart) ? config.chart : 'pie';
         let metric = Object.hasOwn(metrics, config.metric) ? config.metric : 'devices';
         let activeView = config.view === 'content' ? 'content' : 'charts';
@@ -89,7 +89,23 @@
         }
         function legendRows(items, moneyValues = false) {
             legend.replaceChildren();
+            const total = items.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
             items.forEach((item, index) => {
+                if (data.rankedLegend && item.value !== null) {
+                    const percentage = total ? item.value / total * 100 : 0;
+                    const row = document.createElement('div'); row.className = 'br-rank-item';
+                    const heading = document.createElement('div'); heading.className = 'br-rank-heading';
+                    const name = document.createElement('div'); name.className = 'br-rank-name';
+                    const dot = document.createElement('span'); dot.className = 'br-legend-dot'; dot.style.background = palette[index % palette.length];
+                    const label = document.createElement('span'); label.textContent = item.label;
+                    const numbers = document.createElement('div'); numbers.className = 'br-rank-values';
+                    const percent = document.createElement('strong'); percent.className = 'br-rank-percent'; percent.textContent = percentage.toFixed(2) + '%';
+                    const quantity = document.createElement('span'); quantity.className = 'br-rank-quantity'; quantity.textContent = format(item.value) + (metric === 'sales' ? ' sales' : ' qty');
+                    const track = document.createElement('div'); track.className = 'br-rank-track';
+                    const fill = document.createElement('span'); fill.className = 'br-rank-fill'; fill.style.width = Math.max(0, Math.min(100, percentage)) + '%'; fill.style.background = palette[index % palette.length];
+                    name.append(dot, label); numbers.append(percent, quantity); heading.append(name, numbers); track.append(fill); row.append(heading, track); legend.appendChild(row);
+                    return;
+                }
                 const row = document.createElement('div'); row.className = 'br-legend-item';
                 const dot = document.createElement('span'); dot.className = 'br-legend-dot'; dot.style.background = item.color || palette[index % palette.length];
                 const name = document.createElement('span'); name.className = 'br-legend-label'; name.textContent = item.label;
@@ -123,7 +139,7 @@
         }
         function pie(items, width, height, progress, ring) {
             const total = items.reduce((sum, item) => sum + item.value, 0);
-            const cx = width / 2, cy = height / 2 - 6, radius = Math.min(width * .37, height * .40), inner = ring ? radius * .71 : 0;
+            const cx = width / 2, cy = height / 2, radius = Math.min(width * .43, height * .47), inner = ring ? radius * .71 : 0;
             let angle = -Math.PI / 2;
             const point = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
             items.forEach((item, index) => {
@@ -138,7 +154,7 @@
                     } else path += ' L' + cx + ',' + cy + ' Z';
                     const mark = element('path', {d: path, fill: palette[index % palette.length], stroke: '#fff', 'stroke-width': items.length > 1 ? 3 : 0, 'stroke-linejoin': 'round'});
                     interactive(mark, item.label + '\n' + metrics[metric] + ': ' + format(item.value) + '\nShare: ' + (item.value / total * 100).toFixed(1) + '%', progress === 1);
-                    if (!ring && item.value / total > .065 && progress > .9) {
+                    if (!data.rankedLegend && !ring && item.value / total > .065 && progress > .9) {
                         const position = point(radius * .67, (angle + target) / 2);
                         label((item.value / total * 100).toFixed(0) + '%', position[0], position[1] + 4, {fill: '#fff', 'font-size': 13, 'font-weight': 700, 'text-anchor': 'middle', 'pointer-events': 'none'});
                     }
@@ -170,19 +186,19 @@
             const points = values.map((value, index) => [months.length === 1 ? (plot.left + plot.right) / 2 : plot.left + index / (months.length - 1) * (plot.right - plot.left), plot.y(value)]);
             const defs = element('defs');
             const gradient = element('linearGradient', {id: 'br-area-fill', x1: 0, y1: 0, x2: 0, y2: 1}, undefined, defs);
-            element('stop', {offset: '0%', 'stop-color': '#15949b', 'stop-opacity': .28}, undefined, gradient);
-            element('stop', {offset: '100%', 'stop-color': '#15949b', 'stop-opacity': .015}, undefined, gradient);
+            element('stop', {offset: '0%', 'stop-color': '#7c3aed', 'stop-opacity': .28}, undefined, gradient);
+            element('stop', {offset: '100%', 'stop-color': '#7c3aed', 'stop-opacity': .015}, undefined, gradient);
             const clip = element('clipPath', {id: 'br-wave-clip'}, undefined, defs);
             element('rect', {x: plot.left - 8, y: 0, width: (plot.right - plot.left + 16) * progress, height}, undefined, clip);
             const group = element('g', {'clip-path': 'url(#br-wave-clip)'});
             const path = wavePath(points);
             const baseline = plot.y(0);
             element('path', {d: path + ' L' + points[points.length - 1][0] + ',' + baseline + ' L' + points[0][0] + ',' + baseline + ' Z', fill: 'url(#br-area-fill)'}, undefined, group);
-            element('path', {d: path, fill: 'none', stroke: '#15949b', 'stroke-width': 3, 'stroke-linecap': 'round'}, undefined, group);
+            element('path', {d: path, fill: 'none', stroke: '#7c3aed', 'stroke-width': 3, 'stroke-linecap': 'round'}, undefined, group);
             if (progress === 1 && !reducedMotion.matches) element('path', {d: path, fill: 'none', stroke: '#ffffff', 'stroke-opacity': .7, 'stroke-width': 2, class: 'br-wave-flow'}, undefined, group);
             const interval = Math.max(1, Math.ceil(months.length / (width < 600 ? 4 : 8)));
             points.forEach((point, index) => {
-                const mark = element('circle', {cx: point[0], cy: point[1], r: months.length > 50 ? 3 : 4.5, fill: '#15949b', stroke: '#fff', 'stroke-width': 2}, undefined, group);
+                const mark = element('circle', {cx: point[0], cy: point[1], r: months.length > 50 ? 3 : 4.5, fill: '#7c3aed', stroke: '#fff', 'stroke-width': 2}, undefined, group);
                 interactive(mark, monthLabel(months[index].month) + '\n' + metrics[metric] + ': ' + format(values[index]), progress === 1);
                 if (index % interval === 0 || index === months.length - 1) label(monthLabel(months[index].month), point[0], plot.bottom + 26, {'text-anchor': 'middle'});
             });
@@ -204,6 +220,36 @@
                 if (index % interval === 0 || index === months.length - 1) label(monthLabel(month.month), x, plot.bottom + 26, {'text-anchor': 'middle'});
             });
         }
+        function radar(items, width, height, progress) {
+            const cx = width / 2, cy = height / 2, radius = Math.min(width * .33, height * .36);
+            const maximum = Math.max(...items.map(item => item.value), 1);
+            const axesCount = Math.max(3, items.length);
+            const point = (index, factor) => {
+                const angle = index / axesCount * Math.PI * 2 - Math.PI / 2;
+                return [cx + Math.cos(angle) * radius * factor, cy + Math.sin(angle) * radius * factor];
+            };
+            for (let level = 1; level <= 4; level++) {
+                const points = Array.from({length: axesCount}, (_, index) => point(index, level / 4).join(',')).join(' ');
+                element('polygon', {points, fill: 'none', stroke: '#e9e5fc', 'stroke-width': 1});
+            }
+            const points = [];
+            const interval = Math.max(1, Math.ceil(items.length / 10));
+            items.forEach((item, index) => {
+                const edge = point(index, 1), value = point(index, item.value / maximum * progress);
+                element('line', {x1: cx, y1: cy, x2: edge[0], y2: edge[1], stroke: '#ede9fe'});
+                points.push(value);
+                if (index % interval === 0) {
+                    const position = point(index, 1.16);
+                    const short = item.label.length > 16 ? item.label.slice(0, 14) + '…' : item.label;
+                    label(short, position[0], position[1] + 4, {'text-anchor': 'middle', 'font-size': 10});
+                }
+            });
+            element('polygon', {points: points.map(point => point.join(',')).join(' '), fill: '#7c3aed', 'fill-opacity': .17, stroke: '#7c3aed', 'stroke-width': 2});
+            points.forEach((point, index) => {
+                const mark = element('circle', {cx: point[0], cy: point[1], r: 4, fill: '#7c3aed', stroke: '#fff', 'stroke-width': 2});
+                interactive(mark, items[index].label + '\n' + metrics[metric] + ': ' + format(items[index].value), progress === 1);
+            });
+        }
         function render(animate = true) {
             if (animation) cancelAnimationFrame(animation);
             hideTooltip();
@@ -217,10 +263,15 @@
             metricSelect.title = type === 'candle' ? 'Candle chart uses recorded unit sale prices.' : 'Choose a chart metric';
             stage.setAttribute('aria-labelledby', 'chart-tab-' + type);
             const isRound = type === 'pie' || type === 'circle';
-            const distribution = isRound ? data.groups.filter(group => Number(group[metric]) > 0) : data.groups;
-            const items = compactGroups(distribution, metric);
+            const radial = isRound || type === 'radar';
+            const distribution = radial ? data.groups.filter(group => Number(group[metric]) > 0) : data.groups;
+            const items = compactGroups(distribution, metric, data.exactGroups ? Infinity : 10);
             const monthly = type === 'candle' ? data.months.filter(month => month.open !== null) : data.months;
-            const groupTitle = titleCase(data.groupBy);
+            const groupTitle = data.groupBy === 'model' ? 'Product' : titleCase(data.groupBy);
+            const totalNode = document.getElementById('report-chart-total');
+            const totalLabel = document.getElementById('report-total-label');
+            if (totalNode) totalNode.textContent = format(data.groups.reduce((sum, group) => sum + Number(group[metric] || 0), 0));
+            if (totalLabel) totalLabel.textContent = metrics[metric];
             document.getElementById('report-chart-title').textContent = type === 'wave' ? 'Monthly ' + metrics[metric].toLowerCase() : type === 'candle' ? 'Monthly sale price range' : groupTitle + ' distribution';
             document.getElementById('report-chart-subtitle').textContent = type === 'candle' ? 'Wick: lowest to highest unit price. Body: first to last recorded sale price in each month.' : type === 'wave' ? 'Monthly totals by device assignment date, using your current report filters.' : metrics[metric] + ' by ' + data.groupBy + ', using your current report filters.';
             let note = '';
@@ -231,18 +282,24 @@
                 document.getElementById('report-legend-title').textContent = type === 'candle' ? 'Price range guide' : 'Latest monthly totals';
                 legendRows(type === 'candle' ? [{label: 'Last price ≥ first price', value: null, color: '#15949b'}, {label: 'Last price < first price', value: null, color: '#8276c9'}, {label: 'Wick shows minimum / maximum', value: null, color: '#a9b8c9'}] : monthly.slice(-12).map(month => ({label: monthLabel(month.month), value: month[metric], color: '#15949b'})));
             } else {
-                note = distribution.length > 10 ? 'Top 10 groups shown individually; remaining groups are combined as Other. Full detail is available in Content.' : 'All matching groups are included. Full detail is available in Content.';
+                note = !data.exactGroups && distribution.length > 10 ? 'Top 10 groups shown individually; remaining groups are combined as Other. Full detail is available in Content.' : 'Every matching ' + (data.groupBy === 'model' ? 'product' : data.groupBy) + ' is shown separately with its exact quantity and share.';
                 if (metric === 'sales') note += ' ' + data.missingPrices + ' devices have no supplied sales price.';
-                if (isRound && data.groups.some(item => Number(item[metric]) < 0)) note += ' Pie and circle show positive values only; negative sales remain visible in Bar and Content.';
+                if (radial && data.groups.some(item => Number(item[metric]) < 0)) note += ' Pie, circle and radar show positive values only; negative sales remain visible in Bar and Content.';
                 document.getElementById('report-legend-title').textContent = metrics[metric];
                 legendRows(items);
             }
+            if (data.rankedLegend && type !== 'candle') {
+                document.getElementById('report-legend-title').textContent = groupTitle + ' quantities and percentages';
+                legendRows(items);
+                if (type === 'wave') note += ' The list shows the filtered ' + (data.groupBy === 'model' ? 'product' : data.groupBy) + ' quantities.';
+            }
             document.getElementById('report-chart-note').textContent = note;
+            document.getElementById('report-chart-note').hidden = data.rankedLegend && metric !== 'sales' && !['wave', 'candle'].includes(type);
             if (((type === 'wave' || type === 'candle') && !monthly.length) || ((type !== 'wave' && type !== 'candle') && (!items.length || items.every(item => item.value === 0)))) {
                 empty(type === 'candle' ? 'No dated sale prices are available for this selection.' : type === 'wave' ? 'No dated device records are available for this selection.' : 'No values to chart. Try a different metric or filter.');
                 return;
             }
-            const width = Math.max(300, Math.round(stage.clientWidth));
+            const width = type === 'bar' ? Math.max(300, Math.round(stage.clientWidth), items.length * 54 + 90) : Math.max(300, Math.round(stage.clientWidth));
             const height = Math.max(300, Math.round(stage.clientHeight));
             const started = performance.now();
             const duration = animate && !reducedMotion.matches ? 1150 : 0;
@@ -252,10 +309,12 @@
                 const progress = elapsed === 1 ? 1 : 1 - Math.pow(1 - elapsed, 3);
                 stage.replaceChildren();
                 svg = element('svg', {viewBox: '0 0 ' + width + ' ' + height, role: 'group', 'aria-label': document.getElementById('report-chart-title').textContent}, undefined, stage);
+                if (type === 'bar') svg.style.width = width + 'px';
                 if (isRound) pie(items, width, height, progress, type === 'circle');
                 if (type === 'bar') bars(items, width, height, progress);
                 if (type === 'wave') wave(monthly, width, height, progress);
                 if (type === 'candle') candles(monthly, width, height, progress);
+                if (type === 'radar') radar(items, width, height, progress);
                 if (elapsed < 1) animation = requestAnimationFrame(frame);
             }
             animation = requestAnimationFrame(frame);
@@ -272,6 +331,7 @@
             if (!tableReady) {
                 const table = root.BusinessTables;
                 table.init('#report-summary-table');
+                if (data.rankedLegend) table.init('#report-party-products-table');
                 const url = new URL(config.tableUrl);
                 new FormData(document.getElementById('report-filters')).forEach((value, key) => url.searchParams.set(key, value));
                 table.init('#report-devices-table', {processing: true, serverSide: true, ajax: url.toString(), columns: [
@@ -280,7 +340,7 @@
                 ]});
                 tableReady = true;
             }
-            jQuery('#report-summary-table, #report-devices-table').DataTable().columns.adjust();
+            jQuery('#report-summary-table, #report-party-products-table, #report-devices-table').DataTable().columns.adjust();
         }
         function selectView(view) {
             activeView = view;
@@ -308,6 +368,32 @@
         metricSelect.addEventListener('change', () => { metric = metricSelect.value; syncState(); render(); });
         document.getElementById('report-replay').addEventListener('click', () => render());
         document.getElementById('report-group').addEventListener('change', () => document.getElementById('report-filters').requestSubmit());
+        document.querySelectorAll('[data-report-group]').forEach(button => button.addEventListener('click', () => {
+            document.getElementById('report-group').value = button.dataset.reportGroup;
+            document.getElementById('report-filters').requestSubmit();
+        }));
+        const dateRange = document.getElementById('report-date-range');
+        if (dateRange) dateRange.addEventListener('change', () => {
+            const custom = dateRange.value === 'custom';
+            document.getElementById('report-custom-range').hidden = !custom;
+            ['report-from', 'report-to'].forEach(id => { document.getElementById(id).disabled = !custom; });
+        });
+        if (data.locations) {
+            const state = document.getElementById('report-state'), district = document.getElementById('report-district'), city = document.getElementById('report-city');
+            const options = (select, values, placeholder) => {
+                const selected = select.value;
+                select.replaceChildren(new Option(placeholder, ''));
+                Array.from(new Set(values.filter(value => value && value.trim()))).sort((a, b) => a.localeCompare(b)).forEach(value => select.add(new Option(value, value)));
+                select.value = Array.from(select.options).some(option => option.value === selected) ? selected : '';
+            };
+            const updateLocations = () => {
+                const rows = data.locations.filter(row => !state.value || row.state === state.value);
+                options(district, rows.map(row => row.district), 'All Districts');
+                options(city, rows.filter(row => !district.value || row.district === district.value).map(row => row.city), 'All Cities');
+            };
+            state.addEventListener('change', updateLocations); district.addEventListener('change', updateLocations);
+            updateLocations();
+        }
         let previousWidth = stage.clientWidth;
         if ('ResizeObserver' in root) new ResizeObserver(() => {
             if (activeView === 'charts' && stage.clientWidth !== previousWidth) { previousWidth = stage.clientWidth; render(false); }

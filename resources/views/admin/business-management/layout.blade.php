@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{{ asset('css/business-management.css') }}">
 @endsection
 @section('content')
-<div class="bm-workspace">
+<div class="bm-workspace @yield('business-workspace-class')">
     <header class="bm-hero">
         <div><div class="bm-eyebrow"><span class="bm-live-dot"></span> BUSINESS OPERATIONS</div><h1>@yield('business-title', 'Business Management')</h1><p>@yield('business-description', 'One workspace for your parties, devices and activations.')</p></div>
         <div class="bm-hero-icon" aria-hidden="true"><i class="fas @yield('business-icon', 'fa-briefcase')"></i></div>

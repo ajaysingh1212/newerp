@@ -222,7 +222,21 @@ class BusinessManagementController extends Controller
             'state' => ['nullable', 'string', 'max:255'], 'district' => ['nullable', 'string', 'max:255'], 'city' => ['nullable', 'string', 'max:255'],
             'group_by' => ['nullable', Rule::in(['party', 'model', 'state', 'district', 'city'])],
             'export' => ['nullable', Rule::in(['xlsx', 'csv'])],
+            'date_range' => ['nullable', Rule::in(['all', 'today', 'week', 'month', 'year', 'custom'])],
         ]);
+        $dateRange = $request->input('date_range', $request->filled('from') || $request->filled('to') ? 'custom' : 'all');
+        if (in_array($dateRange, ['today', 'week', 'month', 'year'], true)) {
+            $today = Carbon::now('Asia/Kolkata')->startOfDay();
+            [$from, $to] = match ($dateRange) {
+                'today' => [$today->copy(), $today->copy()],
+                'week' => [$today->copy()->startOfWeek(), $today->copy()->endOfWeek()],
+                'month' => [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()],
+                default => [$today->copy()->startOfYear(), $today->copy()->endOfYear()],
+            };
+            $request->merge(['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')]);
+        } elseif ($dateRange === 'all' && $request->has('date_range')) {
+            $request->merge(['from' => null, 'to' => null]);
+        }
         $query = BusinessDevice::query();
         foreach (['party_id' => 'manual_party_id', 'product_id' => 'manual_product_id', 'status' => 'status'] as $filter => $column) {
             if ($request->filled($filter)) {
@@ -238,7 +252,7 @@ class BusinessManagementController extends Controller
             $query->where('business_devices.assigned_at', '>=', $request->input('from'));
         }
         if ($request->filled('to')) {
-            $query->where('business_devices.assigned_at', '<=', $request->input('to'));
+            $query->where('business_devices.assigned_at', '<', Carbon::parse($request->input('to'))->addDay()->format('Y-m-d'));
         }
         if ($request->filled('export')) {
             return Excel::download(new BusinessReportExport(clone $query), 'business-report.'.$request->input('export'));
@@ -247,7 +261,7 @@ class BusinessManagementController extends Controller
             return $this->deviceTable($query);
         }
         $totals = (clone $query)->selectRaw("COUNT(*) as devices, COALESCE(SUM(sales_price), 0) as sales, COALESCE(SUM(CASE WHEN status = 'activated' THEN 1 ELSE 0 END), 0) as activated")->first();
-        $groupBy = $request->input('group_by', 'party');
+        $groupBy = $request->input('group_by') ?: 'model';
         $columns = match ($groupBy) {
             'model' => ['manual_products.id', 'manual_products.name'],
             'state' => ['manual_parties.state'],
@@ -265,6 +279,20 @@ class BusinessManagementController extends Controller
         }
         $summaries = $summaryQuery->selectRaw("COUNT(*) as devices, SUM(business_devices.sales_price) as sales, SUM(CASE WHEN business_devices.status = 'activated' THEN 1 ELSE 0 END) as activated")
             ->groupBy(...$columns)->orderBy($columns[0])->get();
+        $reportStats = [
+            'parties' => (clone $query)->distinct()->count('business_devices.manual_party_id'),
+            'products' => (clone $query)->distinct()->count('business_devices.manual_product_id'),
+            'states' => ManualParty::withTrashed()->whereIn('id', (clone $query)->select('business_devices.manual_party_id'))->whereNotNull('state')->whereRaw("TRIM(state) <> ''")->distinct()->count('state'),
+        ];
+        $partyProducts = DB::table('business_devices')
+            ->join('manual_parties', 'manual_parties.id', '=', 'business_devices.manual_party_id')
+            ->leftJoin('manual_products', 'manual_products.id', '=', 'business_devices.manual_product_id')
+            ->whereIn('business_devices.id', (clone $query)->select('business_devices.id'))
+            ->select(['manual_parties.id as party_id', 'manual_parties.name as party_name', 'manual_products.id as product_id', 'manual_products.name as product_name'])
+            ->selectRaw("COUNT(*) as devices, SUM(CASE WHEN business_devices.status = 'activated' THEN 1 ELSE 0 END) as activated, SUM(business_devices.sales_price) as sales")
+            ->groupBy('manual_parties.id', 'manual_parties.name', 'manual_products.id', 'manual_products.name')
+            ->orderBy('manual_parties.name')->orderBy('manual_products.name')->get();
+        $reportLocations = ManualParty::select('state', 'district', 'city')->distinct()->get();
         $parties = ManualParty::orderBy('name')->get();
         $products = ManualProduct::orderBy('name')->get();
 
@@ -317,8 +345,9 @@ class BusinessManagementController extends Controller
                 return $month;
             }, $months)),
             'undated' => $undated, 'missingPrices' => $missingPrices, 'groupBy' => $groupBy,
+            'locations' => $reportLocations, 'exactGroups' => true, 'rankedLegend' => true,
         ];
 
-        return view('admin.business-management.report', compact('totals', 'summaries', 'parties', 'products', 'groupBy', 'labelColumns', 'reportChartData'));
+        return view('admin.business-management.report', compact('totals', 'summaries', 'parties', 'products', 'groupBy', 'labelColumns', 'reportChartData', 'reportStats', 'partyProducts', 'reportLocations', 'dateRange'));
     }
 }

@@ -41,7 +41,7 @@ function harness(dataOverride) {
     const ids = new Map();
     const get = id => { if (!ids.has(id)) ids.set(id, new Node()); return ids.get(id); };
     const views = ['charts', 'content'].map(value => { const button = get(value + '-tab'); button.dataset.reportView = value; return button; });
-    const types = ['pie', 'circle', 'bar', 'wave', 'candle'].map(value => { const button = get('chart-tab-' + value); button.dataset.chartType = value; return button; });
+    const types = ['pie', 'circle', 'bar', 'wave', 'radar', 'candle'].map(value => { const button = get('chart-tab-' + value); button.dataset.chartType = value; return button; });
     const stage = get('report-chart-stage'); stage.parentElement = new Node();
     let frameId = 0, tableCount = 0;
     const frames = new Map();
@@ -67,7 +67,7 @@ function harness(dataOverride) {
     return {get, views, types, context, flush, stage, tables: () => tableCount};
 }
 
-test('all five charts render finite SVG geometry, with safe text and isolated Content tables', () => {
+test('all chart types render finite SVG geometry, with safe text and isolated Content tables', () => {
     const app = harness();
     assert.equal(app.tables(), 0);
     for (const button of app.types) {
@@ -94,6 +94,29 @@ test('negative sales have an explicit pie exclusion note and bar retains negativ
     assert.ok(!app.get('report-chart-legend').textContent.includes('Party B'));
     app.types[2].fire('click'); app.flush();
     assert.ok(app.get('report-chart-legend').textContent.includes('-20.00'));
+});
+test('reference layout lists every filtered product with its exact quantity and percentage', () => {
+    const groups = Array.from({length: 23}, (_, index) => ({label: 'Product ' + index, devices: index + 1, activated: 0, pending: index + 1, sales: 0}));
+    const app = harness({groupBy: 'model', groups, months: [], undated: 0, missingPrices: 0, exactGroups: true, rankedLegend: true});
+    const legend = app.get('report-chart-legend');
+    assert.equal(legend.children.length, 23);
+    assert.ok(legend.children[0].textContent.includes('23 qty'));
+    assert.ok(legend.children[0].textContent.includes('8.33%'));
+    assert.ok(!legend.textContent.includes('Other'));
+    assert.equal(app.get('report-chart-total').textContent, '276');
+    const radar = app.types.find(button => button.dataset.chartType === 'radar');
+    radar.fire('click'); app.flush();
+    assert.ok(app.stage.outerHTML.includes('polygon'));
+    assert.equal(legend.children.length, 23);
+    app.views[1].fire('click');
+    assert.equal(app.tables(), 3);
+    const range = app.get('report-date-range');
+    range.value = 'custom'; range.fire('change');
+    assert.equal(app.get('report-custom-range').hidden, false);
+    assert.equal(app.get('report-from').disabled, false);
+    range.value = 'all'; range.fire('change');
+    assert.equal(app.get('report-custom-range').hidden, true);
+    assert.equal(app.get('report-from').disabled, true);
 });
 test('empty data has a useful message for every chart and keyboard tab navigation works', () => {
     const app = harness({groups: [], months: [], undated: 0, missingPrices: 0, groupBy: 'model'});

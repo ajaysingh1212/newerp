@@ -1,67 +1,75 @@
 @extends('admin.business-management.layout')
-@section('business-title', 'Reports & insights')
-@section('business-description', 'Explore your business visually, or switch to Content for the complete report.')
-@section('business-icon', 'fa-chart-pie')
+@section('business-workspace-class', 'br-reference-workspace')
 @section('styles')
 @parent
 <link rel="stylesheet" href="{{ asset('css/business-reports.css') }}">
 @endsection
 @section('business-content')
-<div class="bm-stats br-stats">
-    <div class="bm-stat"><div class="bm-stat-label">Total devices <i class="fas fa-cubes"></i></div><div class="bm-stat-value" data-report-count="{{ $totals->devices }}">{{ number_format($totals->devices) }}</div><small>Current report selection</small></div>
-    <div class="bm-stat" style="--accent:#218960"><div class="bm-stat-label">Activated <i class="fas fa-check-circle"></i></div><div class="bm-stat-value" data-report-count="{{ $totals->activated }}">{{ number_format($totals->activated) }}</div><small>{{ $totals->devices ? number_format($totals->activated / $totals->devices * 100, 1) : 0 }}% activation rate</small></div>
-    <div class="bm-stat" style="--accent:#ba8428"><div class="bm-stat-label">Pending <i class="fas fa-clock"></i></div><div class="bm-stat-value" data-report-count="{{ $totals->devices - $totals->activated }}">{{ number_format($totals->devices - $totals->activated) }}</div><small>Awaiting activation</small></div>
-    <div class="bm-stat" style="--accent:#7961b6"><div class="bm-stat-label">Sales value <i class="fas fa-wallet"></i></div><div class="bm-stat-value" data-report-count="{{ $totals->sales }}" data-decimals="2">{{ number_format($totals->sales, 2) }}</div><small>Known sales values only</small></div>
+<h1 class="sr-only">Business Management Report</h1>
+<div class="br-kpis">
+    <div class="br-kpi"><div class="br-kpi-icon"><i class="fas fa-bolt"></i></div><div class="br-kpi-value" data-report-count="{{ $totals->devices }}">{{ number_format($totals->devices) }}</div><div class="br-kpi-label">Total devices</div></div>
+    <div class="br-kpi"><div class="br-kpi-icon"><i class="fas fa-user-tie"></i></div><div class="br-kpi-value" data-report-count="{{ $reportStats['parties'] }}">{{ number_format($reportStats['parties']) }}</div><div class="br-kpi-label">Parties involved</div></div>
+    <div class="br-kpi"><div class="br-kpi-icon"><i class="fas fa-box"></i></div><div class="br-kpi-value" data-report-count="{{ $reportStats['products'] }}">{{ number_format($reportStats['products']) }}</div><div class="br-kpi-label">Products involved</div></div>
+    <div class="br-kpi"><div class="br-kpi-icon"><i class="fas fa-map-marker-alt"></i></div><div class="br-kpi-value" data-report-count="{{ $reportStats['states'] }}">{{ number_format($reportStats['states']) }}</div><div class="br-kpi-label">States covered</div></div>
 </div>
-<details class="br-filters">
-    <summary><span><i class="fas fa-sliders-h"></i> Filters & exports</span><span class="br-filter-hint">Party, model, location & dates <i class="fas fa-chevron-down"></i></span></summary>
-    <form method="GET" id="report-filters" class="br-filter-body">
+<div class="br-filter-bar">
+    <form method="GET" id="report-filters">
         <input type="hidden" name="view" id="report-view" value="{{ request('view', 'charts') }}">
         <input type="hidden" name="chart" id="report-chart" value="{{ request('chart', 'pie') }}">
         <input type="hidden" name="metric" id="report-metric" value="{{ request('metric', 'devices') }}">
-        <div class="form-row">
-            <div class="form-group col-md-4"><label for="report-party">Party</label><select id="report-party" class="form-control select2" name="party_id"><option value="">All parties</option>@foreach($parties as $party)<option value="{{ $party->id }}" {{ (string)request('party_id') === (string)$party->id ? 'selected' : '' }}>{{ $party->name }}</option>@endforeach</select></div>
-            <div class="form-group col-md-4"><label for="report-model">Model</label><select id="report-model" class="form-control select2" name="product_id"><option value="">All models</option>@foreach($products as $product)<option value="{{ $product->id }}" {{ (string)request('product_id') === (string)$product->id ? 'selected' : '' }}>{{ $product->name }}</option>@endforeach</select></div>
-            <div class="form-group col-md-4"><label for="report-status">Status</label><select id="report-status" class="form-control" name="status"><option value="">All statuses</option>@foreach(['pending', 'activated'] as $status)<option value="{{ $status }}" {{ request('status') === $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>@endforeach</select></div>
-            @foreach(['state', 'district', 'city'] as $location)<div class="form-group col-md-4"><label for="report-{{ $location }}">{{ ucfirst($location) }}</label><input id="report-{{ $location }}" class="form-control" name="{{ $location }}" value="{{ request($location) }}" placeholder="All locations" maxlength="255"></div>@endforeach
-            <div class="form-group col-md-6"><label for="report-from">Assigned from</label><input id="report-from" class="form-control" type="date" name="from" value="{{ request('from') }}"></div>
-            <div class="form-group col-md-6"><label for="report-to">Assigned to</label><input id="report-to" class="form-control" type="date" name="to" value="{{ request('to') }}"></div>
+        <input type="hidden" name="group_by" id="report-group" value="{{ $groupBy }}">
+        <div class="br-filter-grid">
+            <div><label for="report-party">Party</label><select id="report-party" class="form-control" name="party_id"><option value="">All Parties</option>@foreach($parties as $party)<option value="{{ $party->id }}" {{ (string)request('party_id') === (string)$party->id ? 'selected' : '' }}>{{ $party->name }}</option>@endforeach</select></div>
+            <div><label for="report-model">Product / item</label><select id="report-model" class="form-control" name="product_id"><option value="">All Products</option>@foreach($products as $product)<option value="{{ $product->id }}" {{ (string)request('product_id') === (string)$product->id ? 'selected' : '' }}>{{ $product->name }}</option>@endforeach</select></div>
+            <div><label for="report-status">Status</label><select id="report-status" class="form-control" name="status"><option value="">All Statuses</option>@foreach(['pending', 'activated'] as $status)<option value="{{ $status }}" {{ request('status') === $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>@endforeach</select></div>
+            @foreach(['state', 'district', 'city'] as $location)
+                @php($locationValues = $reportLocations->pluck($location)->filter(fn ($value) => $value !== null && trim($value) !== '')->unique()->sort()->values())
+                <div><label for="report-{{ $location }}">{{ ucfirst($location) }}</label><select id="report-{{ $location }}" class="form-control" name="{{ $location }}"><option value="">All {{ $location === 'city' ? 'Cities' : ucfirst($location).'s' }}</option>@foreach($locationValues as $value)<option value="{{ $value }}" {{ request($location) === $value ? 'selected' : '' }}>{{ $value }}</option>@endforeach</select></div>
+            @endforeach
+            <div><label for="report-date-range">Date range</label><select id="report-date-range" name="date_range" class="form-control">@foreach(['all' => 'All Time', 'today' => 'Today', 'week' => 'This Week', 'month' => 'This Month', 'year' => 'This Year', 'custom' => 'Custom Range'] as $value => $label)<option value="{{ $value }}" {{ $dateRange === $value ? 'selected' : '' }}>{{ $label }}</option>@endforeach</select></div>
+            <button class="btn br-apply"><i class="fas fa-filter"></i> Apply</button><a class="btn br-reset" href="{{ route('admin.business-management.report') }}"><i class="fas fa-redo-alt"></i> Reset</a>
         </div>
-        <div class="bm-actions"><button class="btn btn-primary"><i class="fas fa-filter mr-1"></i> Apply filters</button><button class="btn btn-light" name="export" value="xlsx"><i class="fas fa-file-excel mr-1"></i> Excel</button><button class="btn btn-light" name="export" value="csv"><i class="fas fa-file-csv mr-1"></i> CSV</button><a class="btn btn-light" href="{{ route('admin.business-management.report') }}">Reset</a></div>
+        <div id="report-custom-range" class="br-custom-range" {{ $dateRange !== 'custom' ? 'hidden' : '' }}><div><label for="report-from">Assigned from</label><input id="report-from" class="form-control" type="date" name="from" value="{{ request('from') }}" {{ $dateRange !== 'custom' ? 'disabled' : '' }}></div><div><label for="report-to">Assigned to</label><input id="report-to" class="form-control" type="date" name="to" value="{{ request('to') }}" {{ $dateRange !== 'custom' ? 'disabled' : '' }}></div></div>
     </form>
-</details>
-<div class="br-view-toolbar">
-    <div class="br-view-tabs" role="tablist" aria-label="Report view">
-        <button type="button" id="charts-tab" role="tab" aria-selected="true" aria-controls="charts-panel" data-report-view="charts"><i class="fas fa-chart-pie"></i> Charts</button>
-        <button type="button" id="content-tab" role="tab" aria-selected="false" aria-controls="content-panel" data-report-view="content" tabindex="-1"><i class="fas fa-list-alt"></i> Content</button>
-    </div>
-    <div class="br-group-control"><label for="report-group">Group by</label><select id="report-group" class="form-control" name="group_by" form="report-filters">@foreach(['party', 'model', 'state', 'district', 'city'] as $group)<option value="{{ $group }}" {{ $groupBy === $group ? 'selected' : '' }}>{{ ucfirst($group) }}</option>@endforeach</select></div>
 </div>
-<section id="charts-panel" role="tabpanel" aria-labelledby="charts-tab">
-    <div class="card br-chart-card"><div class="card-header"><div><div class="bm-kicker">VISUAL REPORT</div><h4 id="report-chart-title">Party distribution</h4><p id="report-chart-subtitle">Switch between charts to explore the same filtered report.</p></div><button type="button" id="report-replay" class="btn btn-light" title="Replay chart animation"><i class="fas fa-redo-alt"></i><span class="br-replay-label"> Replay</span></button></div>
-        <div class="br-chart-controls">
-            <div class="br-chart-tabs" role="tablist" aria-label="Chart type">
-                @foreach(['pie' => ['fa-chart-pie', 'Pie'], 'circle' => ['fa-circle-notch', 'Circle'], 'bar' => ['fa-chart-bar', 'Bar'], 'wave' => ['fa-chart-area', 'Wave'], 'candle' => ['fa-sliders-h', 'Candle']] as $type => $chart)
-                    <button type="button" id="chart-tab-{{ $type }}" role="tab" aria-selected="{{ $type === 'pie' ? 'true' : 'false' }}" aria-controls="report-chart-stage" data-chart-type="{{ $type }}" tabindex="{{ $type === 'pie' ? '0' : '-1' }}"><i class="fas {{ $chart[0] }}"></i>{{ $chart[1] }}</button>
-                @endforeach
-            </div>
-            <div class="br-metric-control"><label class="sr-only" for="chart-metric">Chart metric</label><select class="form-control" id="chart-metric"><option value="devices">Total devices</option><option value="activated">Activated</option><option value="pending">Pending</option><option value="sales">Sales value</option></select></div>
-        </div>
-        <div class="br-chart-layout">
-            <div class="br-plot-wrap"><div id="report-chart-stage" class="br-chart-stage" role="tabpanel" aria-labelledby="chart-tab-pie"></div><div id="report-chart-tooltip" class="br-chart-tooltip" role="tooltip" hidden></div><p id="report-chart-note" class="br-chart-note" aria-live="polite"></p></div>
-            <aside class="br-chart-aside" aria-label="Chart data legend"><h5 id="report-legend-title">Distribution</h5><div id="report-chart-legend"></div><p class="br-legend-tip"><i class="fas fa-mouse-pointer"></i> Hover or focus a chart item to see its value.</p></aside>
+<div class="br-main-card">
+    <div class="br-card-top">
+        <div><div id="report-total-label" class="br-total-label">Total devices</div><div id="report-chart-total" class="br-total-value">{{ number_format($totals->devices) }}</div></div>
+        <div class="br-chart-tabs" role="tablist" aria-label="Chart type">
+            @foreach(['pie' => ['fa-chart-pie', 'Pie'], 'circle' => ['fa-circle-notch', 'Donut'], 'bar' => ['fa-chart-bar', 'Bar'], 'wave' => ['fa-wave-square', 'Wave'], 'radar' => ['fa-braille', 'Radar']] as $type => $chart)
+                <button type="button" id="chart-tab-{{ $type }}" role="tab" aria-selected="{{ $type === 'pie' ? 'true' : 'false' }}" aria-controls="report-chart-stage" data-chart-type="{{ $type }}" tabindex="{{ $type === 'pie' ? '0' : '-1' }}"><i class="fas {{ $chart[0] }}"></i>{{ $chart[1] }}</button>
+            @endforeach
         </div>
     </div>
-</section>
-<section id="content-panel" role="tabpanel" aria-labelledby="content-tab" hidden>
-    <div class="card"><div class="card-header"><div><h4>{{ ucfirst($groupBy) }} summary</h4><p>Complete values for every group in the current selection.</p></div><span class="bm-status neutral">{{ $summaries->count() }} groups</span></div><div class="card-body">
-        <table id="report-summary-table" class="table table-striped"><thead><tr><th>{{ ucfirst($groupBy) }}</th><th>Devices</th><th>Activated</th><th>Pending</th><th>Sales value</th></tr></thead><tbody>@foreach($summaries as $summary)<tr><td>@foreach($labelColumns as $index => $column){{ $index ? ' / ' : '' }}{{ trim((string)$summary->{'label_'.$index}) ?: 'Not supplied' }}@endforeach</td><td>{{ $summary->devices }}</td><td>{{ $summary->activated }}</td><td>{{ $summary->devices - $summary->activated }}</td><td data-order="{{ $summary->sales }}">{{ $summary->sales !== null ? number_format($summary->sales, 2) : 'Not supplied' }}</td></tr>@endforeach</tbody></table>
-    </div></div>
-    <div class="card"><div class="card-header"><div><h4>Device details</h4><p>Search the complete filtered device report.</p></div></div><div class="card-body">
-        <table id="report-devices-table" class="table table-striped"><thead><tr><th>Party</th><th>State / district / city</th><th>Model</th><th>VTS number</th><th>IMEI number</th><th>SIM number</th><th>Sales price</th><th>Assigned date</th><th>Status</th><th>Activated by / at</th></tr></thead><tbody></tbody></table>
-    </div></div>
-</section>
-<noscript><p class="bm-note">Charts need JavaScript. Use Excel or CSV in Filters & exports to download the report.</p></noscript>
+    <div class="br-group-row">
+        <div><div class="br-group-label">Group by</div><div class="br-group-chips" aria-label="Group report by">
+            @foreach(['model' => 'Product', 'party' => 'Party', 'state' => 'State', 'district' => 'District', 'city' => 'City'] as $value => $label)<button type="button" data-report-group="{{ $value }}" aria-pressed="{{ $groupBy === $value ? 'true' : 'false' }}">{{ $label }}</button>@endforeach
+        </div></div>
+        <div class="br-secondary-controls">
+            <div class="br-view-tabs" role="tablist" aria-label="Report view"><button type="button" id="charts-tab" role="tab" aria-selected="true" aria-controls="charts-panel" data-report-view="charts">Charts</button><button type="button" id="content-tab" role="tab" aria-selected="false" aria-controls="content-panel" data-report-view="content" tabindex="-1">Content</button></div>
+            <label class="sr-only" for="chart-metric">Metric</label><select class="form-control br-metric-select" id="chart-metric"><option value="devices">Device quantity</option><option value="activated">Activated quantity</option><option value="pending">Pending quantity</option><option value="sales">Sales value</option></select>
+            <button type="button" id="report-replay" class="br-replay" title="Replay animation"><i class="fas fa-redo-alt"></i><span class="sr-only">Replay animation</span></button>
+        </div>
+    </div>
+    <section id="charts-panel" role="tabpanel" aria-labelledby="charts-tab">
+        <h2 id="report-chart-title" class="sr-only">Product distribution</h2><p id="report-chart-subtitle" class="sr-only"></p>
+        <div class="br-chart-layout">
+            <div class="br-plot-wrap"><div id="report-chart-stage" class="br-chart-stage" role="tabpanel" aria-labelledby="chart-tab-pie"></div><div id="report-chart-tooltip" class="br-chart-tooltip" role="tooltip" hidden></div></div>
+            <aside class="br-chart-aside" aria-label="Filtered quantities and percentages"><h3 id="report-legend-title" class="sr-only">Product quantities</h3><div id="report-chart-legend"></div></aside>
+        </div>
+        <p id="report-chart-note" class="br-chart-note" aria-live="polite"></p>
+    </section>
+    <section id="content-panel" role="tabpanel" aria-labelledby="content-tab" hidden>
+        <div class="br-content-toolbar"><strong>Filtered report content</strong><div class="bm-actions"><button class="btn btn-light" form="report-filters" name="export" value="xlsx">Export Excel</button><button class="btn btn-light" form="report-filters" name="export" value="csv">Export CSV</button></div></div>
+        <h3 class="br-content-title">Party × product quantities</h3>
+        <table id="report-party-products-table" class="table table-striped"><thead><tr><th>Party</th><th>Product / item</th><th>Quantity</th><th>Activated</th><th>Pending</th><th>Sales value</th></tr></thead><tbody>@foreach($partyProducts as $item)<tr><td>{{ $item->party_name }}</td><td>{{ $item->product_name ?? 'Not supplied' }}</td><td>{{ $item->devices }}</td><td>{{ $item->activated }}</td><td>{{ $item->devices - $item->activated }}</td><td data-order="{{ $item->sales }}">{{ $item->sales !== null ? number_format($item->sales, 2) : 'Not supplied' }}</td></tr>@endforeach</tbody></table>
+        <h3 class="br-content-title">{{ $groupBy === 'model' ? 'Product' : ucfirst($groupBy) }} summary</h3>
+        <table id="report-summary-table" class="table table-striped"><thead><tr><th>{{ $groupBy === 'model' ? 'Product' : ucfirst($groupBy) }}</th><th>Quantity</th><th>Activated</th><th>Pending</th><th>Sales value</th></tr></thead><tbody>@foreach($summaries as $summary)<tr><td>@foreach($labelColumns as $index => $column){{ $index ? ' / ' : '' }}{{ trim((string)$summary->{'label_'.$index}) ?: 'Not supplied' }}@endforeach</td><td>{{ $summary->devices }}</td><td>{{ $summary->activated }}</td><td>{{ $summary->devices - $summary->activated }}</td><td data-order="{{ $summary->sales }}">{{ $summary->sales !== null ? number_format($summary->sales, 2) : 'Not supplied' }}</td></tr>@endforeach</tbody></table>
+        <h3 class="br-content-title">Device details</h3>
+        <table id="report-devices-table" class="table table-striped"><thead><tr><th>Party</th><th>State / district / city</th><th>Product</th><th>VTS number</th><th>IMEI number</th><th>SIM number</th><th>Sales price</th><th>Assigned date</th><th>Status</th><th>Activated by / at</th></tr></thead><tbody></tbody></table>
+    </section>
+</div>
+<noscript><p>Enable JavaScript for animated charts. The complete content can be downloaded from the report exports.</p></noscript>
 @endsection
 @section('business-scripts')
 <script>

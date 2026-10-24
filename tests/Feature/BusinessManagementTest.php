@@ -8,6 +8,7 @@ use App\Models\ManualParty;
 use App\Models\ManualProduct;
 use App\Models\Role;
 use App\Models\User;
+use Carbon\Carbon;
 use Database\Seeders\BusinessManagementPermissionsSeeder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\UploadedFile;
@@ -354,6 +355,42 @@ class BusinessManagementTest extends TestCase
         $this->assertStringContainsString('manual_party_id,manual_product_id,vts_number,sim_number,sales_price', $template->streamedContent());
     }
 
+    public function test_party_product_quantities_and_kpis_follow_the_same_filters(): void
+    {
+        $sensor = ManualProduct::create(['name' => 'Sensor']);
+        $other = ManualParty::create(['name' => 'Party B', 'state' => 'Gujarat', 'district' => 'Surat', 'city' => 'Surat']);
+        $row = $this->payload()['devices'][0];
+        $this->post(route('admin.business-management.store'), $this->payload([
+            array_merge($row, ['vts_number' => 'tracker-1']), array_merge($row, ['vts_number' => 'tracker-2']),
+            array_merge($row, ['manual_product_id' => $sensor->id, 'vts_number' => 'sensor-1']),
+        ]))->assertSessionHasNoErrors();
+        $otherData = $this->payload();
+        $otherData['manual_party_id'] = $other->id;
+        $otherData['devices'][0]['vts_number'] = 'other-device';
+        $this->post(route('admin.business-management.store'), $otherData)->assertSessionHasNoErrors();
+        $this->travelTo(Carbon::parse('2026-10-24 12:00:00', 'Asia/Kolkata'));
+        $response = $this->get(route('admin.business-management.report', ['party_id' => $this->party->id]))->assertOk();
+        $this->assertSame('model', $response->viewData('groupBy'));
+        $this->assertSame(['parties' => 1, 'products' => 2, 'states' => 1], $response->viewData('reportStats'));
+        $quantities = $response->viewData('partyProducts');
+        $this->assertSame(2, $quantities->count());
+        $this->assertSame(2, (int) $quantities->firstWhere('product_name', 'Tracker')->devices);
+        $this->assertSame(1, (int) $quantities->firstWhere('product_name', 'Sensor')->devices);
+        $this->assertSame(3, $response->viewData('reportChartData')['groups']->sum('devices'));
+        $this->assertTrue($response->viewData('reportChartData')['exactGroups']);
+        $response = $this->get(route('admin.business-management.report', ['party_id' => $this->party->id, 'product_id' => $sensor->id, 'date_range' => 'today']))->assertOk();
+        $this->assertSame(1, $response->viewData('partyProducts')->count());
+        $this->assertSame('Sensor', $response->viewData('reportChartData')['groups']->first()['label']);
+        $this->assertSame(['parties' => 1, 'products' => 1, 'states' => 1], $response->viewData('reportStats'));
+        $response = $this->get(route('admin.business-management.report', ['state' => 'Gujarat', 'district' => 'Surat', 'city' => 'Surat']))->assertOk();
+        $this->assertSame('Party B', $response->viewData('partyProducts')->first()->party_name);
+        $this->assertSame(1, $response->viewData('reportChartData')['groups']->sum('devices'));
+        $all = $this->get(route('admin.business-management.report', ['date_range' => 'all', 'from' => '2027-01-01', 'to' => '2027-01-31']))->assertOk();
+        $this->assertSame(4, $all->viewData('reportChartData')['groups']->sum('devices'));
+        $this->assertSame(['parties' => 2, 'products' => 2, 'states' => 2], $all->viewData('reportStats'));
+        $this->get(route('admin.business-management.report', ['date_range' => 'unknown']))->assertSessionHasErrors('date_range');
+    }
+
     public function test_report_charts_reconcile_filtered_totals_monthly_gaps_and_price_candles(): void
     {
         foreach ([['2026-01-01', '100.10', 'jan-first'], ['2026-01-20', '20.00', 'jan-last'], ['2026-03-01', '50.25', 'march']] as [$date, $price, $vts]) {
@@ -366,7 +403,7 @@ class BusinessManagementTest extends TestCase
         BusinessDevice::create(['manual_party_id' => $this->party->id, 'manual_product_id' => $this->product->id, 'vts_number' => 'undated', 'sales_price' => null, 'assigned_at' => null]);
         $this->post(route('admin.business-management.activate', BusinessDevice::where('vts_number', 'jan-first')->firstOrFail()));
         $response = $this->get(route('admin.business-management.report'))->assertOk()
-            ->assertSee('business-reports.js')->assertSee('data-chart-type="candle"', false)
+            ->assertSee('business-reports.js')->assertSee('data-chart-type="radar"', false)
             ->assertSee('id="content-panel" role="tabpanel" aria-labelledby="content-tab" hidden', false);
         $chart = $response->viewData('reportChartData');
         $this->assertSame(4, $chart['groups']->sum('devices'));
