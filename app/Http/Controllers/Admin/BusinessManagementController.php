@@ -105,9 +105,23 @@ class BusinessManagementController extends Controller
     {
         $this->authorizeAction('edit');
         $this->decodeRows($request);
-        $data = $request->validate($service->rules(1, $businessDevice));
+        $data = $request->validate($service->rules(1, $businessDevice) + [
+            'status' => ['sometimes', 'required', Rule::in(['pending', 'activated'])],
+        ]);
         abort_unless((int) $data['quantity'] === 1, 422);
-        $businessDevice->update(array_merge($data['devices'][0], ['manual_party_id' => $data['manual_party_id'], 'assigned_at' => $data['assigned_at']]));
+        DB::transaction(function () use ($data, $businessDevice) {
+            $device = BusinessDevice::whereKey($businessDevice->id)->lockForUpdate()->firstOrFail();
+            $device->fill(array_merge($data['devices'][0], ['manual_party_id' => $data['manual_party_id'], 'assigned_at' => $data['assigned_at']]));
+            if (isset($data['status']) && $data['status'] !== $device->status) {
+                if ($data['status'] === 'activated') {
+                    $this->authorizeAction('activate');
+                }
+                $device->status = $data['status'];
+                $device->activated_by = $data['status'] === 'activated' ? auth()->id() : null;
+                $device->activated_at = $data['status'] === 'activated' ? now() : null;
+            }
+            $device->save();
+        });
 
         return redirect()->route('admin.business-management.index', ['party_id' => $data['manual_party_id']])->with('status', 'Device updated.');
     }

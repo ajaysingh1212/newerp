@@ -111,12 +111,69 @@ class BusinessManagementTest extends TestCase
         $this->get(route('admin.business-management.edit', $device))->assertOk();
         $data = $this->payload();
         $data['devices'][0]['sales_price'] = '200.25';
-        $data['status'] = 'activated';
         $this->put(route('admin.business-management.update', $device), $data)->assertSessionHasNoErrors();
         $this->assertSame('200.25', $device->fresh()->sales_price);
         $this->assertSame('pending', $device->fresh()->status);
         $this->delete(route('admin.business-management.destroy', $device))->assertRedirect();
         $this->assertDatabaseCount('business_devices', 0);
+    }
+
+    public function test_edit_can_reset_activation_and_record_a_fresh_activation(): void
+    {
+        $this->post(route('admin.business-management.store'), $this->payload());
+        $device = BusinessDevice::firstOrFail();
+        $this->post(route('admin.business-management.activate', $device));
+        $originalTime = $device->fresh()->activated_at->toDateTimeString();
+        $this->get(route('admin.business-management.edit', $device))->assertOk()->assertSee('name="status"', false);
+
+        $this->travel(1)->hours();
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'activated'])->assertSessionHasNoErrors();
+        $this->assertSame($originalTime, $device->fresh()->activated_at->toDateTimeString());
+
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'pending'])->assertSessionHasNoErrors();
+        $device->refresh();
+        $this->assertSame('pending', $device->status);
+        $this->assertNull($device->activated_by);
+        $this->assertNull($device->activated_at);
+
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'activated'])->assertSessionHasNoErrors();
+        $device->refresh();
+        $this->assertSame('activated', $device->status);
+        $this->assertSame(1, $device->activated_by);
+        $this->assertNotSame($originalTime, $device->activated_at->toDateTimeString());
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'invalid'])->assertSessionHasErrors('status');
+        $this->assertSame('activated', $device->fresh()->status);
+    }
+
+    public function test_edit_respects_activation_permission(): void
+    {
+        $this->post(route('admin.business-management.store'), $this->payload());
+        $device = BusinessDevice::firstOrFail();
+        Gate::define('business_management_activate', fn () => false);
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'activated'])->assertForbidden();
+        $this->assertSame('pending', $device->fresh()->status);
+        $device->forceFill(['status' => 'activated', 'activated_by' => 1, 'activated_at' => now()])->save();
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'pending'])->assertSessionHasNoErrors();
+        $this->assertSame('pending', $device->fresh()->status);
+    }
+
+    public function test_report_status_cards_follow_filters_and_device_edits(): void
+    {
+        $row = $this->payload()['devices'][0];
+        $this->post(route('admin.business-management.store'), $this->payload([$row, array_merge($row, ['vts_number' => 'second'])]));
+        $device = BusinessDevice::firstOrFail();
+        $this->post(route('admin.business-management.activate', $device));
+        $assertCards = function (array $filters, int $activated, int $pending) {
+            $this->get(route('admin.business-management.report', $filters))->assertOk()
+                ->assertSee('id="report-activated-total" class="br-total-value" data-report-count="'.$activated.'"', false)
+                ->assertSee('id="report-pending-total" class="br-total-value" data-report-count="'.$pending.'"', false);
+        };
+        $assertCards([], 1, 1);
+        $assertCards(['status' => 'activated'], 1, 0);
+        $assertCards(['status' => 'pending'], 0, 1);
+        $assertCards(['party_id' => ManualParty::create(['name' => 'Empty party'])->id], 0, 0);
+        $this->put(route('admin.business-management.update', $device), $this->payload() + ['status' => 'pending'])->assertSessionHasNoErrors();
+        $assertCards([], 0, 2);
     }
 
     public function test_bulk_create_quantity_duplicates_and_total(): void

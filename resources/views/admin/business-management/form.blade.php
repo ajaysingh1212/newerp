@@ -14,7 +14,11 @@
                 <div class="form-group col-md-3"><label for="assigned_at">Assigned date</label><input required class="form-control" type="date" id="assigned_at" name="assigned_at" value="{{ old('assigned_at', $businessDevice?->assigned_at?->format('Y-m-d') ?? now()->format('Y-m-d')) }}"></div>
                 <div class="form-group col-md-3"><label for="quantity">Quantity (1–1000)</label><input required class="form-control" type="number" id="quantity" name="quantity" min="1" max="{{ $businessDevice ? 1 : 1000 }}" value="{{ old('quantity', 1) }}" {{ $businessDevice ? 'readonly' : '' }}></div>
             </div>
-            <div class="bm-note"><i class="fas fa-info-circle"></i><span>New devices are saved as Pending. Activate them from the inventory to record who activated each device and when.</span></div>
+            @if($businessDevice)
+                <div class="form-group"><label for="device-status">Device status</label><select required class="form-control" id="device-status" name="status"><option value="pending" {{ old('status', $businessDevice->status) === 'pending' ? 'selected' : '' }}>Pending</option>@if($businessDevice->status === 'activated' || Gate::allows('business_management_activate'))<option value="activated" {{ old('status', $businessDevice->status) === 'activated' ? 'selected' : '' }}>Activated</option>@endif</select><small class="form-text text-muted">Changing to Pending clears the activation user and time.</small></div>
+            @else
+                <div class="bm-note"><i class="fas fa-info-circle"></i><span>New devices are saved as Pending. Activate them from the inventory to record who activated each device and when.</span></div>
+            @endif
             <table id="entry-table" class="table table-striped"><thead><tr><th>#</th><th>Device / model</th><th>VTS number</th><th>SIM number</th><th>Sales price</th><th>Status</th></tr></thead><tbody id="device-rows"></tbody></table>
             <div class="bm-total"><span>Total sales value · updates live</span><strong id="sales-total">0.00</strong></div>
             <div class="bm-form-footer"><a class="btn btn-light" href="{{ route('admin.business-management.index') }}">Cancel</a><button class="btn btn-primary"><i class="fas fa-check mr-1"></i> {{ $businessDevice ? 'Save changes' : 'Save devices' }}</button></div>
@@ -60,6 +64,17 @@
     }
     quantity.addEventListener('input', render);
     rows.addEventListener('input', total);
+    const status = document.getElementById('device-status');
+    if (status) {
+        const badge = document.querySelector('.card-header .bm-status');
+        const updateStatus = () => {
+            rows.querySelectorAll('tr').forEach(row => { row.lastElementChild.textContent = status.value; });
+            badge.textContent = status.options[status.selectedIndex].text;
+            badge.className = 'bm-status ' + status.value;
+        };
+        status.addEventListener('change', updateStatus);
+        updateStatus();
+    }
     document.getElementById('device-form').addEventListener('submit', () => {
         const devices = Array.from(rows.children).map(row => {
             const device = {};
@@ -74,6 +89,7 @@
         rows.querySelectorAll('[data-field]').forEach(input => { input.disabled = true; });
     });
     render();
+    if (status) status.dispatchEvent(new Event('change'));
 })();
 </script>
 @endsection

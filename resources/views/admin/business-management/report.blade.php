@@ -34,7 +34,11 @@
 </div>
 <div class="br-main-card">
     <div class="br-card-top">
-        <div><div id="report-total-label" class="br-total-label">Total devices</div><div id="report-chart-total" class="br-total-value">{{ number_format($totals->devices) }}</div></div>
+        <div class="br-chart-totals">
+            <div class="br-chart-total-card"><div id="report-total-label" class="br-total-label">Total devices</div><div id="report-chart-total" class="br-total-value">{{ number_format($totals->devices) }}</div></div>
+            <div class="br-chart-total-card br-chart-total-activated"><div class="br-total-label">Total activated</div><div id="report-activated-total" class="br-total-value" data-report-count="{{ $totals->activated }}">{{ number_format($totals->activated) }}</div></div>
+            <div class="br-chart-total-card br-chart-total-pending"><div class="br-total-label">Total pending</div><div id="report-pending-total" class="br-total-value" data-report-count="{{ $totals->devices - $totals->activated }}">{{ number_format($totals->devices - $totals->activated) }}</div></div>
+        </div>
         <div class="br-chart-tabs" role="tablist" aria-label="Chart type">
             @foreach(['pie' => ['fa-chart-pie', 'Pie'], 'circle' => ['fa-circle-notch', 'Donut'], 'bar' => ['fa-chart-bar', 'Bar'], 'wave' => ['fa-wave-square', 'Wave'], 'radar' => ['fa-braille', 'Radar']] as $type => $chart)
                 <button type="button" id="chart-tab-{{ $type }}" role="tab" aria-selected="{{ $type === 'pie' ? 'true' : 'false' }}" aria-controls="report-chart-stage" data-chart-type="{{ $type }}" tabindex="{{ $type === 'pie' ? '0' : '-1' }}"><i class="fas {{ $chart[0] }}"></i>{{ $chart[1] }}</button>
