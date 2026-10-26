@@ -176,6 +176,17 @@ class BusinessManagementTest extends TestCase
         $assertCards([], 0, 2);
     }
 
+    public function test_report_includes_styles_in_the_page_head(): void
+    {
+        $response = $this->get(route('admin.business-management.report'))->assertOk();
+        $head = explode('</head>', $response->getContent())[0];
+        $this->assertStringContainsString('css/business-management.css', $head);
+        $this->assertStringContainsString('<style id="business-report-styles">', $head);
+        $this->assertStringContainsString('.bm-workspace.br-reference-workspace{', $head);
+        $this->assertStringContainsString('.br-chart-totals{', $head);
+        $this->assertStringNotContainsString('css/business-reports.css', $head);
+    }
+
     public function test_bulk_create_quantity_duplicates_and_total(): void
     {
         $row = $this->payload()['devices'][0];

@@ -2,7 +2,7 @@
 @section('business-workspace-class', 'br-reference-workspace')
 @section('styles')
 @parent
-<link rel="stylesheet" href="{{ asset('css/business-reports.css') }}">
+@include('admin.business-management.partials.report-styles')
 @endsection
 @section('business-content')
 <h1 class="sr-only">Business Management Report</h1>

@@ -1,1 +1,1 @@
-<!doctype html><html><body>@include('partials.menu')@yield('content')@yield('scripts')</body></html>
+<!doctype html><html><head>@yield('styles')</head><body>@include('partials.menu')@yield('content')@yield('scripts')</body></html>
